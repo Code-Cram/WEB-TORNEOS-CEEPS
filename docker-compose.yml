@@ -1,0 +1,16 @@
+# Postgres local para desarrollo. En producción se usa Supabase (misma base de datos Postgres).
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: torneos-ceeps-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ceeps
+      POSTGRES_PASSWORD: ceeps
+      POSTGRES_DB: torneos
+    ports:
+      - "5433:5432"
+    volumes:
+      - torneos-ceeps-db:/var/lib/postgresql/data
+volumes:
+  torneos-ceeps-db:
