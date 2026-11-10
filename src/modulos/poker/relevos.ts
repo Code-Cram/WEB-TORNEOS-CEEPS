@@ -3,13 +3,12 @@ import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, sql } from "drizzle
 import { db } from "@/db";
 import { asistencia, infoTorneos, mensajes, pokerAsientos, pokerJugadores, pokerMesas, pokerRelevos, registro } from "@/db/schema";
 import { diaMadrid } from "@/modulos/asistencia/logica";
+import { urlWeb } from "@/modulos/compartido/web";
 import { encolarCorreo, enviarPendientes } from "@/modulos/correo/envio";
 import { CIERRE_INSCRIPCIONES } from "@/modulos/torneos/config";
 import { leerInfoTorneos } from "@/modulos/torneos/info";
 import { correoPlazaNueva, correoPlazaPerdida } from "./correos-reserva";
 import { plazasALaReserva, type Decision } from "./reserva";
-
-const web = () => process.env.VERCEL_PROJECT_PRODUCTION_URL || "web-torneos-ceeps.vercel.app";
 
 /** Si está activado y desde cuándo. La primera vez se apunta «desde ahora»: lo que tocaba antes no se hace de golpe. */
 export async function estadoReservaAutomatica(): Promise<{ activa: boolean; desde: Date }> {
@@ -133,7 +132,7 @@ async function aplicar(d: Decision): Promise<boolean> {
       deConsejo: true,
       texto: `🔔 Plaza de la reserva: ${d.entra.nombre} entra en la mesa ${d.mesa.numero} en lugar de ${d.sale.nombre}.`,
     });
-    const datos = { mesa: d.mesa.numero, fecha: d.mesa.fecha, lugar: d.mesa.lugar, web: web() };
+    const datos = { mesa: d.mesa.numero, fecha: d.mesa.fecha, lugar: d.mesa.lugar, web: urlWeb() };
     await encolarCorreo(tx, {
       para: d.sale.email,
       ...correoPlazaPerdida({ ...datos, nombre: d.sale.nombre, motivo: d.motivo }),

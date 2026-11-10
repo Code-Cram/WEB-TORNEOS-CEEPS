@@ -4,6 +4,8 @@ const nextConfig: NextConfig = {
   // Todas las páginas leen la sesión y resultados en directo: render dinámico clásico.
   cacheComponents: false,
   serverExternalPackages: ["pg"],
+  // Las imágenes para redes leen sus fuentes y el logo del disco: que viajen con la función.
+  outputFileTracingIncludes: { "/admin/redes/imagen": ["./src/modulos/redes/fuentes/*.woff", "./public/marca/ceeps.svg"] },
   experimental: {
     serverActions: { bodySizeLimit: "5mb" },
   },

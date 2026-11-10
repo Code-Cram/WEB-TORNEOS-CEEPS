@@ -34,7 +34,7 @@ export function correoPlazaNueva(d: Datos) {
       "",
       `Se ha liberado una plaza en el Torneo de Póker y es tuya: mesa ${d.mesa}, ${fechaLarga(d.fecha)}${d.lugar ? `, en ${d.lugar}` : ""}.`,
       "",
-      `Entra en https://${d.web} con este correo para ver tu mesa y confirmar que vienes. Si no puedes venir, dilo allí cuanto antes para que la plaza pase a la siguiente persona.`,
+      `Entra en ${d.web} con este correo para ver tu mesa y confirmar que vienes. Si no puedes venir, dilo allí cuanto antes para que la plaza pase a la siguiente persona.`,
       "",
       FIRMA,
     ].join("\n"),

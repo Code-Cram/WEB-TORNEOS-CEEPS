@@ -51,6 +51,8 @@ Para tener datos de prueba: `npm run db:seed` importa los CSV de inscripción qu
 | `ADMIN_EMAILS`   | Correos que pueden entrar al panel, separados por comas.                                         |
 | `ADMIN_PASSWORD` | Contraseña común del panel. Además de estar en `ADMIN_EMAILS`, hay que escribirla para entrar.  |
 
+Opcional, para que los correos automáticos (las plazas de la reserva del póker) salgan solos: `SMTP_HOST`, `SMTP_PUERTO` (587 por defecto), `SMTP_USUARIO`, `SMTP_CLAVE` y `CORREO_REMITENTE` (por defecto `consejo.estudiantes.eps@uam.es`). Sin ellas, los correos esperan en **Panel → Correos** con un botón para mandarlos a mano.
+
 Nunca subas tus ficheros `.env` ni los CSV de inscripción: tienen datos personales y ya están en `.gitignore`.
 
 ## Ponerla en internet (gratis)
@@ -80,13 +82,16 @@ Todo desde el panel (`/admin`, botón «Admin» al entrar con un correo de `ADMI
 3. **Personas**: lista completa con buscador y filtros, botón para copiar los correos (para el CCO de un email), descarga en Excel, corrección de nombres y correos (el nombre cambia también en sus equipos, parejas, mesas y actividades) y una sección con quien todavía no tiene correo para ponérselo.
    **Correos**: los correos de todos los participantes por grupos (todos, cada torneo, capitanes, cada mitad del cuadro del mus, cada día del póker, la lista de reserva y cada actividad) para escribirles en CCO: «Copiar» los copia y «Escribir» abre el programa de correo con todos en copia oculta.
 4. **Equipos, parejas y jugadores**: crear, renombrar, cambiar plantillas y borrar (con confirmación). **⇄ Intercambiar** cambia de sitio a dos equipos, parejas o participantes del cuadro, o a dos jugadores de póker entre mesas, sin volver a sortear (si uno no estaba, ocupa el sitio del otro; esos cruces pierden el resultado y el resto se recalcula). En póker, también renombrar turnos si cambia una fecha (se ordenan por fecha: «Martes 10 nov» antes que «Jueves 12 nov») y decidir si la **lista de reserva** puede entrar en la web (por defecto no: quien está en reserva no entra con su correo, salvo que juegue a otro torneo, y se le explica que está en reserva).
+   **Plazas automáticas** (póker, activado por defecto): si un jugador dice que no viene, 12 horas antes de su mesa la plaza pasa al primero de la lista de reserva que pueda ese día; si no ha contestado, 6 horas antes. Los dos reciben un correo, sale un aviso en el chat de ese día y queda en el registro. No se aplica a la mesa final ni a mesas ya empezadas, y se puede apagar en **Póker → Plazas automáticas**.
 5. **Sortear** (hay que escribir `SORTEAR` para confirmar). Si no hay participantes para llenar el cuadro, el sorteo reparte pases directos; la web explica cómo queda (p. ej. 12 equipos → cuadro de 16 con 4 pases directos). En el mus, las parejas que pierden en semifinales juegan por el **3er y 4º puesto** (en `src/modulos/torneos/config.ts`, `tercerPuesto`).
 6. **Apuntar** fechas, lugares y resultados. **Fechas por bloques** pone la misma fecha y lugar a una mitad del cuadro (hasta su semifinal), a una ronda o a la final de una vez. El ganador avanza solo y la clasificación se calcula sola (campeón, subcampeón y, con 3er puesto, 3º y 4º).
    **Calendario** junta en una página, por días, todos los partidos, mesas y eventos para cambiar fecha, hora y lugar en la misma lista, y **mueve un día entero** a otro (huelgas, cambios de aula) manteniendo las horas.
 7. **Asistencia**: cada equipo (lo confirma el capitán), pareja (cualquiera de los dos), jugador de póker o participante de una actividad (si es un equipo, cualquiera de él) confirma en su página si viene el próximo día que juega o que es el evento, con un comentario si quiere. La respuesta vale para ese día: si cambia la fecha de su partido, su mesa o el evento, o pasa a jugar otro día (una final), se le vuelve a preguntar. Solo se pregunta por lo que tiene fecha: partidos, mesas y, en los eventos, la «Fecha y hora» de su ficha. En **Asistencia** están los recuentos de cada día, los correos de quien no ha respondido (para recordárselo) y botones para apuntar a mano lo que alguien avise por otro lado.
 8. **Chat**: cada torneo y actividad tiene un botón «💬 Chat» en su página. Lo público va por días: cada uno lee y escribe en la sala del próximo día que juega (la final, los finalistas). En privado se escribe al Consejo. En **Chat** del panel contestáis los privados (primero los que tienen algo sin leer), escribís en la sala de un día o a todos los de un torneo, y podéis borrar cualquier mensaje (queda en el registro). Los mensajes llegan solos cada pocos segundos y nadie puede mandar más de 8 por minuto.
-9. **Dar por finalizado** cuando acabe: lo ve todo el que entra en la web, con el ganador arriba (se puede reabrir).
-10. **Nueva edición** (con el nombre escrito para confirmar): el ganador pasa a la lista de ganadores, se guarda una copia completa en el archivo y el torneo queda vacío para la siguiente edición.
+   Los **cambios se avisan solos**: al cambiar una fecha, un lugar, un cruce o una mesa, sale un mensaje del Consejo (🔔) en la sala de cada día afectado.
+9. **Redes**: publicaciones que se preparan solas con lo que pasa en los torneos: qué se juega hoy y los próximos días, cada resultado, cómo queda cada cuadro, la mesa final del póker y los campeones. Cada una trae el texto para el canal de WhatsApp (con negritas y el enlace), el de X (cabe en 280 caracteres) y el pie de Instagram con sus hashtags, y su imagen para historia (1080 × 1920) y para post (1080 × 1350). Copiar, descargar y publicar.
+10. **Dar por finalizado** cuando acabe: lo ve todo el que entra en la web, con el ganador arriba (se puede reabrir).
+11. **Nueva edición** (con el nombre escrito para confirmar): el ganador pasa a la lista de ganadores, se guarda una copia completa en el archivo y el torneo queda vacío para la siguiente edición.
 
 ### Actividades
 
@@ -141,12 +146,14 @@ npm run lint
 | `acceso` | Entrar con el correo, sesiones, panel con contraseña y en qué está inscrito cada uno. |
 | `torneos` | Lo común a los tres torneos: configuración, ficha, premios, chuleta de reglas, página del torneo, sorteo, finalizar y nuevas ediciones. |
 | `cuadros` | Eliminatorias (fútbol, mus y torneos de actividades): sorteo, avance, 3er puesto, fechas por bloques, intercambiar y la vista del cuadro. |
-| `futbol`, `mus`, `poker` | Lo propio de cada torneo: datos, sorteos y recálculos, acciones del panel; en el póker, mesas, reserva y su vista. |
+| `futbol`, `mus`, `poker` | Lo propio de cada torneo: datos, sorteos y recálculos, acciones del panel; en el póker, mesas, reserva, plazas automáticas y su vista. |
 | `actividades` | Actividades creadas desde el panel (eventos con lista y torneos). |
 | `asistencia` | Confirmación de asistencia por días: la tarjeta, sus respuestas y el panel. |
-| `chat` | Salas por día, privados con el Consejo y avisos. |
+| `chat` | Salas por día, privados con el Consejo, avisos y avisos automáticos de cambios. |
 | `calendario` | Todas las fechas en una página y mover un día entero. |
 | `personas` | Personas y correos (lista, correcciones, grupos para escribir en CCO, descarga en Excel) y el formato de plantillas. |
+| `correo` | Bandeja de correos automáticos: se guardan y se mandan por SMTP (o a mano desde el panel). |
+| `redes` | Publicaciones para WhatsApp, X e Instagram y sus imágenes (las fuentes, con licencia OFL, en `fuentes/`). |
 | `importacion` | Leer los CSV de Forms e importarlos sin duplicar ni pisar correcciones. |
 | `panel` | Piezas comunes del panel: marco, formularios con resultado, intercambiar y validación de lo que llega del navegador. |
 | `compartido` | Utilidades de toda la web: fechas, textos, cabecera, ventanas y refresco. |
