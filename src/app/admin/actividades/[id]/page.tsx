@@ -25,6 +25,8 @@ import {
   sortearActividadAccion,
 } from "../acciones";
 import { FormularioActividad } from "../formulario";
+import { intercambiarEnCuadro } from "../../acciones-intercambiar";
+import { Intercambiar, opcionesCuadro } from "../../intercambiar";
 
 export const metadata: Metadata = { title: "Panel · Actividad" };
 
@@ -122,6 +124,18 @@ export default async function AdminActividad(props: PageProps<"/admin/actividade
             </label>
           </FormAccion>
         </Seccion>
+      )}
+
+      {partidos.length > 0 && (
+        <Intercambiar
+          accion={intercambiarEnCuadro}
+          ocultos={{ cuadro: "actividad", actividad: a.id }}
+          opciones={opcionesCuadro(
+            participantes,
+            partidos.filter((p) => p.ronda === 1).map((p) => ({ posicion: p.posicion, a: p.aId, b: p.bId })),
+          )}
+          descripcion={`Cambia de sitio a dos ${unidad}s del cuadro sin volver a sortear (si uno no estaba en el cuadro, ocupa el sitio del otro). Esos cruces pierden el resultado y el resto del cuadro se recalcula.`}
+        />
       )}
 
       {partidos.length > 0 && (

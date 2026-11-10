@@ -41,7 +41,7 @@ export default async function Personas({ searchParams }: { searchParams: Promise
     <MarcoAdmin actual="/admin/personas" titulo="Personas">
       <Seccion
         titulo={`Con correo (${conCorreo.length})`}
-        descripcion="Todas las personas que pueden entrar en la web con su correo (si siguen inscritas en algún torneo). Si corriges un correo, el cambio se aplica en los tres torneos y se recuerda al reimportar los CSV."
+        descripcion="Todas las personas que pueden entrar en la web con su correo (si siguen inscritas en algún torneo). Si corriges un nombre o un correo, el cambio se aplica en todos sus torneos y actividades (equipos, parejas, mesas), y el correo se recuerda al reimportar los CSV."
       >
         <form className="flex flex-wrap gap-2">
           {filtro !== "todos" && <input type="hidden" name="filtro" value={filtro} />}

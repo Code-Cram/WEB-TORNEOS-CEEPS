@@ -11,8 +11,10 @@ import { paraInputFecha } from "@/lib/formato";
 import { ordenarTurnos } from "@/lib/mesas";
 import { exigirAdmin } from "@/lib/sesion";
 import { guardarAccesoReserva, guardarJugadorPoker, guardarMesa, renombrarTurno, sortearTorneo } from "../acciones";
+import { intercambiarEnMesas } from "../acciones-intercambiar";
 import { Finalizar, NuevaEdicion } from "../edicion";
 import { InfoTorneoAdmin } from "../info";
+import { Intercambiar } from "../intercambiar";
 import { Sorteo } from "../sorteo";
 
 export const metadata: Metadata = { title: "Panel · Póker" };
@@ -144,6 +146,18 @@ export default async function AdminPoker() {
             })}
           </div>
         </Seccion>
+      )}
+
+      {clasif.length > 0 && (
+        <Intercambiar
+          accion={intercambiarEnMesas}
+          opciones={inscritos.map((j) => {
+            const a = asientos.find((x) => x.jugadorEmail === j.email && clasif.some((m) => m.id === x.mesaId));
+            const m = a && clasif.find((x) => x.id === a.mesaId);
+            return { valor: j.email, texto: `${j.nombre} · ${m ? `mesa ${m.numero}` : "sin mesa"}` };
+          })}
+          descripcion="Cambia de asiento a dos jugadores, también de mesas distintas. Si uno no tenía mesa, se sienta en el sitio del otro, que se queda sin mesa. Las mesas que ya tienen ganador no se tocan."
+        />
       )}
 
       <Seccion

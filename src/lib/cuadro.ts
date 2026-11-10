@@ -84,6 +84,34 @@ export function enBloque(bloque: string, p: { ronda: number; posicion: number },
   return bloque === `ronda-${p.ronda}`;
 }
 
+/* ───────────── Intercambiar: cambiar de sitio a dos participantes sin volver a sortear ───────────── */
+
+export type CruceRonda1 = { id: number; a: number | null; b: number | null };
+
+/**
+ * Cambia de sitio a `x` e `y` en la primera ronda (de ahí en adelante, el cuadro se recalcula con los resultados).
+ * Si uno de los dos no está en el cuadro, el otro le deja su sitio: es una sustitución. Devuelve los cruces que cambian,
+ * a los que hay que borrar el resultado (ya no lo jugaron los mismos).
+ */
+export function intercambiar(cruces: CruceRonda1[], x: number, y: number): { cambios: CruceRonda1[] } | { error: string } {
+  if (x === y) return { error: "Elige a dos distintos." };
+  const sitio = (id: number) => {
+    for (const c of cruces) {
+      if (c.a === id) return { cruce: c, lado: "a" as const };
+      if (c.b === id) return { cruce: c, lado: "b" as const };
+    }
+    return null;
+  };
+  const sx = sitio(x);
+  const sy = sitio(y);
+  if (!sx && !sy) return { error: "Ninguno de los dos está en el cuadro." };
+  if (sx && sy && sx.cruce.id === sy.cruce.id) return { error: "Ya juegan entre ellos: no hay nada que cambiar." };
+  const nuevos = new Map(cruces.map((c) => [c.id, { ...c }]));
+  if (sx) nuevos.get(sx.cruce.id)![sx.lado] = y;
+  if (sy) nuevos.get(sy.cruce.id)![sy.lado] = x;
+  return { cambios: cruces.map((c) => nuevos.get(c.id)!).filter((n, i) => n.a !== cruces[i].a || n.b !== cruces[i].b) };
+}
+
 /** Orden estándar de cabezas de serie: para 8 → [1, 8, 4, 5, 2, 7, 3, 6]. Reparte los byes por todo el cuadro. */
 export function ordenSiembra(tamano: number): number[] {
   let orden = [1, 2];

@@ -11,9 +11,11 @@ import { paraInputFecha } from "@/lib/formato";
 import { plantillaATexto } from "@/lib/operaciones";
 import { exigirAdmin } from "@/lib/sesion";
 import { eliminarPareja, guardarParejaAdmin, guardarPartidoMus, sortearTorneo } from "../acciones";
+import { intercambiarEnCuadro } from "../acciones-intercambiar";
 import { Finalizar, NuevaEdicion } from "../edicion";
 import { FechasEnBloque } from "../fechas-bloque";
 import { InfoTorneoAdmin } from "../info";
+import { Intercambiar, opcionesCuadro } from "../intercambiar";
 import { Sorteo } from "../sorteo";
 
 export const metadata: Metadata = { title: "Panel · Mus" };
@@ -50,6 +52,18 @@ export default async function AdminMus() {
       </Seccion>
 
       {partidos.length > 0 && <FechasEnBloque torneo="mus" rondas={rondas} conTercerPuesto={conTercero} lugares="lugares-mus" />}
+
+      {partidos.length > 0 && (
+        <Intercambiar
+          accion={intercambiarEnCuadro}
+          ocultos={{ cuadro: "mus" }}
+          opciones={opcionesCuadro(
+            parejas,
+            partidos.filter((p) => p.ronda === 1).map((p) => ({ posicion: p.posicion, a: p.parejaAId, b: p.parejaBId })),
+          )}
+          descripcion="Cambia de sitio a dos parejas del cuadro sin volver a sortear (si una no estaba en el cuadro, ocupa el sitio de la otra). Esos cruces pierden el resultado y el resto del cuadro se recalcula."
+        />
+      )}
 
       {partidos.length > 0 && (
         <Seccion

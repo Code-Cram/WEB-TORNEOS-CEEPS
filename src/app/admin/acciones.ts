@@ -598,13 +598,26 @@ export async function editarUsuario(_prev: Resultado, f: FormData): Promise<Resu
         await tx.update(asistencia).set({ unidad: nuevo.email! }).where(and(eq(asistencia.torneo, "poker"), eq(asistencia.unidad, actual)));
         await tx.update(asistencia).set({ email: nuevo.email! }).where(eq(asistencia.email, actual));
       }
+      // Cada torneo guarda su copia del nombre (la de la inscripción): el nombre corregido se pone en todas.
+      if (nombre && nombre !== persona.nombre) {
+        await tx.update(futbolJugadores).set({ nombre }).where(eq(futbolJugadores.email, nuevo.email!));
+        await tx.update(musIntegrantes).set({ nombre }).where(eq(musIntegrantes.email, nuevo.email!));
+        await tx.update(pokerJugadores).set({ nombre }).where(eq(pokerJugadores.email, nuevo.email!));
+        await tx.update(actividadMiembros).set({ nombre }).where(eq(actividadMiembros.email, nuevo.email!));
+      }
     });
     if (nuevo.email !== actual) {
       await hecho(admin, "Correo corregido.", undefined, `${actual} → ${nuevo.email}`);
       // Con un filtro activo la persona podría desaparecer de la lista: se muestra su ficha ya corregida.
       redirect(`/admin/personas?q=${encodeURIComponent(nuevo.email)}&corregido=1`);
     }
-    return hecho(admin, "Persona actualizada.", nuevo.aviso ? [nuevo.aviso] : undefined, actual);
+    const renombrada = !!nombre && nombre !== persona.nombre;
+    return hecho(
+      admin,
+      renombrada ? "Nombre cambiado en todos sus torneos y actividades." : "Persona actualizada.",
+      nuevo.aviso ? [nuevo.aviso] : undefined,
+      renombrada ? `${persona.nombre} → ${nombre}` : actual,
+    );
   });
 }
 

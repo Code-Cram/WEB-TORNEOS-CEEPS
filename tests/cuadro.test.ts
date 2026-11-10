@@ -6,6 +6,7 @@ import {
   enBloque,
   ganadorFutbol,
   ganadorMus,
+  intercambiar,
   nombreRonda,
   ordenSiembra,
   parsearTantos,
@@ -226,5 +227,42 @@ describe("ganadores", () => {
       [40, 38],
     ]);
     assert.deepEqual(parsearTantos("basura, 40-, -3, 100-2"), []);
+  });
+});
+
+describe("intercambiar", () => {
+  // Cruce 1: 10 contra 11; cruce 2: 12 contra 13; cruce 3: 14 con pase directo.
+  const cruces = [
+    { id: 1, a: 10, b: 11 },
+    { id: 2, a: 12, b: 13 },
+    { id: 3, a: 14, b: null },
+  ];
+
+  test("dos de cruces distintos cambian de sitio", () => {
+    assert.deepEqual(intercambiar(cruces, 11, 12), {
+      cambios: [
+        { id: 1, a: 10, b: 12 },
+        { id: 2, a: 11, b: 13 },
+      ],
+    });
+  });
+
+  test("con un pase directo, el pase pasa al otro", () => {
+    assert.deepEqual(intercambiar(cruces, 14, 10), {
+      cambios: [
+        { id: 1, a: 14, b: 11 },
+        { id: 3, a: 10, b: null },
+      ],
+    });
+  });
+
+  test("quien no está en el cuadro sustituye al otro", () => {
+    assert.deepEqual(intercambiar(cruces, 99, 13), { cambios: [{ id: 2, a: 12, b: 99 }] });
+  });
+
+  test("nada que cambiar", () => {
+    assert.ok("error" in intercambiar(cruces, 10, 11));
+    assert.ok("error" in intercambiar(cruces, 98, 99));
+    assert.ok("error" in intercambiar(cruces, 10, 10));
   });
 });

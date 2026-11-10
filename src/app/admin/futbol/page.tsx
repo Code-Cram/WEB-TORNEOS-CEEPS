@@ -11,9 +11,11 @@ import { paraInputFecha } from "@/lib/formato";
 import { plantillaATexto } from "@/lib/operaciones";
 import { exigirAdmin } from "@/lib/sesion";
 import { eliminarEquipo, guardarEquipo, guardarPartidoFutbol, sortearTorneo } from "../acciones";
+import { intercambiarEnCuadro } from "../acciones-intercambiar";
 import { Finalizar, NuevaEdicion } from "../edicion";
 import { FechasEnBloque } from "../fechas-bloque";
 import { InfoTorneoAdmin } from "../info";
+import { Intercambiar, opcionesCuadro } from "../intercambiar";
 import { Sorteo } from "../sorteo";
 
 export const metadata: Metadata = { title: "Panel · Fútbol" };
@@ -52,6 +54,18 @@ export default async function AdminFutbol() {
       </Seccion>
 
       {partidos.length > 0 && <FechasEnBloque torneo="futbol" rondas={rondas} conTercerPuesto={conTercero} lugares="lugares" />}
+
+      {partidos.length > 0 && (
+        <Intercambiar
+          accion={intercambiarEnCuadro}
+          ocultos={{ cuadro: "futbol" }}
+          opciones={opcionesCuadro(
+            equipos,
+            partidos.filter((p) => p.ronda === 1).map((p) => ({ posicion: p.posicion, a: p.localId, b: p.visitanteId })),
+          )}
+          descripcion="Cambia de sitio a dos equipos del cuadro sin volver a sortear (si uno no estaba en el cuadro, ocupa el sitio del otro). Esos partidos pierden el resultado y el resto del cuadro se recalcula."
+        />
+      )}
 
       {partidos.length > 0 && (
         <Seccion titulo="Cruces y resultados" descripcion="Si hay empate, apunta la tanda de penaltis. El ganador pasa solo a la siguiente ronda; si corriges un resultado, las rondas siguientes se recalculan.">
