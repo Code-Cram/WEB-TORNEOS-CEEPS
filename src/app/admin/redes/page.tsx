@@ -9,6 +9,7 @@ import { paraInstagram, paraWhatsApp, paraX, type Publicacion } from "@/modulos/
 export const metadata: Metadata = { title: "Panel · Redes" };
 
 const SECCIONES: [Publicacion["tipo"], string, string][] = [
+  ["aviso", "📢 Avisos", "El aviso destacado de cada torneo y actividad (el que sale arriba de su página): para contarlo también por redes."],
   ["dia", "📅 Qué se juega", "Hoy y los próximos días: para avisar por la mañana o la víspera."],
   ["resultado", "🏁 Resultados", "Cada partido y mesa con ganador, lo último primero."],
   ["final", "♠ Mesa final", "Los finalistas del póker, según van ganando su mesa."],

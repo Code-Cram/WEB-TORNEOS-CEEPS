@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-import { enumerar, paraInstagram, paraWhatsApp, paraX, type Publicacion } from "../src/modulos/redes/publicaciones";
+import { enumerar, paraInstagram, paraWhatsApp, paraX, publicacionDeAviso, type Publicacion } from "../src/modulos/redes/publicaciones";
 
 const web = "https://web-torneos-ceeps.vercel.app";
 const resultado: Publicacion = {
@@ -40,5 +40,34 @@ describe("redes", () => {
     assert.equal(enumerar([1, 2, 3, 4]), "1, 2, 3 y 4");
     assert.equal(enumerar(["Ana"]), "Ana");
     assert.equal(enumerar([]), "");
+  });
+});
+
+describe("redes: avisos destacados", () => {
+  const aviso = (texto: string) => publicacionDeAviso({ clave: "aviso-mus", tema: "mus", nombre: "I Torneo de Mus", aviso: texto });
+
+  test("«Algo: frase» → título y la frase debajo, con mayúscula", () => {
+    const p = aviso("📍 Nuevo lugar: todas las partidas son a las 16:00 en la cafetería de la EPS (zona de microondas), no en el comedor.")!;
+    assert.equal(p.antetitulo, "I TORNEO DE MUS · AVISO");
+    assert.deepEqual(p.bloques, [{ titulo: "📍 Nuevo lugar", lineas: ["Todas las partidas son a las 16:00 en la cafetería de la EPS (zona de microondas), no en el comedor."] }]);
+    assert.equal(
+      paraWhatsApp(p, web),
+      "📢 *I TORNEO DE MUS · AVISO*\n\n*📍 Nuevo lugar*\nTodas las partidas son a las 16:00 en la cafetería de la EPS (zona de microondas), no en el comedor.\n\n👉 https://web-torneos-ceeps.vercel.app",
+    );
+    assert.ok(paraX(p, web).length <= 280);
+  });
+
+  test("sin «Algo:» al principio, «Aviso»; varias líneas, cada una la suya", () => {
+    const p = aviso("Por la huelga del jueves, la primera ronda pasa al lunes 10.\r\n\r\nTraed el DNI.")!;
+    assert.deepEqual(p.bloques, [{ titulo: "Aviso", lineas: ["Por la huelga del jueves, la primera ronda pasa al lunes 10.", "Traed el DNI."] }]);
+  });
+
+  test("una frase larga con dos puntos no es un título", () => {
+    assert.equal(aviso("Lo que se decidió en la reunión de capitanes del martes por la tarde: se juega igual.")!.bloques[0].titulo, "Aviso");
+  });
+
+  test("sin aviso, nada que publicar", () => {
+    assert.equal(aviso(""), null);
+    assert.equal(aviso("  \n "), null);
   });
 });

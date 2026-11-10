@@ -21,7 +21,7 @@ import { nombreRonda, RONDA_TERCER_PUESTO } from "@/modulos/cuadros/logica";
 import { TORNEOS, type TorneoId } from "@/modulos/torneos/config";
 import { campeonActividad, campeonTorneo } from "@/modulos/torneos/ediciones";
 import { leerInfoTorneos } from "@/modulos/torneos/info";
-import { enumerar, type Publicacion, type Tema } from "./publicaciones";
+import { enumerar, publicacionDeAviso, type Publicacion, type Tema } from "./publicaciones";
 
 const hora = (d: Date | string) => fechaCorta(typeof d === "string" ? d : d.toISOString())!.split(" · ")[1];
 const cuando = (d: Date | null, lugar: string | null) => [d && fechaCorta(d.toISOString()), lugar].filter(Boolean).join(" · ");
@@ -85,6 +85,16 @@ export async function publicaciones(ahora = new Date()): Promise<Publicacion[]> 
   ]);
   const lista: Publicacion[] = [];
   const nombreTorneo = (t: TorneoId) => info[t].nombre;
+
+  /* ── Avisos destacados de cada torneo y actividad (cambios de lugar, de fecha…) ── */
+  for (const t of ["futbol", "mus", "poker"] as const) {
+    const p = publicacionDeAviso({ clave: `aviso-${t}`, tema: t, nombre: nombreTorneo(t), aviso: info[t].aviso });
+    if (p && !info[t].finalizado) lista.push(p);
+  }
+  for (const a of acts.filter((x) => x.estado === "activa")) {
+    const p = publicacionDeAviso({ clave: `aviso-actividad-${a.id}`, tema: "actividad", nombre: a.nombre, aviso: a.aviso ?? "" });
+    if (p) lista.push(p);
+  }
 
   /* ── Lo que se juega hoy y los próximos días (los cinco primeros días con algo) ── */
   const hoy = diaMadrid(ahora);
