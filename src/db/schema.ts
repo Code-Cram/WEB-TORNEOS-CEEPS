@@ -1,5 +1,6 @@
 import {
   boolean,
+  date,
   integer,
   jsonb,
   pgSchema,
@@ -54,6 +55,12 @@ export const infoTorneos = pgTable("info_torneos", {
   finalizado: boolean("finalizado").notNull().default(false),
   /** Solo póker: si la lista de reserva puede entrar en la web (si no, su correo no da acceso al póker). */
   reservaConAcceso: boolean("reserva_con_acceso").notNull().default(false),
+}).enableRLS();
+
+/** Ficheros de sql/ ya aplicados en esta base de datos (los apunta scripts/migrar.mts al desplegar). */
+export const migraciones = pgTable("migraciones", {
+  nombre: text("nombre").primaryKey(),
+  aplicadaEn: timestamp("aplicada_en", { withTimezone: true }).defaultNow().notNull(),
 }).enableRLS();
 
 /** Registro de cambios hechos desde el panel: quién y qué. */
@@ -238,6 +245,30 @@ export const pokerAsientos = poker.table(
     puesto: integer("puesto"),
   },
   (t) => [primaryKey({ columns: [t.mesaId, t.asiento] }), unique().on(t.mesaId, t.jugadorEmail)],
+).enableRLS();
+
+/* ───────────────────────────── ASISTENCIA ───────────────────────────── */
+
+/**
+ * Confirmación de que se viene a jugar un día: una por equipo (la da el capitán), por pareja (cualquiera de los dos)
+ * o por jugador de póker. Va ligada al día: si cambia la fecha del partido o de la mesa, hay que volver a confirmar.
+ */
+export const asistencia = pgTable(
+  "asistencia",
+  {
+    /** futbol | mus | poker */
+    torneo: text("torneo").notNull(),
+    /** Fútbol: id del equipo; mus: id de la pareja; póker: correo del jugador. */
+    unidad: text("unidad").notNull(),
+    /** Día al que se refiere, en hora de Madrid. */
+    dia: date("dia", { mode: "string" }).notNull(),
+    viene: boolean("viene").notNull(),
+    comentario: text("comentario"),
+    /** Quién respondió (un participante o alguien del Consejo desde el panel). */
+    email: text("email").notNull(),
+    actualizadoEn: timestamp("actualizado_en", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.torneo, t.unidad, t.dia] })],
 ).enableRLS();
 
 /* ───────────────────── ACTIVIDADES (creadas desde el panel) ───────────────────── */

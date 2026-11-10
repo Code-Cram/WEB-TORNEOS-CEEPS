@@ -6,9 +6,12 @@ import { futbolEquipos, musParejas, pokerAsientos, pokerMesas } from "@/db/schem
 import { Cabecera } from "@/components/cabecera";
 import { Logos } from "@/components/logos";
 import { listarActividades } from "@/lib/actividades";
+import type { Cita } from "@/lib/asistencia";
+import { citaDe } from "@/lib/asistencia-datos";
 import { campeonActividad, campeonTorneo } from "@/lib/ediciones";
 import { esCorreoAdmin, TORNEOS, type TorneoId } from "@/lib/config";
 import { leerInfoTorneos, torneosActivos, torneosDe } from "@/lib/datos";
+import { fechaCorta } from "@/lib/formato";
 import { esAdmin, exigirSesion } from "@/lib/sesion";
 
 export const metadata: Metadata = { title: "Mis actividades" };
@@ -19,6 +22,14 @@ const FONDOS: Record<TorneoId, string> = {
   poker: "fondo-tapete text-white",
 };
 
+/** «📅 mar 10 nov · 16:00 · ¿Vienes? Confírmalo» en la tarjeta del torneo, hasta que se responda. */
+function avisoCita(c: Cita): string {
+  const cuando = fechaCorta(c.eventos[0].fecha);
+  const vosotros = c.torneo !== "poker";
+  if (c.respuesta) return c.respuesta.viene ? `✓ ${cuando} · confirmado` : `✗ ${cuando} · ${vosotros ? "no venís" : "no vienes"}`;
+  return c.puedeResponder ? `📅 ${cuando} · ¿${vosotros ? "Venís" : "Vienes"}? Confírmalo` : `📅 ${cuando} · falta que confirme el capitán`;
+}
+
 export default async function Torneos() {
   const sesion = await exigirSesion();
   const [inscripciones, modoAdmin, info] = await Promise.all([torneosDe(sesion.email), esAdmin(), leerInfoTorneos()]);
@@ -26,6 +37,7 @@ export default async function Torneos() {
   // Los torneos finalizados los ve todo el que entra, aunque no jugara (y el Consejo con el modo admin, todos).
   const propios = torneosActivos(inscripciones);
   const activos = (["futbol", "mus", "poker"] as const).filter((t) => modoAdmin || propios.includes(t) || info[t].finalizado);
+  const citas = new Map(await Promise.all(propios.map(async (t) => [t, await citaDe(t, sesion.email)] as const)));
   const mias = new Set(inscripciones.actividades.map((a) => a.id));
   const actividades = (await listarActividades(modoAdmin)).filter((a) => modoAdmin || mias.has(a.id) || (a.estado === "terminada" && a.tipo === "torneo"));
   const total = activos.length + actividades.length;
@@ -88,11 +100,16 @@ export default async function Torneos() {
               </span>
               <span className="block pr-8 font-mono text-xs font-bold tracking-widest uppercase opacity-80">{info[t].lema}</span>
               <h2 className="mt-1 pr-8 font-display text-2xl uppercase sm:text-3xl">{info[t].nombre}</h2>
-              {(info[t].finalizado || detalle[t]) && (
-                <span className="mt-3 inline-block rounded-full bg-black/25 px-3 py-1 text-sm font-semibold backdrop-blur-sm">
-                  {info[t].finalizado ? `🏆 Ganador: ${ganadores.get(t) ?? "sin decidir"}` : detalle[t]}
-                </span>
-              )}
+              <span className="flex flex-wrap gap-2 pr-8">
+                {(info[t].finalizado || detalle[t]) && (
+                  <span className="mt-3 inline-block rounded-full bg-black/25 px-3 py-1 text-sm font-semibold backdrop-blur-sm">
+                    {info[t].finalizado ? `🏆 Ganador: ${ganadores.get(t) ?? "sin decidir"}` : detalle[t]}
+                  </span>
+                )}
+                {!info[t].finalizado && citas.get(t) && (
+                  <span className="mt-3 inline-block rounded-full bg-black/25 px-3 py-1 text-sm font-semibold backdrop-blur-sm">{avisoCita(citas.get(t)!)}</span>
+                )}
+              </span>
               <span className="absolute top-5 right-5 font-display text-2xl transition group-hover:translate-x-1">→</span>
             </Link>
           ))}

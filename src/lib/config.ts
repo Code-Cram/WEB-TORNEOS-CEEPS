@@ -57,7 +57,7 @@ export const TORNEOS: Record<
     lema: "Por parejas · al mejor de 3 partidas a 40 tantos",
     lugar: "Comedor de la EPS (zona de microondas)",
     calendario:
-      "Martes 17 nov · mitad izquierda del cuadro, hasta su semifinal\nMiércoles 18 nov · mitad derecha del cuadro, hasta su semifinal\nViernes 20 nov · final y partido por el 3er y 4º puesto",
+      "Martes 17 nov, 16:00 · mitad izquierda del cuadro, hasta su semifinal\nMiércoles 18 nov, 16:00 · mitad derecha del cuadro, hasta su semifinal\nViernes 20 nov, 16:00 · final y partido por el 3er y 4º puesto",
     formato:
       "Por parejas, eliminatoria directa hasta la pareja campeona.\nCada cruce, al mejor de 3 partidas a 40 tantos. La final, al mejor de 5.\nCada mitad del cuadro se juega en un día distinto: así no tienen que venir todas las parejas a la vez.\nLas dos parejas que pierdan en semifinales juegan por el 3er y 4º puesto.",
     premios:
@@ -82,7 +82,7 @@ export const TORNEOS: Record<
     tercerPuesto: false,
     lema: "8 mesas clasificatorias · mesa final de 8",
     lugar: "Comedor de la EPS (zona de microondas)",
-    calendario: "Martes 10 nov · fase clasificatoria, 1.er turno\nJueves 12 nov · fase clasificatoria, 2.º turno\nViernes 13 nov · mesa final",
+    calendario: "Martes 10 nov, 16:00 · fase clasificatoria, 1.er turno\nJueves 12 nov, 16:00 · fase clasificatoria, 2.º turno\nViernes 13 nov, 16:00 · mesa final",
     formato:
       "8 mesas clasificatorias de 8 jugadores, repartidas entre el martes 10 y el jueves 12 según la disponibilidad de cada uno.\nEl ganador de cada mesa pasa a la mesa final del viernes 13.\nSin crupier en las clasificatorias (el reparto rota entre jugadores); la mesa final tiene crupier del Consejo.\n64 plazas por orden de inscripción; el resto queda en lista de reserva para cubrir bajas.",
     premios:

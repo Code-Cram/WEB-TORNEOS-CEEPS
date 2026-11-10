@@ -5,6 +5,9 @@ import { db } from "@/db";
 import { actividadMiembros, futbolEquipos, futbolJugadores, futbolPartidos, musIntegrantes, musParejas, musPartidos, pokerAsientos, pokerJugadores, pokerMesas, registro, usuarios } from "@/db/schema";
 import { MarcoAdmin } from "@/components/admin/marco-admin";
 import { TarjetasActividades } from "@/components/admin/tarjetas-actividades";
+import { resumir } from "@/lib/asistencia";
+import { agendaAsistencia } from "@/lib/asistencia-datos";
+import { TORNEOS } from "@/lib/config";
 import { fechaCorta } from "@/lib/formato";
 import { exigirAdmin } from "@/lib/sesion";
 
@@ -33,7 +36,7 @@ export default async function Resumen() {
       n(db.select({ n: contar }).from(actividadMiembros).where(isNull(actividadMiembros.email))),
     ]);
   const sinCorreo = futSinCorreo + musSinCorreo + actSinCorreo;
-  const cambios = await db.select().from(registro).orderBy(desc(registro.id)).limit(20);
+  const [cambios, agenda] = await Promise.all([db.select().from(registro).orderBy(desc(registro.id)).limit(20), agendaAsistencia()]);
 
   const tarjetas = [
     {
@@ -67,6 +70,31 @@ export default async function Resumen() {
           </Link>
         ))}
       </div>
+
+      {agenda.length > 0 && (
+        <Link
+          href="/admin/asistencia"
+          className="mt-4 block rounded-3xl border-2 border-tinta bg-papel p-5 shadow-[4px_4px_0_var(--tinta)] transition hover:-translate-y-0.5"
+        >
+          <h2 className="font-display text-lg uppercase">📅 Asistencia</h2>
+          <ul className="mt-1 space-y-0.5 text-sm">
+            {agenda.slice(0, 4).map((d) => {
+              const r = resumir(d.filas.map((f) => f.respuesta));
+              const cuando = d.filas.map((f) => f.eventos[0].fecha).sort()[0];
+              return (
+                <li key={`${d.torneo}-${d.dia}`}>
+                  {TORNEOS[d.torneo].icono} {TORNEOS[d.torneo].corto} · {fechaCorta(cuando)}:{" "}
+                  <strong className="text-verde">
+                    {r.vienen} {r.vienen === 1 ? "viene" : "vienen"}
+                  </strong>{" "}
+                  ·{" "}
+                  <span className={r.noVienen ? "font-semibold text-copas" : ""}>{r.noVienen} no</span> · {r.sinResponder} sin responder
+                </li>
+              );
+            })}
+          </ul>
+        </Link>
+      )}
 
       <h2 className="mt-8 mb-3 font-display text-xl text-verde uppercase">Actividades</h2>
       <TarjetasActividades />

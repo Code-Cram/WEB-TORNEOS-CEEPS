@@ -9,6 +9,7 @@ const SECCIONES = [
   ["/admin/futbol", "⚽ Fútbol"],
   ["/admin/mus", "🂡 Mus"],
   ["/admin/poker", "♠ Póker"],
+  ["/admin/asistencia", "📅 Asistencia"],
   ["/admin/actividades", "⭐ Actividades"],
   ["/admin/personas", "Personas"],
   ["/admin/correos", "✉ Correos"],

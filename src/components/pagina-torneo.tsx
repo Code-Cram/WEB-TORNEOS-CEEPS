@@ -1,11 +1,13 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { TarjetaAsistencia } from "@/components/asistencia";
 import { Cabecera } from "@/components/cabecera";
 import { db } from "@/db";
 import { AvisoTorneo, BannerGanador, FichaTorneo } from "@/components/ficha-torneo";
 import { TarjetaPremios } from "@/components/premios";
 import { TarjetaReglas } from "@/components/reglas";
 import { Refresco } from "@/components/refresco";
+import { citaDe } from "@/lib/asistencia-datos";
 import { TORNEOS, type TorneoId } from "@/lib/config";
 import { leerInfoTorneos } from "@/lib/datos";
 import { campeonTorneo } from "@/lib/ediciones";
@@ -34,7 +36,8 @@ export async function PaginaTorneo({
   children: ReactNode;
 }) {
   const t = TORNEOS[torneo];
-  const ficha = (await leerInfoTorneos())[torneo];
+  const [infos, cita] = await Promise.all([leerInfoTorneos(), citaDe(torneo, sesion.email)]);
+  const ficha = infos[torneo];
   const campeon = ficha.finalizado ? await campeonTorneo(db, torneo) : null;
   return (
     <>
@@ -56,6 +59,7 @@ export async function PaginaTorneo({
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
         {ficha.finalizado && <BannerGanador campeon={campeon?.campeon ?? null} detalle={campeon?.detalle} />}
         <AvisoTorneo texto={ficha.aviso} />
+        {cita && <TarjetaAsistencia cita={cita} yo={sesion.email} lugarTorneo={ficha.lugar} />}
         {children}
         <section className="mt-10 grid items-start gap-4 lg:grid-cols-2">
           <FichaTorneo info={ficha} />

@@ -7,6 +7,7 @@ import {
   actividadMiembros,
   actividadParticipantes,
   aliasCorreos,
+  asistencia,
   futbolEquipos,
   futbolJugadores,
   futbolPartidos,
@@ -593,6 +594,9 @@ export async function editarUsuario(_prev: Resultado, f: FormData): Promise<Resu
           await tx.update(futbolEquipos).set({ clave: nuevaClave(e.clave) }).where(eq(futbolEquipos.id, e.id));
         for (const p of await tx.select().from(musParejas).where(like(musParejas.clave, `%${actual}%`)))
           await tx.update(musParejas).set({ clave: nuevaClave(p.clave) }).where(eq(musParejas.id, p.id));
+        // En el póker la confirmación de asistencia va por correo: sin esto se perdería la que ya hubiera dado.
+        await tx.update(asistencia).set({ unidad: nuevo.email! }).where(and(eq(asistencia.torneo, "poker"), eq(asistencia.unidad, actual)));
+        await tx.update(asistencia).set({ email: nuevo.email! }).where(eq(asistencia.email, actual));
       }
     });
     if (nuevo.email !== actual) {
