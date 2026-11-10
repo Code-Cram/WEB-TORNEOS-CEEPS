@@ -66,7 +66,7 @@ Nunca subas tus ficheros `.env` ni los CSV de inscripción: tienen datos persona
 
 3. Cada `git push` a `main` vuelve a desplegar la web. **Si cambias una variable en Vercel, vuelve a desplegar** (*Deployments → Redeploy*) para que se aplique.
 
-Si una versión nueva añade tablas, créalas en Supabase **antes** de subir el código: `npm run supabase:push` o, si se queda colgado, pegando en el *SQL Editor* de Supabase el fichero correspondiente de `sql/` (cambios de base de datos por fecha). En una instalación nueva no hacen falta: `db:push` / `supabase:push` crean todo de una vez.
+Los cambios de la base de datos van en `sql/`, un fichero por cambio que empieza por la fecha. **Se aplican solos al desplegar en producción**, antes de compilar (`scripts/migrar.mts`, dentro de `npm run build`), y quedan apuntados en la tabla `migraciones`: un push publica a la vez el código y la base de datos. Si uno falla, no se publica nada y sigue la versión anterior. Tienen que poder repetirse sin problema (`IF NOT EXISTS`, rellenar solo lo vacío…) y no borrar nada: lo que borra datos va en `sql/a-mano/` y se pega a mano en el *SQL Editor* de Supabase. En local, `npm run db:migrar` aplica los que falten en la base de `.env.local`.
 
 Las funciones se ejecutan en Dublín (`vercel.json`), cerca de la base de datos de Supabase en `eu-west-1`.
 
@@ -82,8 +82,9 @@ Todo desde el panel (`/admin`, botón «Admin» al entrar con un correo de `ADMI
 4. **Equipos, parejas y jugadores**: crear, renombrar, cambiar plantillas y borrar (con confirmación). En póker, también renombrar turnos si cambia una fecha (se ordenan por fecha: «Martes 10 nov» antes que «Jueves 12 nov») y decidir si la **lista de reserva** puede entrar en la web (por defecto no: quien está en reserva no entra con su correo, salvo que juegue a otro torneo, y se le explica que está en reserva).
 5. **Sortear** (hay que escribir `SORTEAR` para confirmar). Si no hay participantes para llenar el cuadro, el sorteo reparte pases directos; la web explica cómo queda (p. ej. 12 equipos → cuadro de 16 con 4 pases directos). En el mus, las parejas que pierden en semifinales juegan por el **3er y 4º puesto** (en `src/lib/config.ts`, `tercerPuesto`).
 6. **Apuntar** fechas, lugares y resultados. **Fechas por bloques** pone la misma fecha y lugar a una mitad del cuadro (hasta su semifinal), a una ronda o a la final de una vez. El ganador avanza solo y la clasificación se calcula sola (campeón, subcampeón y, con 3er puesto, 3º y 4º).
-7. **Dar por finalizado** cuando acabe: lo ve todo el que entra en la web, con el ganador arriba (se puede reabrir).
-8. **Nueva edición** (con el nombre escrito para confirmar): el ganador pasa a la lista de ganadores, se guarda una copia completa en el archivo y el torneo queda vacío para la siguiente edición.
+7. **Asistencia**: cada equipo (lo confirma el capitán), pareja (cualquiera de los dos) o jugador de póker confirma en la página del torneo si viene el próximo día que juega, con un comentario si quiere. La respuesta vale para ese día: si cambia la fecha de su partido o su mesa, o pasa a jugar otro día (una final), se le vuelve a preguntar. Solo se pregunta por partidos y mesas con fecha. En **Asistencia** están los recuentos de cada día, los correos de quien no ha respondido (para recordárselo) y botones para apuntar a mano lo que alguien avise por otro lado.
+8. **Dar por finalizado** cuando acabe: lo ve todo el que entra en la web, con el ganador arriba (se puede reabrir).
+9. **Nueva edición** (con el nombre escrito para confirmar): el ganador pasa a la lista de ganadores, se guarda una copia completa en el archivo y el torneo queda vacío para la siguiente edición.
 
 ### Actividades
 
@@ -113,7 +114,8 @@ Otro Nombre
 ## Pruebas
 
 ```bash
-npm test          # lógica: cuadros, sorteos, mesas, correos, importación, seguridad
+npm run comprobar  # todo lo de abajo de una vez
+npm test           # lógica: cuadros, sorteos, mesas, asistencia, correos, importación, migraciones, seguridad
 npm run typecheck
 npm run lint
 ```
