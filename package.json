@@ -22,6 +22,7 @@
     "supabase:seed": "tsx --env-file=.env.supabase scripts/seed.mts"
   },
   "dependencies": {
+    "@vercel/analytics": "^2.0.1",
     "@vercel/functions": "^3.10.3",
     "drizzle-orm": "^0.45.4",
     "jose": "^6.2.13",
