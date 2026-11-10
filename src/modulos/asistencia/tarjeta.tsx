@@ -74,7 +74,7 @@ export function TarjetaAsistencia({ cita, yo, lugarTorneo, plazo = null }: { cit
       <h2 id="asistencia" className="mt-1 font-display text-2xl text-verde uppercase sm:text-3xl">
         {fechaLarga(cita.eventos[0].fecha, idioma)}
       </h2>
-      <p className="mt-1 text-sm">{[lugar && `📍 ${lugar}`, ...cita.eventos.map((e) => detalleEnSuIdioma(e.detalle, t))].filter(Boolean).join(" · ")}</p>
+      <p className="mt-1 text-sm">{[lugar && `📍 ${t(lugar)}`, ...cita.eventos.map((e) => detalleEnSuIdioma(e.detalle, t))].filter(Boolean).join(" · ")}</p>
 
       <p
         role="status"

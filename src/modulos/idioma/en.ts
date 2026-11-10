@@ -363,4 +363,7 @@ export const EN: Record<string, string> = {
   "Esta página no existe": "This page doesn't exist",
   "Puede que el enlace esté mal copiado.": "The link may have been copied wrongly.",
   "Ir a los torneos": "Go to the tournaments",
+
+  // Lugares de siempre (datos que se escriben en español)
+  "Cafetería de la EPS (zona de microondas)": "EPS cafeteria (microwave area)",
 };

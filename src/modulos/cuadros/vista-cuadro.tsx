@@ -329,7 +329,7 @@ function TarjetaPartido({
     >
       <div className="flex h-[18px] items-center justify-between gap-1 border-b border-linea px-2 font-mono text-[10px] text-tinta-suave">
         <span className="truncate">{etiqueta ?? (bye ? t("Pase directo") : (fecha ?? t("Fecha por fijar")))}</span>
-        {p.lugar && !bye && !compacta && <span className="truncate">{p.lugar}</span>}
+        {p.lugar && !bye && !compacta && <span className="truncate">{t(p.lugar)}</span>}
       </div>
       <FilaEquipo p={p} lado="a" equipos={equipos} bye={bye} />
       <div className="h-px bg-linea" />
@@ -739,7 +739,7 @@ function ModalPartido({ tipo, vista, equipos, partidos, rondas, onCerrar, onAbri
             <dt className="font-mono text-xs font-bold text-tinta-suave uppercase">{t("Cuándo")}</dt>
             <dd className="first-letter:uppercase">{fechaLarga(p.fecha, idioma) ?? t("Por fijar")}</dd>
             <dt className="font-mono text-xs font-bold text-tinta-suave uppercase">{t("Dónde")}</dt>
-            <dd>{p.lugar ?? t("Por fijar")}</dd>
+            <dd>{p.lugar ? t(p.lugar) : t("Por fijar")}</dd>
             {p.notas && (
               <>
                 <dt className="font-mono text-xs font-bold text-tinta-suave uppercase">{t("Notas")}</dt>

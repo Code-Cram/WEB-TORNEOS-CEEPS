@@ -36,7 +36,7 @@ export default async function AdminMus() {
   return (
     <MarcoAdmin actual="/admin/mus" titulo="Mus">
       <datalist id="lugares-mus">
-        <option value="Comedor EPS (zona microondas)" />
+        <option value="Cafetería de la EPS (zona de microondas)" />
       </datalist>
 
       <InfoTorneoAdmin torneo="mus" />

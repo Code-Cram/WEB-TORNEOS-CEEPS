@@ -88,7 +88,7 @@ export function VistaPoker({ datos }: { datos: DatosPoker }) {
       >
         {abierta && (
           <div className="space-y-3">
-            {abierta.lugar && <p className="text-sm">📍 {abierta.lugar}</p>}
+            {abierta.lugar && <p className="text-sm">📍 {t(abierta.lugar)}</p>}
             {abierta.ganador && (
               <p className="rounded-xl bg-oros/20 px-3 py-2 text-sm">
                 👑 <strong>{abierta.ganador}</strong> {abierta.fase === "final" ? t("gana el torneo") : t("pasa a la mesa final")}
