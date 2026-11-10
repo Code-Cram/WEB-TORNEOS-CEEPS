@@ -3,13 +3,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { db } from "@/db";
 import { actividadMiembros, futbolEquipos, futbolJugadores, futbolPartidos, musIntegrantes, musParejas, musPartidos, pokerAsientos, pokerJugadores, pokerMesas, registro, usuarios } from "@/db/schema";
-import { MarcoAdmin } from "@/components/admin/marco-admin";
-import { TarjetasActividades } from "@/components/admin/tarjetas-actividades";
-import { grupoAsistencia, resumir } from "@/lib/asistencia";
-import { agendaAsistencia } from "@/lib/asistencia-datos";
-import { sinLeerConsejo } from "@/lib/chat";
-import { fechaCorta } from "@/lib/formato";
-import { exigirAdmin } from "@/lib/sesion";
+import { MarcoAdmin } from "@/modulos/panel/marco";
+import { TarjetasActividades } from "@/modulos/actividades/tarjetas-admin";
+import { grupoAsistencia, resumir } from "@/modulos/asistencia/logica";
+import { agendaAsistencia } from "@/modulos/asistencia/datos";
+import { sinLeerConsejo } from "@/modulos/chat/datos";
+import { fechaCorta } from "@/modulos/compartido/formato";
+import { exigirAdmin } from "@/modulos/acceso/sesion";
 
 export const metadata: Metadata = { title: "Panel" };
 

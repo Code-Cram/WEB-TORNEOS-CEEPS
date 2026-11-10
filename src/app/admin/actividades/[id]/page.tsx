@@ -4,29 +4,19 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/db";
 import { actividadPartidos } from "@/db/schema";
-import { estiloInput } from "@/components/admin/estilos";
-import { FormAccion } from "@/components/admin/form-accion";
-import { MarcoAdmin, Seccion } from "@/components/admin/marco-admin";
-import { actividadPorId, participantesDe } from "@/lib/actividades";
-import { nombreRonda } from "@/lib/cuadro";
-import { paraInputFecha } from "@/lib/formato";
-import { plantillaATexto } from "@/lib/operaciones";
-import { exigirAdmin } from "@/lib/sesion";
-import { sinTildes } from "@/lib/texto";
-import {
-  anadirLista,
-  anadirParticipante,
-  borrarActividad,
-  guardarParticipante,
-  guardarPartidoActividad,
-  importarCsvActividad,
-  nuevaEdicionActividad,
-  quitarParticipante,
-  sortearActividadAccion,
-} from "../acciones";
-import { FormularioActividad } from "../formulario";
-import { intercambiarEnCuadro } from "../../acciones-intercambiar";
-import { Intercambiar, opcionesCuadro } from "../../intercambiar";
+import { estiloInput } from "@/modulos/panel/estilos";
+import { FormAccion } from "@/modulos/panel/form-accion";
+import { MarcoAdmin, Seccion } from "@/modulos/panel/marco";
+import { actividadPorId, participantesDe } from "@/modulos/actividades/datos";
+import { nombreRonda } from "@/modulos/cuadros/logica";
+import { paraInputFecha } from "@/modulos/compartido/formato";
+import { plantillaATexto } from "@/modulos/personas/plantilla";
+import { exigirAdmin } from "@/modulos/acceso/sesion";
+import { sinTildes } from "@/modulos/compartido/texto";
+import { anadirLista, anadirParticipante, borrarActividad, guardarParticipante, guardarPartidoActividad, importarCsvActividad, nuevaEdicionActividad, quitarParticipante, sortearActividadAccion } from "@/modulos/actividades/acciones";
+import { FormularioActividad } from "@/modulos/actividades/formulario";
+import { intercambiarEnCuadro } from "@/modulos/cuadros/acciones";
+import { Intercambiar, opcionesCuadro } from "@/modulos/panel/intercambiar";
 
 export const metadata: Metadata = { title: "Panel · Actividad" };
 

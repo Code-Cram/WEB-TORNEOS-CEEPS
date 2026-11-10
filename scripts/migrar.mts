@@ -3,11 +3,11 @@
  * - En Vercel va dentro de «npm run build»: cada despliegue de producción pone la base de datos al día antes de compilar,
  *   así que un push publica a la vez el código y los cambios de la base. Si una migración falla, no se publica nada.
  * - En local: npm run db:migrar (con la base de .env.local).
- * Las reglas de los ficheros (que se puedan repetir, nada que borre) están en src/lib/migraciones.ts.
+ * Las reglas de los ficheros (que se puedan repetir, nada que borre) están en src/db/migraciones.ts.
  */
 import path from "node:path";
 import pg from "pg";
-import { esDestructiva, ficherosSql } from "../src/lib/migraciones";
+import { esDestructiva, ficherosSql } from "../src/db/migraciones";
 
 // Dentro de «build» solo actúa en los despliegues de producción de Vercel: un build en local no toca ninguna base.
 if (process.argv.includes("--solo-en-vercel") && process.env.VERCEL_ENV !== "production") {

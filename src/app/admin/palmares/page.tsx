@@ -2,12 +2,12 @@ import { desc, sql } from "drizzle-orm";
 import type { Metadata } from "next";
 import { db } from "@/db";
 import { archivo, palmares } from "@/db/schema";
-import { estiloInput } from "@/components/admin/estilos";
-import { FormAccion } from "@/components/admin/form-accion";
-import { MarcoAdmin, Seccion } from "@/components/admin/marco-admin";
-import { fechaCorta } from "@/lib/formato";
-import { exigirAdmin } from "@/lib/sesion";
-import { borrarArchivo, borrarPalmares, guardarPalmares } from "../acciones-ediciones";
+import { estiloInput } from "@/modulos/panel/estilos";
+import { FormAccion } from "@/modulos/panel/form-accion";
+import { MarcoAdmin, Seccion } from "@/modulos/panel/marco";
+import { fechaCorta } from "@/modulos/compartido/formato";
+import { exigirAdmin } from "@/modulos/acceso/sesion";
+import { borrarArchivo, borrarPalmares, guardarPalmares } from "@/modulos/torneos/acciones-ediciones";
 
 export const metadata: Metadata = { title: "Panel · Ganadores" };
 

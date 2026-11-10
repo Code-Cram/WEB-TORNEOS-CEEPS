@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-import { diaMadrid, esDia, proximoDia, resumir, type Evento, type Respuesta } from "../src/lib/asistencia";
+import { diaMadrid, esDia, proximoDia, resumir, type Evento, type Respuesta } from "../src/modulos/asistencia/logica";
 
 const evento = (fecha: string | null, detalle: string, pendiente = true): Evento => ({ fecha, lugar: null, detalle, pendiente });
 const respuesta = (viene: boolean): Respuesta => ({ viene, comentario: null, email: "a@b.es", quien: null, actualizadoEn: "" });

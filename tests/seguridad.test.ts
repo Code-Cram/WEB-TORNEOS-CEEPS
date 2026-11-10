@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-import { limpiarClave } from "../src/lib/clave";
-import { aCsv } from "../src/lib/exportar";
-import { parsearPlantilla } from "../src/lib/operaciones";
+import { limpiarClave } from "../src/modulos/acceso/clave";
+import { aCsv } from "../src/modulos/personas/exportar";
+import { parsearPlantilla } from "../src/modulos/personas/plantilla";
 
 describe("contraseña del panel", () => {
   test("tolera comillas y espacios que se cuelan al pegarla en Vercel", () => {

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { MarcoAdmin } from "@/components/admin/marco-admin";
-import { TarjetasActividades } from "@/components/admin/tarjetas-actividades";
-import { exigirAdmin } from "@/lib/sesion";
+import { MarcoAdmin } from "@/modulos/panel/marco";
+import { TarjetasActividades } from "@/modulos/actividades/tarjetas-admin";
+import { exigirAdmin } from "@/modulos/acceso/sesion";
 
 export const metadata: Metadata = { title: "Panel · Actividades" };
 

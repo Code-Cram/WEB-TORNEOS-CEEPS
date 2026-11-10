@@ -1,5 +1,5 @@
 import "server-only";
-import { crearDb } from "./client";
+import { crearDb } from "@/db/client";
 
 export type { Db, Tx } from "./client";
 

@@ -6,10 +6,12 @@
 import { asc, eq } from "drizzle-orm";
 import { crearDb } from "../src/db/client";
 import { futbolPartidos, musPartidas, musPartidos, pokerAsientos, pokerMesas } from "../src/db/schema";
-import { enBloque } from "../src/lib/cuadro";
-import { fechaMadrid } from "../src/lib/import/csv";
-import { ordenarTurnos } from "../src/lib/mesas";
-import { recalcularFinalPoker, recalcularFutbol, recalcularMus, sortearFutbol, sortearMus, sortearPoker } from "../src/lib/operaciones";
+import { enBloque } from "../src/modulos/cuadros/logica";
+import { fechaMadrid } from "../src/modulos/importacion/csv";
+import { ordenarTurnos } from "../src/modulos/poker/mesas";
+import { recalcularFinalPoker, sortearPoker } from "../src/modulos/poker/operaciones";
+import { recalcularFutbol, sortearFutbol } from "../src/modulos/futbol/operaciones";
+import { recalcularMus, sortearMus } from "../src/modulos/mus/operaciones";
 
 const url = process.env.DATABASE_URL ?? "";
 if (!/@(localhost|127\.0\.0\.1)[:/]/.test(url)) {

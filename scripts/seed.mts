@@ -8,8 +8,8 @@
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { crearDb } from "../src/db/client";
-import type { TorneoId } from "../src/lib/config";
-import { aplicar, parsearFicheros, planificar } from "../src/lib/import/aplicar";
+import type { TorneoId } from "../src/modulos/torneos/config";
+import { aplicar, parsearFicheros, planificar } from "../src/modulos/importacion/aplicar";
 
 const carpeta = path.resolve(process.cwd(), process.env.CSV_DIR ?? "..");
 const csvs = readdirSync(carpeta).filter((f) => f.toLowerCase().endsWith(".csv"));

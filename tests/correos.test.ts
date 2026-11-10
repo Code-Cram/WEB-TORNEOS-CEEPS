@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-import { enlaceCorreo, gruposCorreo } from "../src/lib/correos";
-import type { PersonaFila } from "../src/lib/personas";
+import { enlaceCorreo, gruposCorreo } from "../src/modulos/personas/correos";
+import type { PersonaFila } from "../src/modulos/personas/datos";
 
 const persona = (email: string, datos: Partial<PersonaFila> = {}): PersonaFila => ({
   email,

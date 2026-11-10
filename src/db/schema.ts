@@ -1,17 +1,4 @@
-import {
-  boolean,
-  date,
-  index,
-  integer,
-  jsonb,
-  pgSchema,
-  pgTable,
-  primaryKey,
-  serial,
-  text,
-  timestamp,
-  unique,
-} from "drizzle-orm/pg-core";
+import { boolean, date, index, integer, jsonb, pgSchema, pgTable, primaryKey, serial, text, timestamp, unique } from "drizzle-orm/pg-core";
 
 // Todas las tablas llevan RLS activado sin políticas: así la API pública de Supabase (PostgREST) no puede leerlas.
 // La web se conecta como propietaria de las tablas, a la que RLS no afecta.
@@ -35,7 +22,7 @@ export const aliasCorreos = pgTable("alias_correos", {
   nuevo: text("nuevo").notNull(),
 }).enableRLS();
 
-/** Información de cada torneo editable desde el panel. Los campos a null usan el valor por defecto de config.ts. */
+/** Información de cada torneo editable desde el panel. Los campos a null usan el valor por defecto de modulos/torneos/config.ts. */
 export const infoTorneos = pgTable("info_torneos", {
   /** futbol | mus | poker */
   torneo: text("torneo").primaryKey(),
@@ -46,9 +33,9 @@ export const infoTorneos = pgTable("info_torneos", {
   formato: text("formato"),
   /** Aviso destacado arriba de la página (cambios de fecha, huelgas…). */
   aviso: text("aviso"),
-  /** Premios, uno por línea («1º Tarjeta regalo de 100 €»; ver lib/premios.ts). */
+  /** Premios, uno por línea («1º Tarjeta regalo de 100 €»; ver modulos/torneos/premios.ts). */
   premios: text("premios"),
-  /** Chuleta de reglas de la página del torneo (ver lib/reglas.ts). Null: la de config.ts. */
+  /** Chuleta de reglas de la página del torneo (ver modulos/torneos/reglas.ts). Null: la de config.ts. */
   reglas: text("reglas"),
   enlaceInscripcion: text("enlace_inscripcion"),
   cierreInscripcion: timestamp("cierre_inscripcion", { withTimezone: true }),

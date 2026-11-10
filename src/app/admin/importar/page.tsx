@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { MarcoAdmin } from "@/components/admin/marco-admin";
-import { exigirAdmin } from "@/lib/sesion";
-import { Importador } from "./importador";
+import { MarcoAdmin } from "@/modulos/panel/marco";
+import { exigirAdmin } from "@/modulos/acceso/sesion";
+import { Importador } from "@/modulos/importacion/importador";
 
 export const metadata: Metadata = { title: "Importar CSV" };
 

@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BotonCopiar } from "@/components/admin/boton-copiar";
-import { MarcoAdmin, Seccion } from "@/components/admin/marco-admin";
-import { enlaceCorreo, gruposCorreo, LARGO_MAXIMO_ENLACE, type GrupoCorreo } from "@/lib/correos";
-import { leerInfoTorneos } from "@/lib/datos";
-import { listaPersonas } from "@/lib/personas";
-import { exigirAdmin } from "@/lib/sesion";
+import { BotonCopiar } from "@/modulos/panel/boton-copiar";
+import { MarcoAdmin, Seccion } from "@/modulos/panel/marco";
+import { enlaceCorreo, gruposCorreo, LARGO_MAXIMO_ENLACE, type GrupoCorreo } from "@/modulos/personas/correos";
+import { leerInfoTorneos } from "@/modulos/torneos/info";
+import { listaPersonas } from "@/modulos/personas/datos";
+import { exigirAdmin } from "@/modulos/acceso/sesion";
 
 export const metadata: Metadata = { title: "Panel · Correos" };
 

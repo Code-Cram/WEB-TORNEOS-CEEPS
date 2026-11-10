@@ -1,20 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { TarjetaAsistencia } from "@/components/asistencia";
-import { Cabecera } from "@/components/cabecera";
-import { ChatFlotante } from "@/components/chat/chat-flotante";
-import { VistaCuadro } from "@/components/cuadro/vista-cuadro";
+import { TarjetaAsistencia } from "@/modulos/asistencia/tarjeta";
+import { Cabecera } from "@/modulos/compartido/cabecera";
+import { ChatFlotante } from "@/modulos/chat/chat-flotante";
+import { VistaCuadro } from "@/modulos/cuadros/vista-cuadro";
 import { db } from "@/db";
-import { AvisoTorneo, BannerGanador, FichaTorneo } from "@/components/ficha-torneo";
-import { Chip } from "@/components/pagina-torneo";
-import { Refresco } from "@/components/refresco";
-import { actividadPorSlug, contarParticipantes, cuadroDeActividad, infoDeActividad, miParticipacion } from "@/lib/actividades";
-import { citaEn, unidadesDeActividad } from "@/lib/asistencia-datos";
-import { chatDe } from "@/lib/chat";
-import { campeonActividad } from "@/lib/ediciones";
-import { contextoEn } from "@/lib/sala-chat";
-import { esAdmin, exigirSesion } from "@/lib/sesion";
+import { AvisoTorneo, BannerGanador, FichaTorneo } from "@/modulos/torneos/ficha";
+import { Chip } from "@/modulos/torneos/pagina-torneo";
+import { Refresco } from "@/modulos/compartido/refresco";
+import { actividadPorSlug, contarParticipantes, cuadroDeActividad, infoDeActividad, miParticipacion } from "@/modulos/actividades/datos";
+import { citaEn, unidadesDeActividad } from "@/modulos/asistencia/datos";
+import { chatDe } from "@/modulos/chat/datos";
+import { campeonActividad } from "@/modulos/torneos/ediciones";
+import { contextoEn } from "@/modulos/chat/sala";
+import { esAdmin, exigirSesion } from "@/modulos/acceso/sesion";
 
 // Título genérico: el nombre de la actividad no se enseña a quien no puede verla.
 export const metadata: Metadata = { title: "Actividad" };

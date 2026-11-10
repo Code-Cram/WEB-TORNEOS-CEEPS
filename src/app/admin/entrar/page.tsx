@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { esCorreoAdmin } from "@/lib/config";
-import { esAdmin, leerSesion } from "@/lib/sesion";
-import { FormularioAdmin } from "./formulario";
+import { esCorreoAdmin } from "@/modulos/acceso/admins";
+import { esAdmin, leerSesion } from "@/modulos/acceso/sesion";
+import { FormularioAdmin } from "@/modulos/acceso/formulario-admin";
 
 export const metadata: Metadata = { title: "Panel" };
 

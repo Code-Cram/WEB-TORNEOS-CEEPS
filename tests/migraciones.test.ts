@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import path from "node:path";
 import { describe, test } from "node:test";
-import { esDestructiva, ficherosSql } from "../src/lib/migraciones";
+import { esDestructiva, ficherosSql } from "../src/db/migraciones";
 
 describe("migraciones", () => {
   test("lo que borra datos o tablas no se aplica solo", () => {

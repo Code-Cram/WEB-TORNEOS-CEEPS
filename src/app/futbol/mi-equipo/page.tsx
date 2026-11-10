@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Cabecera } from "@/components/cabecera";
-import { equipoDeCapitan } from "@/lib/datos";
-import { plantillaATexto } from "@/lib/operaciones";
-import { exigirSesion } from "@/lib/sesion";
-import { FormularioPlantilla } from "./formulario";
+import { Cabecera } from "@/modulos/compartido/cabecera";
+import { equipoDeCapitan } from "@/modulos/futbol/datos";
+import { plantillaATexto } from "@/modulos/personas/plantilla";
+import { exigirSesion } from "@/modulos/acceso/sesion";
+import { FormularioPlantilla } from "@/modulos/futbol/formulario-plantilla";
 
 export const metadata: Metadata = { title: "Mi equipo" };
 

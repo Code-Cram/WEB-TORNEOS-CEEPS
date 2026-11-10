@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { VistaCuadro } from "@/components/cuadro/vista-cuadro";
-import { Chip, PaginaTorneo } from "@/components/pagina-torneo";
-import { datosFutbol, leerInfoTorneos, torneosDe } from "@/lib/datos";
-import { esAdmin, exigirSesion } from "@/lib/sesion";
+import { VistaCuadro } from "@/modulos/cuadros/vista-cuadro";
+import { Chip, PaginaTorneo } from "@/modulos/torneos/pagina-torneo";
+import { datosFutbol } from "@/modulos/futbol/datos";
+import { leerInfoTorneos } from "@/modulos/torneos/info";
+import { torneosDe } from "@/modulos/acceso/inscripciones";
+import { esAdmin, exigirSesion } from "@/modulos/acceso/sesion";
 
 export const metadata: Metadata = { title: "Fútbol Sala" };
 

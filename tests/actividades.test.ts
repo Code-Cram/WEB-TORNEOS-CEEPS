@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-import { ganadorPorPuntos } from "../src/lib/cuadro";
-import { parsearParticipantes } from "../src/lib/import/parsers";
-import { slugify } from "../src/lib/texto";
+import { ganadorPorPuntos } from "../src/modulos/cuadros/logica";
+import { parsearParticipantes } from "../src/modulos/importacion/parsers";
+import { slugify } from "../src/modulos/compartido/texto";
 
 describe("direcciones de las actividades", () => {
   test("nombre → slug", () => {

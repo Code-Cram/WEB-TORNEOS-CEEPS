@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { MarcoAdmin, Seccion } from "@/components/admin/marco-admin";
-import { exigirAdmin } from "@/lib/sesion";
-import { FormularioActividad } from "../formulario";
+import { MarcoAdmin, Seccion } from "@/modulos/panel/marco";
+import { exigirAdmin } from "@/modulos/acceso/sesion";
+import { FormularioActividad } from "@/modulos/actividades/formulario";
 
 export const metadata: Metadata = { title: "Panel · Nueva actividad" };
 

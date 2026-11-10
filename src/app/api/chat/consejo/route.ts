@@ -1,6 +1,6 @@
-import { mensajesConsejo } from "@/lib/chat";
-import { canalDe, origenDe } from "@/lib/sala-chat";
-import { esAdmin, leerSesion } from "@/lib/sesion";
+import { mensajesConsejo } from "@/modulos/chat/datos";
+import { canalDe, origenDe } from "@/modulos/chat/sala";
+import { esAdmin, leerSesion } from "@/modulos/acceso/sesion";
 
 /** Lo mismo para el panel: una sala de un día, los avisos para todos o una conversación privada. Solo admins. */
 export async function GET(req: Request) {

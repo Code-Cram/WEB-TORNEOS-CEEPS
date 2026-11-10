@@ -1,7 +1,7 @@
 import { attachDatabasePool } from "@vercel/functions";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
-import * as schema from "./schema";
+import * as schema from "@/db/schema";
 
 export function crearDb(url: string) {
   // En Vercel las funciones se congelan entre peticiones: una conexión que moría estando congelada dejaba

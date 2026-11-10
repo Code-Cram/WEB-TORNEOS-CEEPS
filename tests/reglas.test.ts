@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-import { TORNEOS } from "../src/lib/config";
-import { conNegritas, parsearReglas } from "../src/lib/reglas";
+import { TORNEOS } from "../src/modulos/torneos/config";
+import { conNegritas, parsearReglas } from "../src/modulos/torneos/reglas";
 
 describe("reglas", () => {
   test("títulos, subtítulos, viñetas, pasos y notas", () => {

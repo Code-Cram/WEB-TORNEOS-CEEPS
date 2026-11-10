@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-import { fechaForms, fechaMadrid, leerCsv } from "../src/lib/import/csv";
-import { parsearFutbol, parsearMus, parsearPoker } from "../src/lib/import/parsers";
+import { fechaForms, fechaMadrid, leerCsv } from "../src/modulos/importacion/csv";
+import { parsearFutbol, parsearMus, parsearPoker } from "../src/modulos/importacion/parsers";
 
 const utf8 = (s: string) => new TextEncoder().encode(s);
 

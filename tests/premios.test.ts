@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-import { TORNEOS } from "../src/lib/config";
-import { parsearPremios } from "../src/lib/premios";
+import { TORNEOS } from "../src/modulos/torneos/config";
+import { parsearPremios } from "../src/modulos/torneos/premios";
 
 describe("premios", () => {
   test("puestos, detalles y notas", () => {

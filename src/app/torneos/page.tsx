@@ -3,16 +3,18 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { db } from "@/db";
 import { futbolEquipos, musParejas, pokerAsientos, pokerMesas } from "@/db/schema";
-import { Cabecera } from "@/components/cabecera";
-import { Logos } from "@/components/logos";
-import { listarActividades } from "@/lib/actividades";
-import type { Cita } from "@/lib/asistencia";
-import { citaDe, citaDeActividad } from "@/lib/asistencia-datos";
-import { campeonActividad, campeonTorneo } from "@/lib/ediciones";
-import { esCorreoAdmin, TORNEOS, type TorneoId } from "@/lib/config";
-import { leerInfoTorneos, torneosActivos, torneosDe } from "@/lib/datos";
-import { fechaCorta } from "@/lib/formato";
-import { esAdmin, exigirSesion } from "@/lib/sesion";
+import { Cabecera } from "@/modulos/compartido/cabecera";
+import { Logos } from "@/modulos/compartido/logos";
+import { listarActividades } from "@/modulos/actividades/datos";
+import type { Cita } from "@/modulos/asistencia/logica";
+import { citaDe, citaDeActividad } from "@/modulos/asistencia/datos";
+import { campeonActividad, campeonTorneo } from "@/modulos/torneos/ediciones";
+import { esCorreoAdmin } from "@/modulos/acceso/admins";
+import { TORNEOS, type TorneoId } from "@/modulos/torneos/config";
+import { leerInfoTorneos } from "@/modulos/torneos/info";
+import { torneosActivos, torneosDe } from "@/modulos/acceso/inscripciones";
+import { fechaCorta } from "@/modulos/compartido/formato";
+import { esAdmin, exigirSesion } from "@/modulos/acceso/sesion";
 
 export const metadata: Metadata = { title: "Mis actividades" };
 

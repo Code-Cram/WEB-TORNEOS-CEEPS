@@ -1,9 +1,9 @@
 import { db } from "@/db";
 import { registro } from "@/db/schema";
-import { actividadPorId, participantesDe } from "@/lib/actividades";
-import { aCsv } from "@/lib/exportar";
-import { esAdmin, leerSesion } from "@/lib/sesion";
-import { slugify } from "@/lib/texto";
+import { actividadPorId, participantesDe } from "@/modulos/actividades/datos";
+import { aCsv } from "@/modulos/personas/exportar";
+import { esAdmin, leerSesion } from "@/modulos/acceso/sesion";
+import { slugify } from "@/modulos/compartido/texto";
 
 /** Lista de participantes de una actividad para abrir en Excel. Solo admins con la contraseña puesta. */
 export async function GET(_req: Request, ctx: RouteContext<"/admin/actividades/[id]/csv">) {

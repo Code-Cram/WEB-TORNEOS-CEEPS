@@ -1,6 +1,6 @@
-import { chatDe, contextoChat } from "@/lib/chat";
-import { origenDe } from "@/lib/sala-chat";
-import { leerSesion } from "@/lib/sesion";
+import { chatDe, contextoChat } from "@/modulos/chat/datos";
+import { origenDe } from "@/modulos/chat/sala";
+import { leerSesion } from "@/modulos/acceso/sesion";
 
 /** Lo que pregunta el navegador cada pocos segundos con el chat abierto: su sala del día y su conversación con el Consejo. */
 export async function GET(req: Request) {

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-import { ordenarTurnos, posicionAsiento, sortearMesas } from "../src/lib/mesas";
+import { ordenarTurnos, posicionAsiento, sortearMesas } from "../src/modulos/poker/mesas";
 
 const mesas = Array.from({ length: 8 }, (_, i) => ({ numero: i + 1, turno: i < 4 ? "Martes" : "Miércoles" }));
 const jugadores = (n: number, disponibilidad: (i: number) => string[]) =>

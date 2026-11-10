@@ -1,12 +1,12 @@
 import Image from "next/image";
 import { redirect } from "next/navigation";
-import { Logos } from "@/components/logos";
-import { TORNEOS, type TorneoId } from "@/lib/config";
-import { infoDeActividad, listarActividades } from "@/lib/actividades";
-import { inscripcionAbierta, leerInfoTorneos } from "@/lib/datos";
-import { fechaLarga } from "@/lib/formato";
-import { leerSesion } from "@/lib/sesion";
-import { FormularioEntrar } from "./formulario-entrar";
+import { Logos } from "@/modulos/compartido/logos";
+import { TORNEOS, type TorneoId } from "@/modulos/torneos/config";
+import { infoDeActividad, listarActividades } from "@/modulos/actividades/datos";
+import { inscripcionAbierta, leerInfoTorneos } from "@/modulos/torneos/info";
+import { fechaLarga } from "@/modulos/compartido/formato";
+import { leerSesion } from "@/modulos/acceso/sesion";
+import { FormularioEntrar } from "@/modulos/acceso/formulario-entrar";
 
 export default async function Inicio() {
   if (await leerSesion()) redirect("/torneos");

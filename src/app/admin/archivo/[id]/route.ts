@@ -1,8 +1,8 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { archivo, registro } from "@/db/schema";
-import { esAdmin, leerSesion } from "@/lib/sesion";
-import { slugify } from "@/lib/texto";
+import { esAdmin, leerSesion } from "@/modulos/acceso/sesion";
+import { slugify } from "@/modulos/compartido/texto";
 
 /** Descarga una copia del archivo (todos los datos de una edición cerrada) en JSON. Solo admins. */
 export async function GET(_req: Request, ctx: RouteContext<"/admin/archivo/[id]">) {

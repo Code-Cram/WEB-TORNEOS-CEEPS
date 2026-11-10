@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BotonCopiar } from "@/components/admin/boton-copiar";
-import { estiloInput } from "@/components/admin/estilos";
-import { FormAccion } from "@/components/admin/form-accion";
-import { MarcoAdmin, Seccion } from "@/components/admin/marco-admin";
-import { listaPersonas, type PersonaFila } from "@/lib/personas";
-import { exigirAdmin } from "@/lib/sesion";
-import { sinTildes } from "@/lib/texto";
-import { borrarSinTorneo, editarUsuario, ponerCorreo } from "../acciones";
+import { BotonCopiar } from "@/modulos/panel/boton-copiar";
+import { estiloInput } from "@/modulos/panel/estilos";
+import { FormAccion } from "@/modulos/panel/form-accion";
+import { MarcoAdmin, Seccion } from "@/modulos/panel/marco";
+import { listaPersonas, type PersonaFila } from "@/modulos/personas/datos";
+import { exigirAdmin } from "@/modulos/acceso/sesion";
+import { sinTildes } from "@/modulos/compartido/texto";
+import { borrarSinTorneo, editarUsuario, ponerCorreo } from "@/modulos/personas/acciones";
 
 export const metadata: Metadata = { title: "Panel · Personas" };
 

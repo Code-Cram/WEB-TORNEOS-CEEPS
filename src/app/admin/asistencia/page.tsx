@@ -3,15 +3,15 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { db } from "@/db";
 import { pokerJugadores } from "@/db/schema";
-import { BotonCopiar } from "@/components/admin/boton-copiar";
-import { MarcoAdmin, Seccion } from "@/components/admin/marco-admin";
-import { grupoAsistencia, resumir, type Respuesta } from "@/lib/asistencia";
-import { agendaAsistencia, type DiaAsistencia, type FilaAsistencia } from "@/lib/asistencia-datos";
-import { enlaceCorreo, LARGO_MAXIMO_ENLACE } from "@/lib/correos";
-import { leerInfoTorneos } from "@/lib/datos";
-import { fechaCorta, fechaLarga } from "@/lib/formato";
-import { exigirAdmin } from "@/lib/sesion";
-import { MarcarAsistencia } from "./marcar";
+import { BotonCopiar } from "@/modulos/panel/boton-copiar";
+import { MarcoAdmin, Seccion } from "@/modulos/panel/marco";
+import { grupoAsistencia, resumir, type Respuesta } from "@/modulos/asistencia/logica";
+import { agendaAsistencia, type DiaAsistencia, type FilaAsistencia } from "@/modulos/asistencia/datos";
+import { enlaceCorreo, LARGO_MAXIMO_ENLACE } from "@/modulos/personas/correos";
+import { leerInfoTorneos } from "@/modulos/torneos/info";
+import { fechaCorta, fechaLarga } from "@/modulos/compartido/formato";
+import { exigirAdmin } from "@/modulos/acceso/sesion";
+import { MarcarAsistencia } from "@/modulos/asistencia/marcar";
 
 export const metadata: Metadata = { title: "Panel · Asistencia" };
 

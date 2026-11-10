@@ -80,7 +80,7 @@ Todo desde el panel (`/admin`, botón «Admin» al entrar con un correo de `ADMI
 3. **Personas**: lista completa con buscador y filtros, botón para copiar los correos (para el CCO de un email), descarga en Excel, corrección de nombres y correos (el nombre cambia también en sus equipos, parejas, mesas y actividades) y una sección con quien todavía no tiene correo para ponérselo.
    **Correos**: los correos de todos los participantes por grupos (todos, cada torneo, capitanes, cada mitad del cuadro del mus, cada día del póker, la lista de reserva y cada actividad) para escribirles en CCO: «Copiar» los copia y «Escribir» abre el programa de correo con todos en copia oculta.
 4. **Equipos, parejas y jugadores**: crear, renombrar, cambiar plantillas y borrar (con confirmación). **⇄ Intercambiar** cambia de sitio a dos equipos, parejas o participantes del cuadro, o a dos jugadores de póker entre mesas, sin volver a sortear (si uno no estaba, ocupa el sitio del otro; esos cruces pierden el resultado y el resto se recalcula). En póker, también renombrar turnos si cambia una fecha (se ordenan por fecha: «Martes 10 nov» antes que «Jueves 12 nov») y decidir si la **lista de reserva** puede entrar en la web (por defecto no: quien está en reserva no entra con su correo, salvo que juegue a otro torneo, y se le explica que está en reserva).
-5. **Sortear** (hay que escribir `SORTEAR` para confirmar). Si no hay participantes para llenar el cuadro, el sorteo reparte pases directos; la web explica cómo queda (p. ej. 12 equipos → cuadro de 16 con 4 pases directos). En el mus, las parejas que pierden en semifinales juegan por el **3er y 4º puesto** (en `src/lib/config.ts`, `tercerPuesto`).
+5. **Sortear** (hay que escribir `SORTEAR` para confirmar). Si no hay participantes para llenar el cuadro, el sorteo reparte pases directos; la web explica cómo queda (p. ej. 12 equipos → cuadro de 16 con 4 pases directos). En el mus, las parejas que pierden en semifinales juegan por el **3er y 4º puesto** (en `src/modulos/torneos/config.ts`, `tercerPuesto`).
 6. **Apuntar** fechas, lugares y resultados. **Fechas por bloques** pone la misma fecha y lugar a una mitad del cuadro (hasta su semifinal), a una ronda o a la final de una vez. El ganador avanza solo y la clasificación se calcula sola (campeón, subcampeón y, con 3er puesto, 3º y 4º).
    **Calendario** junta en una página, por días, todos los partidos, mesas y eventos para cambiar fecha, hora y lugar en la misma lista, y **mueve un día entero** a otro (huelgas, cambios de aula) manteniendo las horas.
 7. **Asistencia**: cada equipo (lo confirma el capitán), pareja (cualquiera de los dos), jugador de póker o participante de una actividad (si es un equipo, cualquiera de él) confirma en su página si viene el próximo día que juega o que es el evento, con un comentario si quiere. La respuesta vale para ese día: si cambia la fecha de su partido, su mesa o el evento, o pasa a jugar otro día (una final), se le vuelve a preguntar. Solo se pregunta por lo que tiene fecha: partidos, mesas y, en los eventos, la «Fecha y hora» de su ficha. En **Asistencia** están los recuentos de cada día, los correos de quien no ha respondido (para recordárselo) y botones para apuntar a mano lo que alguien avise por otro lado.
@@ -123,9 +123,37 @@ npm run typecheck
 npm run lint
 ```
 
+## Cómo está organizado el código
+
+- `src/app/`: solo las rutas (páginas, API y diseño general). Cada página junta lo de su apartado; la lógica está en `src/modulos/`.
+- `src/modulos/<apartado>/`: todo lo de una parte de la web en su carpeta. Dentro, cada fichero tiene un papel fijo:
+  - `config.ts`: valores fijos (nombres, cupos…).
+  - `logica.ts` y similares (`sala.ts`, `mesas.ts`…): lógica sin base de datos; es lo que prueban los tests de `tests/`.
+  - `datos.ts`: consultas a la base de datos (solo en el servidor).
+  - `operaciones.ts`: cambios que usan varias acciones o los scripts (sorteos, recálculos…).
+  - `acciones.ts`: acciones del servidor que usan los participantes; `acciones-consejo.ts` / `acciones-admin.ts`, las del panel.
+  - `tipos.ts`: los datos tal como se mandan al navegador (sin correos ni teléfonos).
+  - `*.tsx`: las piezas de pantalla de ese apartado.
+- `src/db/`: tablas (`schema.ts`), conexión y reglas de las migraciones de `sql/`.
+
+| Apartado | Qué hace |
+| --- | --- |
+| `acceso` | Entrar con el correo, sesiones, panel con contraseña y en qué está inscrito cada uno. |
+| `torneos` | Lo común a los tres torneos: configuración, ficha, premios, chuleta de reglas, página del torneo, sorteo, finalizar y nuevas ediciones. |
+| `cuadros` | Eliminatorias (fútbol, mus y torneos de actividades): sorteo, avance, 3er puesto, fechas por bloques, intercambiar y la vista del cuadro. |
+| `futbol`, `mus`, `poker` | Lo propio de cada torneo: datos, sorteos y recálculos, acciones del panel; en el póker, mesas, reserva y su vista. |
+| `actividades` | Actividades creadas desde el panel (eventos con lista y torneos). |
+| `asistencia` | Confirmación de asistencia por días: la tarjeta, sus respuestas y el panel. |
+| `chat` | Salas por día, privados con el Consejo y avisos. |
+| `calendario` | Todas las fechas en una página y mover un día entero. |
+| `personas` | Personas y correos (lista, correcciones, grupos para escribir en CCO, descarga en Excel) y el formato de plantillas. |
+| `importacion` | Leer los CSV de Forms e importarlos sin duplicar ni pisar correcciones. |
+| `panel` | Piezas comunes del panel: marco, formularios con resultado, intercambiar y validación de lo que llega del navegador. |
+| `compartido` | Utilidades de toda la web: fechas, textos, cabecera, ventanas y refresco. |
+
 ## Adaptarla a tu asociación
 
-- Nombres, calendario, formato, premios y chuleta de reglas por defecto, partido por el 3er puesto y número de mesas de póker: `src/lib/config.ts`. Para cualquier otra cosa no hace falta tocar código: créala como actividad desde el panel.
+- Nombres, calendario, formato, premios y chuleta de reglas por defecto y partido por el 3er puesto: `src/modulos/torneos/config.ts`; número de mesas y asientos del póker: `src/modulos/poker/config.ts`. Para cualquier otra cosa no hace falta tocar código: créala como actividad desde el panel.
 - Logos: `public/marca/` y `src/app/icon.svg`. Colores: `src/app/globals.css`.
 - Estructura de la base de datos: `src/db/schema.ts`.
 

@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { estiloInput } from "@/components/admin/estilos";
-import { FormAccion } from "@/components/admin/form-accion";
-import { MarcoAdmin, Seccion } from "@/components/admin/marco-admin";
-import { diaMadrid } from "@/lib/asistencia";
-import { elementosCalendario, type ElementoCalendario } from "@/lib/calendario";
-import { diaLargo, paraInputFecha } from "@/lib/formato";
-import { exigirAdmin } from "@/lib/sesion";
-import { guardarCita, moverDia } from "./acciones";
+import { estiloInput } from "@/modulos/panel/estilos";
+import { FormAccion } from "@/modulos/panel/form-accion";
+import { MarcoAdmin, Seccion } from "@/modulos/panel/marco";
+import { diaMadrid } from "@/modulos/asistencia/logica";
+import { elementosCalendario, type ElementoCalendario } from "@/modulos/calendario/datos";
+import { diaLargo, paraInputFecha } from "@/modulos/compartido/formato";
+import { exigirAdmin } from "@/modulos/acceso/sesion";
+import { guardarCita, moverDia } from "@/modulos/calendario/acciones";
 
 export const metadata: Metadata = { title: "Panel · Calendario" };
 

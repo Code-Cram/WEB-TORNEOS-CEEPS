@@ -3,15 +3,15 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { db } from "@/db";
 import { actividades } from "@/db/schema";
-import { MarcoAdmin, Seccion } from "@/components/admin/marco-admin";
-import { Conversacion } from "@/components/chat/conversacion";
-import { grupoAsistencia, type TipoAsistencia } from "@/lib/asistencia";
-import { agendaAsistencia } from "@/lib/asistencia-datos";
-import { bandeja, mensajesConsejo, salasConMensajes } from "@/lib/chat";
-import { diaCorto, diaLargo, fechaCorta } from "@/lib/formato";
-import { canalDe, origenDe, type CanalConsejo, type OrigenChat } from "@/lib/sala-chat";
-import { exigirAdmin } from "@/lib/sesion";
-import { borrarMensajeConsejo, escribirConsejo, marcarLeidoConsejo } from "./acciones";
+import { MarcoAdmin, Seccion } from "@/modulos/panel/marco";
+import { Conversacion } from "@/modulos/chat/conversacion";
+import { grupoAsistencia, type TipoAsistencia } from "@/modulos/asistencia/logica";
+import { agendaAsistencia } from "@/modulos/asistencia/datos";
+import { bandeja, mensajesConsejo, salasConMensajes } from "@/modulos/chat/datos";
+import { diaCorto, diaLargo, fechaCorta } from "@/modulos/compartido/formato";
+import { canalDe, origenDe, type CanalConsejo, type OrigenChat } from "@/modulos/chat/sala";
+import { exigirAdmin } from "@/modulos/acceso/sesion";
+import { borrarMensajeConsejo, escribirConsejo, marcarLeidoConsejo } from "@/modulos/chat/acciones-consejo";
 
 export const metadata: Metadata = { title: "Panel · Chat" };
 

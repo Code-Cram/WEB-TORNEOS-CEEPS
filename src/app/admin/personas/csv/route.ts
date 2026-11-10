@@ -1,8 +1,8 @@
 import { db } from "@/db";
 import { registro } from "@/db/schema";
-import { aCsv } from "@/lib/exportar";
-import { listaPersonas } from "@/lib/personas";
-import { esAdmin, leerSesion } from "@/lib/sesion";
+import { aCsv } from "@/modulos/personas/exportar";
+import { listaPersonas } from "@/modulos/personas/datos";
+import { esAdmin, leerSesion } from "@/modulos/acceso/sesion";
 
 /** Descarga de todas las personas (con y sin correo) para abrir en Excel. Solo admins con la contraseña puesta. */
 export async function GET() {

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-import { coincidenciaNombres, limpiarNombre, nombreCorto, normalizarCorreo, siguienteEdicion } from "../src/lib/texto";
+import { coincidenciaNombres, limpiarNombre, nombreCorto, normalizarCorreo, siguienteEdicion } from "../src/modulos/compartido/texto";
 
 describe("correos", () => {
   test("mayúsculas, espacios y tildes", () => {

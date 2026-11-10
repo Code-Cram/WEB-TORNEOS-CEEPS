@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-import type { Unidad } from "../src/lib/asistencia-datos";
-import { canalDe, contextoEn, limpiarMensaje, origenDe } from "../src/lib/sala-chat";
+import type { Unidad } from "../src/modulos/asistencia/datos";
+import { canalDe, contextoEn, limpiarMensaje, origenDe } from "../src/modulos/chat/sala";
 
 const ahora = new Date("2026-11-10T09:00:00Z");
 const unidad = (u: Partial<Unidad>): Unidad => ({ torneo: "mus", actividad: null, id: "1", nombre: "", miembros: [], responden: [], eventos: [], ...u });

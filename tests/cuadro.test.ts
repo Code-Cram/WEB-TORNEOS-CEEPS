@@ -1,24 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-import {
-  bloquesCuadro,
-  describirCuadro,
-  enBloque,
-  ganadorFutbol,
-  ganadorMus,
-  intercambiar,
-  nombreRonda,
-  ordenSiembra,
-  parsearTantos,
-  recalcular,
-  resumenCuadro,
-  RONDA_TERCER_PUESTO,
-  rondasEnOrden,
-  sortear,
-  tamanoCuadro,
-  totalRondas,
-  type PartidoCuadro,
-} from "../src/lib/cuadro";
+import { bloquesCuadro, describirCuadro, enBloque, ganadorFutbol, ganadorMus, intercambiar, nombreRonda, ordenSiembra, parsearTantos, recalcular, resumenCuadro, RONDA_TERCER_PUESTO, rondasEnOrden, sortear, tamanoCuadro, totalRondas, type PartidoCuadro } from "../src/modulos/cuadros/logica";
 
 /** Generador pseudoaleatorio con semilla: los sorteos de las pruebas son siempre iguales. */
 function semilla(n: number) {
@@ -28,7 +10,7 @@ function semilla(n: number) {
   };
 }
 
-/** Cuadro completo a partir de un sorteo, como lo crea operaciones.ts (con el partido por el 3er puesto si se pide). */
+/** Cuadro completo a partir de un sorteo, como lo crean futbol/operaciones.ts y mus/operaciones.ts (con el partido por el 3er puesto si se pide). */
 function crearCuadro(participantes: number, s = 1, tercerPuesto = false): PartidoCuadro[] {
   const { tamano, primeraRonda } = sortear(
     Array.from({ length: participantes }, (_, i) => i + 1),
