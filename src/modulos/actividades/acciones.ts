@@ -13,6 +13,7 @@ import { correosEnActividad, guardarMiembros, recalcularActividad, sortearActivi
 import { exigirAdmin } from "@/modulos/acceso/sesion";
 import { limpiarNombre, normalizarCorreo, slugify } from "@/modulos/compartido/texto";
 import { entero, fecha, hecho, idDe, intentar, texto, textoONull, type Resultado } from "@/modulos/panel/comun";
+import { conAvisos } from "@/modulos/chat/avisos";
 
 type Actividad = typeof actividades.$inferSelect;
 
@@ -81,13 +82,16 @@ export async function crearActividad(_prev: Resultado, f: FormData): Promise<Res
 
 export async function guardarActividad(_prev: Resultado, f: FormData): Promise<Resultado> {
   const admin = await exigirAdmin();
-  return intentar(async () => {
-    const id = idDe(f);
-    const datos = datosFicha(f);
-    const [a] = await db.update(actividades).set(datos).where(eq(actividades.id, id)).returning({ id: actividades.id });
-    if (!a) throw new AvisoError("Actividad no encontrada: recarga la página.");
-    return hecho(admin, "Actividad guardada.", undefined, datos.nombre);
-  });
+  // Lo que cambie de fechas, lugares, cruces o mesas se cuenta solo en el chat del día.
+  return conAvisos(admin, () =>
+    intentar(async () => {
+      const id = idDe(f);
+      const datos = datosFicha(f);
+      const [a] = await db.update(actividades).set(datos).where(eq(actividades.id, id)).returning({ id: actividades.id });
+      if (!a) throw new AvisoError("Actividad no encontrada: recarga la página.");
+      return hecho(admin, "Actividad guardada.", undefined, datos.nombre);
+    }),
+  );
 }
 
 /** Borra la actividad entera (con copia en el archivo). */
@@ -277,34 +281,37 @@ export async function sortearActividadAccion(_prev: Resultado, f: FormData): Pro
 
 export async function guardarPartidoActividad(_prev: Resultado, f: FormData): Promise<Resultado> {
   const admin = await exigirAdmin();
-  return intentar(async () => {
-    const id = idDe(f);
-    const puntos = { puntosA: entero(f, "puntosA", 9999), puntosB: entero(f, "puntosB", 9999) };
-    let detalle = "";
-    await db.transaction(async (tx) => {
-      const [p] = await tx.select().from(actividadPartidos).where(eq(actividadPartidos.id, id));
-      if (!p) throw new AvisoError("Cruce no encontrado: recarga la página.");
-      detalle = `ronda ${p.ronda}, cruce ${p.posicion + 1}`;
-      const cambios: Partial<typeof actividadPartidos.$inferInsert> = {
-        ...puntos,
-        fecha: fecha(f, "fecha"),
-        lugar: textoONull(f, "lugar", 200),
-        notas: textoONull(f, "notas", 500),
-      };
-      if (p.ronda === 1 && f.has("aId")) {
-        const a = entero(f, "aId");
-        const b = entero(f, "bId");
-        if (a !== null && a === b) throw new AvisoError("Nadie puede jugar contra sí mismo.");
-        if (a !== p.aId || b !== p.bId) {
-          Object.assign(cambios, { aId: a, bId: b });
-          if (texto(f, "puntosA") === String(p.puntosA ?? "")) Object.assign(cambios, { puntosA: null, puntosB: null });
+  // Lo que cambie de fechas, lugares, cruces o mesas se cuenta solo en el chat del día.
+  return conAvisos(admin, () =>
+    intentar(async () => {
+      const id = idDe(f);
+      const puntos = { puntosA: entero(f, "puntosA", 9999), puntosB: entero(f, "puntosB", 9999) };
+      let detalle = "";
+      await db.transaction(async (tx) => {
+        const [p] = await tx.select().from(actividadPartidos).where(eq(actividadPartidos.id, id));
+        if (!p) throw new AvisoError("Cruce no encontrado: recarga la página.");
+        detalle = `ronda ${p.ronda}, cruce ${p.posicion + 1}`;
+        const cambios: Partial<typeof actividadPartidos.$inferInsert> = {
+          ...puntos,
+          fecha: fecha(f, "fecha"),
+          lugar: textoONull(f, "lugar", 200),
+          notas: textoONull(f, "notas", 500),
+        };
+        if (p.ronda === 1 && f.has("aId")) {
+          const a = entero(f, "aId");
+          const b = entero(f, "bId");
+          if (a !== null && a === b) throw new AvisoError("Nadie puede jugar contra sí mismo.");
+          if (a !== p.aId || b !== p.bId) {
+            Object.assign(cambios, { aId: a, bId: b });
+            if (texto(f, "puntosA") === String(p.puntosA ?? "")) Object.assign(cambios, { puntosA: null, puntosB: null });
+          }
         }
-      }
-      await tx.update(actividadPartidos).set(cambios).where(eq(actividadPartidos.id, id));
-      await recalcularActividad(tx, p.actividadId);
-    });
-    const avisos =
-      puntos.puntosA !== null && puntos.puntosA === puntos.puntosB ? ["Empate: el cruce queda sin ganador hasta que apuntes el desempate."] : undefined;
-    return hecho(admin, "Cruce guardado.", avisos, detalle);
-  });
+        await tx.update(actividadPartidos).set(cambios).where(eq(actividadPartidos.id, id));
+        await recalcularActividad(tx, p.actividadId);
+      });
+      const avisos =
+        puntos.puntosA !== null && puntos.puntosA === puntos.puntosB ? ["Empate: el cruce queda sin ganador hasta que apuntes el desempate."] : undefined;
+      return hecho(admin, "Cruce guardado.", avisos, detalle);
+    }),
+  );
 }

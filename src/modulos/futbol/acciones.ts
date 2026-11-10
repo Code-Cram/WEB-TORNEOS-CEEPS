@@ -9,45 +9,49 @@ import { limpiarNombre, normalizarCorreo } from "@/modulos/compartido/texto";
 import { guardarPlantillaFutbol, recalcularFutbol } from "@/modulos/futbol/operaciones";
 import { entero, fecha, hecho, idDe, intentar, texto, textoONull, type Resultado } from "@/modulos/panel/comun";
 import { parsearPlantilla } from "@/modulos/personas/plantilla";
+import { conAvisos } from "@/modulos/chat/avisos";
 
 export async function guardarPartidoFutbol(_prev: Resultado, f: FormData): Promise<Resultado> {
   const admin = await exigirAdmin();
-  return intentar(async () => {
-    const id = idDe(f);
-    const goles = { golesLocal: entero(f, "golesLocal", 99), golesVisitante: entero(f, "golesVisitante", 99) };
-    const penaltis = { penaltisLocal: entero(f, "penaltisLocal", 99), penaltisVisitante: entero(f, "penaltisVisitante", 99) };
-    let detalle = "";
-    await db.transaction(async (tx) => {
-      const [p] = await tx.select().from(futbolPartidos).where(eq(futbolPartidos.id, id));
-      if (!p) throw new AvisoError("Partido no encontrado: recarga la página.");
-      detalle = `Fútbol · ronda ${p.ronda}, partido ${p.posicion + 1}`;
-      const cambios: Partial<typeof futbolPartidos.$inferInsert> = {
-        ...goles,
-        ...penaltis,
-        fecha: fecha(f, "fecha"),
-        lugar: textoONull(f, "lugar", 200),
-        notas: textoONull(f, "notas", 500),
-      };
-      if (p.ronda === 1 && f.has("localId")) {
-        const local = entero(f, "localId");
-        const visitante = entero(f, "visitanteId");
-        if (local !== null && local === visitante) throw new AvisoError("Un equipo no puede jugar contra sí mismo.");
-        if (local !== p.localId || visitante !== p.visitanteId) {
-          Object.assign(cambios, { localId: local, visitanteId: visitante });
-          // Cruce cambiado a mano: el marcador anterior ya no vale.
-          if (texto(f, "golesLocal") === String(p.golesLocal ?? ""))
-            Object.assign(cambios, { golesLocal: null, golesVisitante: null, penaltisLocal: null, penaltisVisitante: null });
+  // Lo que cambie de fechas, lugares, cruces o mesas se cuenta solo en el chat del día.
+  return conAvisos(admin, () =>
+    intentar(async () => {
+      const id = idDe(f);
+      const goles = { golesLocal: entero(f, "golesLocal", 99), golesVisitante: entero(f, "golesVisitante", 99) };
+      const penaltis = { penaltisLocal: entero(f, "penaltisLocal", 99), penaltisVisitante: entero(f, "penaltisVisitante", 99) };
+      let detalle = "";
+      await db.transaction(async (tx) => {
+        const [p] = await tx.select().from(futbolPartidos).where(eq(futbolPartidos.id, id));
+        if (!p) throw new AvisoError("Partido no encontrado: recarga la página.");
+        detalle = `Fútbol · ronda ${p.ronda}, partido ${p.posicion + 1}`;
+        const cambios: Partial<typeof futbolPartidos.$inferInsert> = {
+          ...goles,
+          ...penaltis,
+          fecha: fecha(f, "fecha"),
+          lugar: textoONull(f, "lugar", 200),
+          notas: textoONull(f, "notas", 500),
+        };
+        if (p.ronda === 1 && f.has("localId")) {
+          const local = entero(f, "localId");
+          const visitante = entero(f, "visitanteId");
+          if (local !== null && local === visitante) throw new AvisoError("Un equipo no puede jugar contra sí mismo.");
+          if (local !== p.localId || visitante !== p.visitanteId) {
+            Object.assign(cambios, { localId: local, visitanteId: visitante });
+            // Cruce cambiado a mano: el marcador anterior ya no vale.
+            if (texto(f, "golesLocal") === String(p.golesLocal ?? ""))
+              Object.assign(cambios, { golesLocal: null, golesVisitante: null, penaltisLocal: null, penaltisVisitante: null });
+          }
         }
-      }
-      await tx.update(futbolPartidos).set(cambios).where(eq(futbolPartidos.id, id));
-      await recalcularFutbol(tx);
-    });
-    const avisos =
-      goles.golesLocal !== null && goles.golesLocal === goles.golesVisitante && penaltis.penaltisLocal === null
-        ? ["Empate sin penaltis: el partido queda sin ganador hasta que apuntes la tanda."]
-        : undefined;
-    return hecho(admin, "Partido guardado.", avisos, detalle);
-  });
+        await tx.update(futbolPartidos).set(cambios).where(eq(futbolPartidos.id, id));
+        await recalcularFutbol(tx);
+      });
+      const avisos =
+        goles.golesLocal !== null && goles.golesLocal === goles.golesVisitante && penaltis.penaltisLocal === null
+          ? ["Empate sin penaltis: el partido queda sin ganador hasta que apuntes la tanda."]
+          : undefined;
+      return hecho(admin, "Partido guardado.", avisos, detalle);
+    }),
+  );
 }
 
 export async function guardarEquipo(_prev: Resultado, f: FormData): Promise<Resultado> {
