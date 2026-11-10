@@ -1,12 +1,10 @@
 import { fechaLarga } from "@/modulos/compartido/formato";
+import { FIRMA, primerNombre } from "@/modulos/correo/firma";
 import type { MotivoRelevo } from "./reserva";
 
 /* Textos de los correos que se mandan cuando una plaza pasa sola a la reserva. */
 
 type Datos = { nombre: string; mesa: number; fecha: string; lugar: string | null; web: string };
-
-const FIRMA = "Consejo de Estudiantes de la EPS (UAM)";
-const primerNombre = (nombre: string) => nombre.split(" ")[0];
 
 /** Para quien deja la plaza. */
 export function correoPlazaPerdida(d: Datos & { motivo: MotivoRelevo }) {

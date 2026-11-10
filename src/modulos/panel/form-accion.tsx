@@ -21,17 +21,26 @@ export function FormAccion({
   compacto?: boolean;
   /** Pregunta de confirmación antes de enviar (para borrar): un toque sin querer en el móvil no borra nada. */
   confirmar?: string;
-  /** Vaciar el formulario tras guardar bien (altas rápidas: queda listo para el siguiente). */
-  limpiar?: boolean;
+  /**
+   * Vaciar el formulario tras guardar bien (altas rápidas: queda listo para el siguiente). Con una lista de nombres de
+   * campo, solo esos (el resto, como a dónde se apunta, se queda). La lista tiene que ser fija (una constante).
+   */
+  limpiar?: boolean | readonly string[];
   className?: string;
 }) {
   const [estado, enviar, pendiente] = useActionState(accion, {});
   const form = useRef<HTMLFormElement>(null);
   useEffect(() => {
-    if (limpiar && estado.ok) {
-      form.current?.reset();
-      form.current?.querySelector<HTMLElement>("input:not([type=hidden]), textarea")?.focus();
+    const f = form.current;
+    if (!f || !limpiar || !estado.ok) return;
+    if (limpiar === true) {
+      f.reset();
+      f.querySelector<HTMLElement>("input:not([type=hidden]), textarea")?.focus();
+      return;
     }
+    const campos = [...f.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(limpiar.map((n) => `[name="${n}"]`).join(","))];
+    for (const c of campos) c.value = "";
+    campos[0]?.focus();
   }, [estado, limpiar]);
 
   return (

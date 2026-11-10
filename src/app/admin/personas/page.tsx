@@ -4,7 +4,9 @@ import { BotonCopiar } from "@/modulos/panel/boton-copiar";
 import { estiloInput } from "@/modulos/panel/estilos";
 import { FormAccion } from "@/modulos/panel/form-accion";
 import { MarcoAdmin, Seccion } from "@/modulos/panel/marco";
-import { listaPersonas, type PersonaFila } from "@/modulos/personas/datos";
+import { destinosDeAlta, listaPersonas, type PersonaFila } from "@/modulos/personas/datos";
+import { AltaPersonas } from "@/modulos/personas/alta-form";
+import { correoConfigurado } from "@/modulos/correo/envio";
 import { exigirAdmin } from "@/modulos/acceso/sesion";
 import { sinTildes } from "@/modulos/compartido/texto";
 import { borrarSinTorneo, editarUsuario, ponerCorreo } from "@/modulos/personas/acciones";
@@ -31,7 +33,7 @@ export default async function Personas({ searchParams }: { searchParams: Promise
   const filtro = typeof sp.filtro === "string" && FILTROS.some(([id]) => id === sp.filtro) ? sp.filtro : "todos";
   const corregido = sp.corregido === "1";
 
-  const { conCorreo, sinCorreo } = await listaPersonas();
+  const [{ conCorreo, sinCorreo }, destinos] = await Promise.all([listaPersonas(), destinosDeAlta()]);
   const [, , pasa] = FILTROS.find(([id]) => id === filtro)!;
   const lista = conCorreo.filter((p) => pasa(p) && (!q || comparable(`${p.nombre} ${p.email}`).includes(comparable(q))));
   const sinTorneo = conCorreo.filter(FILTROS.find(([id]) => id === "sin-torneo")![2]).length;
@@ -39,6 +41,14 @@ export default async function Personas({ searchParams }: { searchParams: Promise
 
   return (
     <MarcoAdmin actual="/admin/personas" titulo="Personas">
+      <div id="anadir" />
+      <Seccion
+        titulo="Añadir personas"
+        descripcion="Se guardan al momento y desde entonces pueden entrar en la web con su correo (las de la lista de reserva del póker, cuando les toca plaza). Si alguien ya está en la web, se le apunta también aquí, con su nombre de siempre."
+      >
+        <AltaPersonas grupos={destinos.grupos} turnos={destinos.turnos} correoAutomatico={correoConfigurado()} />
+      </Seccion>
+
       <Seccion
         titulo={`Con correo (${conCorreo.length})`}
         descripcion="Todas las personas que pueden entrar en la web con su correo (si siguen inscritas en algún torneo). Si corriges un nombre o un correo, el cambio se aplica en todos sus torneos y actividades (equipos, parejas, mesas), y el correo se recuerda al reimportar los CSV."

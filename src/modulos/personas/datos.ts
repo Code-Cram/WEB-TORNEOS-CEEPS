@@ -1,7 +1,10 @@
 import "server-only";
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { actividades, actividadMiembros, actividadParticipantes, futbolEquipos, futbolJugadores, musIntegrantes, musParejas, musPartidos, pokerAsientos, pokerJugadores, pokerMesas, usuarios } from "@/db/schema";
+import { CUPO_POKER } from "@/modulos/poker/config";
+import { ordenarTurnos } from "@/modulos/poker/mesas";
+import type { DestinosAlta } from "./tipos";
 
 /** Una persona que puede entrar en la web (tiene correo) y en qué está inscrita. */
 export type PersonaFila = {
@@ -113,4 +116,54 @@ export async function listaPersonas(): Promise<{ conCorreo: PersonaFila[]; sinCo
   ].sort((a, b) => a.tipo.localeCompare(b.tipo) || a.equipo.localeCompare(b.equipo) || a.nombre.localeCompare(b.nombre));
 
   return { conCorreo, sinCorreo };
+}
+
+/** A dónde se puede apuntar a alguien desde Personas (equipos de fútbol, póker y actividades) y los turnos del póker. */
+export async function destinosDeAlta(): Promise<DestinosAlta> {
+  const [equipos, jugadores, poker, mesas, acts, equiposDeActividad] = await Promise.all([
+    db.select({ id: futbolEquipos.id, nombre: futbolEquipos.nombre }).from(futbolEquipos).orderBy(asc(futbolEquipos.nombre)),
+    db.select({ equipoId: futbolJugadores.equipoId }).from(futbolJugadores),
+    db.select({ estado: pokerJugadores.estado, disponibilidad: pokerJugadores.disponibilidad }).from(pokerJugadores),
+    db.select({ turno: pokerMesas.turno }).from(pokerMesas).where(eq(pokerMesas.fase, "clasificatoria")),
+    db
+      .select({ id: actividades.id, nombre: actividades.nombre, icono: actividades.icono, porEquipos: actividades.porEquipos, estado: actividades.estado })
+      .from(actividades)
+      .orderBy(asc(actividades.nombre)),
+    db
+      .select({ id: actividadParticipantes.id, nombre: actividadParticipantes.nombre, actividadId: actividadParticipantes.actividadId })
+      .from(actividadParticipantes)
+      .innerJoin(actividades, and(eq(actividades.id, actividadParticipantes.actividadId), eq(actividades.porEquipos, true)))
+      .orderBy(asc(actividadParticipantes.nombre)),
+  ]);
+  const grupos: DestinosAlta["grupos"] = [];
+  if (equipos.length)
+    grupos.push({
+      grupo: "⚽ Fútbol",
+      opciones: equipos.map((e) => {
+        const n = jugadores.filter((j) => j.equipoId === e.id).length;
+        return { valor: `futbol:${e.id}`, texto: `${e.nombre} · ${n} ${n === 1 ? "jugador" : "jugadores"}` };
+      }),
+    });
+  const inscritos = poker.filter((j) => j.estado === "inscrito").length;
+  grupos.push({
+    grupo: "♠ Póker",
+    opciones: [
+      { valor: "poker:reserva", texto: `Lista de reserva · ${poker.filter((j) => j.estado === "reserva").length} en ella` },
+      {
+        valor: "poker:inscrito",
+        texto: inscritos >= CUPO_POKER ? `Inscrito · lleno (${inscritos}/${CUPO_POKER}): irá a la reserva` : `Inscrito · ${inscritos}/${CUPO_POKER} (se sienta solo si hay sitio)`,
+      },
+    ],
+  });
+  const estado = (e: string) => (e === "activa" ? "" : ` (${e})`);
+  const individuales = acts.filter((a) => !a.porEquipos);
+  if (individuales.length)
+    grupos.push({ grupo: "⭐ Actividades", opciones: individuales.map((a) => ({ valor: `actividad:${a.id}`, texto: `${a.icono} ${a.nombre}${estado(a.estado)}` })) });
+  for (const a of acts.filter((x) => x.porEquipos)) {
+    const deEsta = equiposDeActividad.filter((p) => p.actividadId === a.id);
+    if (deEsta.length)
+      grupos.push({ grupo: `${a.icono} ${a.nombre}${estado(a.estado)} · equipos`, opciones: deEsta.map((p) => ({ valor: `equipo-actividad:${p.id}`, texto: p.nombre })) });
+  }
+  const turnos = ordenarTurnos([...new Set([...mesas.map((m) => m.turno), ...poker.flatMap((j) => j.disponibilidad)].filter((t): t is string => !!t))]);
+  return { grupos, turnos };
 }

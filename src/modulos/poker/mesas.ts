@@ -75,6 +75,29 @@ export function sortearMesas(
   return { asignacion, avisos };
 }
 
+export type MesaConSitio = { id: number; numero: number; turno: string | null; fecha: string | null; ocupados: number[] };
+
+/**
+ * Sitio para un jugador nuevo: una mesa clasificatoria que todavía no se ha jugado, de un turno que puede (sin
+ * disponibilidad, cualquiera), la más vacía primero (a igualdad, la que antes se juega); dentro, el primer asiento libre.
+ */
+export function asientoLibre(
+  mesas: MesaConSitio[],
+  disponibilidad: string[],
+  asientosPorMesa: number,
+  ahora: Date,
+): { mesaId: number; numero: number; asiento: number } | null {
+  const candidatas = mesas
+    .filter((m) => m.ocupados.length < asientosPorMesa)
+    .filter((m) => !m.fecha || new Date(m.fecha) > ahora)
+    .filter((m) => !disponibilidad.length || !m.turno || disponibilidad.includes(m.turno))
+    .sort((a, b) => a.ocupados.length - b.ocupados.length || (a.fecha ?? "").localeCompare(b.fecha ?? "") || a.numero - b.numero);
+  const m = candidatas[0];
+  if (!m) return null;
+  const asiento = Array.from({ length: asientosPorMesa }, (_, i) => i + 1).find((n) => !m.ocupados.includes(n))!;
+  return { mesaId: m.id, numero: m.numero, asiento };
+}
+
 /** Posición (en %) del asiento `i` de `n` alrededor de una mesa ovalada, empezando arriba a la izquierda. */
 export function posicionAsiento(i: number, n: number): { x: number; y: number } {
   const angulo = -Math.PI / 2 - Math.PI / n + (2 * Math.PI * i) / n;

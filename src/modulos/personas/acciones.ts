@@ -2,14 +2,40 @@
 
 import { and, eq, like } from "drizzle-orm";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { db } from "@/db";
 import { actividadMiembros, actividadParticipantes, aliasCorreos, asistencia, futbolEquipos, futbolJugadores, mensajes, musIntegrantes, musParejas, pokerJugadores, usuarios } from "@/db/schema";
 import { AvisoError } from "@/modulos/acceso/clave";
 import { exigirAdmin } from "@/modulos/acceso/sesion";
 import { correosEnActividad } from "@/modulos/actividades/operaciones";
+import { conAvisos } from "@/modulos/chat/avisos";
+import { enviarPendientes } from "@/modulos/correo/envio";
 import { limpiarNombre, normalizarCorreo } from "@/modulos/compartido/texto";
 import { hecho, idDe, intentar, texto, type Resultado } from "@/modulos/panel/comun";
 import { borrarHuerfanos } from "@/modulos/torneos/ediciones";
+import { darDeAlta } from "./alta";
+import { leerDestino, parsearAltas, unaAlta } from "./logica";
+
+/**
+ * Personas → Añadir personas: una (nombre y correo) o varias pegando una lista, a un equipo de fútbol, al póker o a una
+ * actividad. Se guardan al momento y desde ese momento pueden entrar en la web con su correo.
+ */
+export async function anadirPersonas(_prev: Resultado, f: FormData): Promise<Resultado> {
+  const admin = await exigirAdmin();
+  const destino = leerDestino(texto(f, "destino", 40));
+  const apuntar = () =>
+    intentar(async () => {
+      if (!destino) throw new AvisoError("Elige a dónde apuntarlas.");
+      const altas = texto(f, "modo", 10) === "varias" ? parsearAltas(texto(f, "lista", 60000)) : [unaAlta(texto(f, "nombre", 120), texto(f, "correo", 200))];
+      const disponibilidad = [...new Set(f.getAll("disponibilidad").map((d) => String(d).trim().slice(0, 60)))].filter(Boolean).slice(0, 10);
+      const avisar = f.has("avisar");
+      const r = await darDeAlta(destino, altas, { disponibilidad, avisar });
+      if (avisar) after(() => enviarPendientes().catch((e) => console.error(e)));
+      return hecho(admin, r.ok, r.avisos.length ? r.avisos : undefined, r.detalle);
+    });
+  // Si alguien se sienta en una mesa de póker, se cuenta solo en el chat de ese día.
+  return destino?.tipo === "poker" ? conAvisos(admin, apuntar) : apuntar();
+}
 
 /** Corrige el correo o el nombre de una persona. El cambio de correo se propaga a los tres torneos (ON UPDATE CASCADE). */
 export async function editarUsuario(_prev: Resultado, f: FormData): Promise<Resultado> {
