@@ -43,12 +43,34 @@ export const infoTorneos = pgTable("info_torneos", {
   finalizado: boolean("finalizado").notNull().default(false),
   /** Solo póker: si la lista de reserva puede entrar en la web (si no, su correo no da acceso al póker). */
   reservaConAcceso: boolean("reserva_con_acceso").notNull().default(false),
+  /** Solo póker: las plazas de quien dice que no (12 h antes) o no contesta (6 h antes) pasan solas a la reserva. */
+  reservaAutomatica: boolean("reserva_automatica").notNull().default(true),
+  /** Desde cuándo está activado: lo que tocaba antes no se hace de golpe al activarlo. */
+  reservaAutomaticaDesde: timestamp("reserva_automatica_desde", { withTimezone: true }),
 }).enableRLS();
 
 /** Ficheros de sql/ ya aplicados en esta base de datos (los apunta scripts/migrar.mts al desplegar). */
 export const migraciones = pgTable("migraciones", {
   nombre: text("nombre").primaryKey(),
   aplicadaEn: timestamp("aplicada_en", { withTimezone: true }).defaultNow().notNull(),
+}).enableRLS();
+
+/**
+ * Correos que manda la web sola (p. ej. al pasar una plaza a la reserva). Se guardan siempre: si el envío no está
+ * configurado o falla, el Consejo los ve en el panel y los puede mandar a mano.
+ */
+export const correos = pgTable("correos", {
+  id: serial("id").primaryKey(),
+  para: text("para").notNull(),
+  asunto: text("asunto").notNull(),
+  texto: text("texto").notNull(),
+  /** Por qué se manda, para el panel: «Póker · plaza a la reserva»… */
+  motivo: text("motivo"),
+  /** pendiente | enviado | error */
+  estado: text("estado").notNull().default("pendiente"),
+  error: text("error"),
+  creadoEn: creadoEn(),
+  enviadoEn: timestamp("enviado_en", { withTimezone: true }),
 }).enableRLS();
 
 /** Registro de cambios hechos desde el panel: quién y qué. */
@@ -234,6 +256,20 @@ export const pokerAsientos = poker.table(
   },
   (t) => [primaryKey({ columns: [t.mesaId, t.asiento] }), unique().on(t.mesaId, t.jugadorEmail)],
 ).enableRLS();
+
+/** Plazas que han pasado solas a la reserva: quién la dejó, quién la ocupa y por qué. */
+export const pokerRelevos = poker.table("relevos", {
+  id: serial("id").primaryKey(),
+  mesaId: integer("mesa_id")
+    .notNull()
+    .references(() => pokerMesas.id, { onDelete: "cascade" }),
+  asiento: integer("asiento").notNull(),
+  saleEmail: text("sale_email").notNull(),
+  entraEmail: text("entra_email").notNull(),
+  /** no (dijo que no venía) | sin respuesta (no confirmó a tiempo) */
+  motivo: text("motivo").notNull(),
+  creadoEn: creadoEn(),
+}).enableRLS();
 
 /* ───────────────────────────── ASISTENCIA ───────────────────────────── */
 

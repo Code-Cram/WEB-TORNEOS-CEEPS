@@ -9,6 +9,7 @@ import { TarjetaPremios } from "@/modulos/torneos/tarjeta-premios";
 import { TarjetaReglas } from "@/modulos/torneos/tarjeta-reglas";
 import { Refresco } from "@/modulos/compartido/refresco";
 import { citaEn, unidadesDe } from "@/modulos/asistencia/datos";
+import type { Cita } from "@/modulos/asistencia/logica";
 import { chatDe } from "@/modulos/chat/datos";
 import { TORNEOS, type TorneoId } from "@/modulos/torneos/config";
 import { leerInfoTorneos } from "@/modulos/torneos/info";
@@ -28,6 +29,7 @@ export async function PaginaTorneo({
   info,
   acciones,
   premiosEnFicha = true,
+  plazoAsistencia,
   children,
 }: {
   torneo: TorneoId;
@@ -36,6 +38,8 @@ export async function PaginaTorneo({
   acciones?: ReactNode;
   /** Tarjeta de premios junto a la ficha (el póker los enseña en la pestaña de la mesa final). */
   premiosEnFicha?: boolean;
+  /** Aviso del plazo para confirmar (el póker: cuándo pasa la plaza a la reserva). */
+  plazoAsistencia?: (cita: Cita) => string | null;
   children: ReactNode;
 }) {
   const t = TORNEOS[torneo];
@@ -66,7 +70,7 @@ export async function PaginaTorneo({
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
         {ficha.finalizado && <BannerGanador campeon={campeon?.campeon ?? null} detalle={campeon?.detalle} />}
         <AvisoTorneo texto={ficha.aviso} />
-        {cita && <TarjetaAsistencia cita={cita} yo={sesion.email} lugarTorneo={ficha.lugar} />}
+        {cita && <TarjetaAsistencia cita={cita} yo={sesion.email} lugarTorneo={ficha.lugar} plazo={plazoAsistencia?.(cita) ?? null} />}
         {children}
         <section className="mt-10 grid items-start gap-4 lg:grid-cols-2">
           <FichaTorneo info={ficha} />

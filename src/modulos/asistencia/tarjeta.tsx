@@ -15,7 +15,7 @@ const TEXTOS = {
 } as const;
 
 /** «¿Vienes el martes 10 a las 16:00?»: arriba de la página del torneo o la actividad, mientras quede algo con fecha. */
-export function TarjetaAsistencia({ cita, yo, lugarTorneo }: { cita: Cita; yo: string; lugarTorneo: string }) {
+export function TarjetaAsistencia({ cita, yo, lugarTorneo, plazo = null }: { cita: Cita; yo: string; lugarTorneo: string; plazo?: string | null }) {
   const [estado, enviar, pendiente] = useActionState<EstadoAsistencia, FormData>(responderAsistencia, {});
   const t = TEXTOS[cita.actividad?.porEquipos ? "equipo" : cita.torneo];
   const r = cita.respuesta;
@@ -52,6 +52,7 @@ export function TarjetaAsistencia({ cita, yo, lugarTorneo }: { cita: Cita; yo: s
         {r && !r.viene && cita.torneo === "poker" && (
           <span className="block font-normal text-tinta">Gracias por avisar: así el Consejo puede dar tu plaza a alguien de la lista de reserva.</span>
         )}
+        {plazo && <span className="mt-1 block text-xs font-normal text-tinta">⏰ {plazo}</span>}
       </p>
 
       {cita.puedeResponder && (

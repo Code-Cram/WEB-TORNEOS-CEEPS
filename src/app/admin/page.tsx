@@ -1,8 +1,8 @@
-import { and, desc, eq, isNotNull, isNull, notLike, sql } from "drizzle-orm";
+import { and, desc, eq, isNotNull, isNull, ne, notLike, sql } from "drizzle-orm";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { db } from "@/db";
-import { actividadMiembros, futbolEquipos, futbolJugadores, futbolPartidos, musIntegrantes, musParejas, musPartidos, pokerAsientos, pokerJugadores, pokerMesas, registro, usuarios } from "@/db/schema";
+import { actividadMiembros, correos, futbolEquipos, futbolJugadores, futbolPartidos, musIntegrantes, musParejas, musPartidos, pokerAsientos, pokerJugadores, pokerMesas, registro, usuarios } from "@/db/schema";
 import { MarcoAdmin } from "@/modulos/panel/marco";
 import { TarjetasActividades } from "@/modulos/actividades/tarjetas-admin";
 import { grupoAsistencia, resumir } from "@/modulos/asistencia/logica";
@@ -36,7 +36,12 @@ export default async function Resumen() {
       n(db.select({ n: contar }).from(actividadMiembros).where(isNull(actividadMiembros.email))),
     ]);
   const sinCorreo = futSinCorreo + musSinCorreo + actSinCorreo;
-  const [cambios, agenda, privados] = await Promise.all([db.select().from(registro).orderBy(desc(registro.id)).limit(20), agendaAsistencia(), sinLeerConsejo()]);
+  const [cambios, agenda, privados, sinEnviar] = await Promise.all([
+    db.select().from(registro).orderBy(desc(registro.id)).limit(20),
+    agendaAsistencia(),
+    sinLeerConsejo(),
+    n(db.select({ n: contar }).from(correos).where(ne(correos.estado, "enviado"))),
+  ]);
 
   const tarjetas = [
     {
@@ -103,6 +108,15 @@ export default async function Resumen() {
       <div className="mt-6 rounded-3xl border-2 border-tinta bg-papel p-5">
         <h2 className="font-display text-lg uppercase">Pendiente de revisar</h2>
         <ul className="mt-2 space-y-1 text-sm">
+          {sinEnviar > 0 && (
+            <li>
+              📮{" "}
+              <Link className="font-semibold underline" href="/admin/correos">
+                {sinEnviar} {sinEnviar === 1 ? "correo automático sin enviar" : "correos automáticos sin enviar"}
+              </Link>{" "}
+              (mándalos a mano o configura el envío).
+            </li>
+          )}
           {privados > 0 && (
             <li>
               💬{" "}

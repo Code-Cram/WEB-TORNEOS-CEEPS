@@ -10,6 +10,8 @@ import { reservaConAcceso } from "@/modulos/poker/datos";
 import { paraInputFecha } from "@/modulos/compartido/formato";
 import { ordenarTurnos } from "@/modulos/poker/mesas";
 import { exigirAdmin } from "@/modulos/acceso/sesion";
+import { procesarReservas } from "@/modulos/poker/relevos";
+import { ReservaAutomaticaAdmin } from "@/modulos/poker/reserva-admin";
 import { guardarAccesoReserva, guardarJugadorPoker, guardarMesa, renombrarTurno } from "@/modulos/poker/acciones";
 import { sortearTorneo } from "@/modulos/torneos/acciones";
 import { intercambiarEnMesas } from "@/modulos/poker/acciones";
@@ -25,6 +27,7 @@ const COLOR_ESTADO: Record<string, string> = { inscrito: "bg-verde/15 text-verde
 
 export default async function AdminPoker() {
   await exigirAdmin();
+  await procesarReservas(true).catch((e) => console.error(e));
   const [mesas, asientos, jugadores, accesoReserva] = await Promise.all([
     db.select().from(pokerMesas).orderBy(asc(pokerMesas.fase), asc(pokerMesas.numero)),
     db.select().from(pokerAsientos),
@@ -160,6 +163,8 @@ export default async function AdminPoker() {
           descripcion="Cambia de asiento a dos jugadores, también de mesas distintas. Si uno no tenía mesa, se sienta en el sitio del otro, que se queda sin mesa. Las mesas que ya tienen ganador no se tocan."
         />
       )}
+
+      <ReservaAutomaticaAdmin />
 
       <Seccion
         titulo={`Lista de reserva (${reservas.length})`}

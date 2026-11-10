@@ -7,6 +7,7 @@ import { asistencia } from "@/db/schema";
 import { actividadPorId } from "@/modulos/actividades/datos";
 import { citaDe, citaDeActividad } from "@/modulos/asistencia/datos";
 import { leerSesion } from "@/modulos/acceso/sesion";
+import { procesarReservas } from "@/modulos/poker/relevos";
 
 export type EstadoAsistencia = { ok?: string; error?: string; t?: number };
 
@@ -40,6 +41,7 @@ export async function responderAsistencia(_prev: EstadoAsistencia, f: FormData):
         target: [asistencia.torneo, asistencia.unidad, asistencia.dia],
         set: { viene, comentario, email: sesion.email, actualizadoEn: sql`now()` },
       });
+    if (torneo === "poker") await procesarReservas(true).catch((e) => console.error(e));
     revalidatePath("/", "layout");
     return { ok: viene ? "¡Apuntado! Gracias por confirmar." : "Apuntado. Gracias por avisar.", t: Date.now() };
   } catch (e) {

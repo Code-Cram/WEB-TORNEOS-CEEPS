@@ -157,6 +157,21 @@ export async function renombrarTurno(_prev: Resultado, f: FormData): Promise<Res
   });
 }
 
+/** Activa o apaga las plazas automáticas. Al volver a activarlo cuenta desde ahora: lo pendiente de mientras estuvo apagado no se hace de golpe. */
+export async function guardarReservaAutomatica(_prev: Resultado, f: FormData): Promise<Resultado> {
+  const admin = await exigirAdmin();
+  return intentar(async () => {
+    const activa = f.get("activa") === "on";
+    const [antes] = await db.select({ activa: infoTorneos.reservaAutomatica }).from(infoTorneos).where(eq(infoTorneos.torneo, "poker"));
+    const cambios = { reservaAutomatica: activa, ...(activa && antes?.activa === false ? { reservaAutomaticaDesde: new Date() } : {}) };
+    await db
+      .insert(infoTorneos)
+      .values({ torneo: "poker", cierreInscripcion: new Date(CIERRE_INSCRIPCIONES), reservaAutomaticaDesde: new Date(), ...cambios })
+      .onConflictDoUpdate({ target: infoTorneos.torneo, set: cambios });
+    return hecho(admin, activa ? "Plazas automáticas activadas." : "Plazas automáticas desactivadas.", undefined, "Póker");
+  });
+}
+
 /** Da o quita a la lista de reserva del póker el acceso a la web (sin acceso, su correo no les deja entrar al póker). */
 export async function guardarAccesoReserva(_prev: Resultado, f: FormData): Promise<Resultado> {
   const admin = await exigirAdmin();

@@ -1,4 +1,6 @@
+import { after } from "next/server";
 import { chatDe, contextoChat } from "@/modulos/chat/datos";
+import { procesarReservas } from "@/modulos/poker/relevos";
 import { origenDe } from "@/modulos/chat/sala";
 import { leerSesion } from "@/modulos/acceso/sesion";
 
@@ -10,5 +12,7 @@ export async function GET(req: Request) {
   const o = origenDe(sp.get("t"), sp.get("a"));
   const ctx = o && (await contextoChat(o, sesion.email));
   if (!ctx) return Response.json({ error: "No participas en este torneo." }, { status: 403 });
+  // De paso (después de contestar), las plazas del póker que toque pasar a la reserva.
+  after(() => procesarReservas().catch((e) => console.error(e)));
   return Response.json(await chatDe(ctx), { headers: { "Cache-Control": "no-store" } });
 }

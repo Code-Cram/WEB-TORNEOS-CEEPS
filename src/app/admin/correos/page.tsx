@@ -6,6 +6,7 @@ import { enlaceCorreo, gruposCorreo, LARGO_MAXIMO_ENLACE, type GrupoCorreo } fro
 import { leerInfoTorneos } from "@/modulos/torneos/info";
 import { listaPersonas } from "@/modulos/personas/datos";
 import { exigirAdmin } from "@/modulos/acceso/sesion";
+import { CorreosAutomaticos } from "@/modulos/correo/bandeja-admin";
 
 export const metadata: Metadata = { title: "Panel · Correos" };
 
@@ -17,6 +18,7 @@ export default async function Correos() {
 
   return (
     <MarcoAdmin actual="/admin/correos" titulo="Correos">
+      <CorreosAutomaticos />
       <p className="mb-6 max-w-3xl text-sm text-tinta-suave">
         Para escribir a los participantes. <strong>Copiar</strong> copia los correos para pegarlos en el campo <strong>CCO</strong> (copia oculta) de tu
         correo; <strong>Escribir</strong> abre tu programa de correo con todos ya en CCO. Usa siempre CCO: así nadie ve los correos de los demás. Son datos

@@ -11,6 +11,7 @@ import { enlaceCorreo, LARGO_MAXIMO_ENLACE } from "@/modulos/personas/correos";
 import { leerInfoTorneos } from "@/modulos/torneos/info";
 import { fechaCorta, fechaLarga } from "@/modulos/compartido/formato";
 import { exigirAdmin } from "@/modulos/acceso/sesion";
+import { procesarReservas } from "@/modulos/poker/relevos";
 import { MarcarAsistencia } from "@/modulos/asistencia/marcar";
 
 export const metadata: Metadata = { title: "Panel · Asistencia" };
@@ -20,6 +21,7 @@ const orden = (r: Respuesta | null) => (r === null ? 1 : r.viene ? 2 : 0);
 
 export default async function AdminAsistencia() {
   await exigirAdmin();
+  await procesarReservas(true).catch((e) => console.error(e));
   const [agenda, info, reserva] = await Promise.all([
     agendaAsistencia(),
     leerInfoTorneos(),

@@ -15,6 +15,7 @@ import { leerInfoTorneos } from "@/modulos/torneos/info";
 import { torneosActivos, torneosDe } from "@/modulos/acceso/inscripciones";
 import { fechaCorta } from "@/modulos/compartido/formato";
 import { esAdmin, exigirSesion } from "@/modulos/acceso/sesion";
+import { procesarReservas, salidaALaReserva } from "@/modulos/poker/relevos";
 
 export const metadata: Metadata = { title: "Mis actividades" };
 
@@ -34,7 +35,9 @@ function avisoCita(c: Cita): string {
 
 export default async function Torneos() {
   const sesion = await exigirSesion();
-  const [inscripciones, modoAdmin, info] = await Promise.all([torneosDe(sesion.email), esAdmin(), leerInfoTorneos()]);
+  // Quien estaba en reserva puede haber entrado en una mesa: se mira antes de enseñarle sus torneos.
+  await procesarReservas().catch((e) => console.error(e));
+  const [inscripciones, modoAdmin, info, salida] = await Promise.all([torneosDe(sesion.email), esAdmin(), leerInfoTorneos(), salidaALaReserva(sesion.email)]);
   // Con el modo admin activo (contraseña ya puesta) se ven los tres torneos; si no, solo los propios.
   // Los torneos finalizados los ve todo el que entra, aunque no jugara (y el Consejo con el modo admin, todos).
   const propios = torneosActivos(inscripciones);
@@ -92,6 +95,16 @@ export default async function Torneos() {
                 ? "Aquí tienes:"
                 : "¿Qué quieres ver?"}
         </p>
+
+        {salida && (
+          <p role="status" className="mt-5 flex gap-3 rounded-2xl border-2 border-naranja bg-naranja/10 px-4 py-3 text-sm">
+            <span aria-hidden className="text-lg leading-none">📢</span>
+            <span>
+              Tu plaza del Torneo de Póker (mesa {salida.mesa}) ha pasado a la lista de reserva porque{" "}
+              {salida.motivo === "no" ? "dijiste que no podías venir" : "no confirmaste tu asistencia a tiempo"}. Te lo hemos contado también por correo.
+            </span>
+          </p>
+        )}
 
         <div className="mt-6 grid gap-4">
           {activos.map((t) => (
