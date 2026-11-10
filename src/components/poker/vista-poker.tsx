@@ -29,8 +29,8 @@ export function VistaPoker({ datos }: { datos: DatosPoker }) {
       {miMesa && (
         <Aviso>
           Juegas en la <strong>mesa {miMesa.numero}</strong>
-          {miMesa.turno && <> · {miMesa.turno}</>}
-          {miMesa.fecha && <> · {fechaCorta(miMesa.fecha)}</>}. ¡Suerte!
+          {/* Con fecha, el día ya va en ella: el nombre del turno sería repetirlo. */}
+          {miMesa.fecha ? <> · {fechaCorta(miMesa.fecha)}</> : miMesa.turno && <> · {miMesa.turno}</>}. ¡Suerte!
         </Aviso>
       )}
 

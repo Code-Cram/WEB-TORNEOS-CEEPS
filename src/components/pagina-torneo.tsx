@@ -2,15 +2,18 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { TarjetaAsistencia } from "@/components/asistencia";
 import { Cabecera } from "@/components/cabecera";
+import { ChatFlotante } from "@/components/chat/chat-flotante";
 import { db } from "@/db";
 import { AvisoTorneo, BannerGanador, FichaTorneo } from "@/components/ficha-torneo";
 import { TarjetaPremios } from "@/components/premios";
 import { TarjetaReglas } from "@/components/reglas";
 import { Refresco } from "@/components/refresco";
-import { citaDe } from "@/lib/asistencia-datos";
+import { citaEn, unidadesDe } from "@/lib/asistencia-datos";
+import { chatDe } from "@/lib/chat";
 import { TORNEOS, type TorneoId } from "@/lib/config";
 import { leerInfoTorneos } from "@/lib/datos";
 import { campeonTorneo } from "@/lib/ediciones";
+import { contextoEn } from "@/lib/sala-chat";
 import type { Sesion } from "@/lib/sesion";
 
 const BANDA: Record<TorneoId, string> = {
@@ -36,8 +39,12 @@ export async function PaginaTorneo({
   children: ReactNode;
 }) {
   const t = TORNEOS[torneo];
-  const [infos, cita] = await Promise.all([leerInfoTorneos(), citaDe(torneo, sesion.email)]);
+  const ahora = new Date();
+  const [infos, unidades] = await Promise.all([leerInfoTorneos(), unidadesDe(torneo)]);
   const ficha = infos[torneo];
+  // Con los mismos equipos, parejas o jugadores salen la confirmación de asistencia y el chat del día.
+  const ctxChat = contextoEn(unidades, { torneo, actividadId: null }, sesion.email, ahora);
+  const [cita, chat] = await Promise.all([citaEn(unidades, sesion.email, ahora), ctxChat ? chatDe(ctxChat) : null]);
   const campeon = ficha.finalizado ? await campeonTorneo(db, torneo) : null;
   return (
     <>
@@ -68,6 +75,7 @@ export async function PaginaTorneo({
         </section>
       </main>
       <Refresco />
+      {chat && <ChatFlotante t={torneo} a={null} titulo={ficha.nombre} inicial={chat} />}
     </>
   );
 }

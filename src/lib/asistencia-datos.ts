@@ -157,7 +157,7 @@ export async function unidadesDeActividad(a: Actividad): Promise<Unidad[]> {
 }
 
 /** El próximo día de la unidad de esta persona, con lo que haya respondido. Null si no tiene nada con fecha. */
-async function citaEn(unidades: Unidad[], email: string, ahora: Date): Promise<Cita | null> {
+export async function citaEn(unidades: Unidad[], email: string, ahora: Date): Promise<Cita | null> {
   const u = unidades.find((x) => x.miembros.some((m) => m.email === email));
   const proximo = u && proximoDia(u.eventos, ahora);
   if (!u || !proximo) return null;

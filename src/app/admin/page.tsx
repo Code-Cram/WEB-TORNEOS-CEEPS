@@ -7,6 +7,7 @@ import { MarcoAdmin } from "@/components/admin/marco-admin";
 import { TarjetasActividades } from "@/components/admin/tarjetas-actividades";
 import { grupoAsistencia, resumir } from "@/lib/asistencia";
 import { agendaAsistencia } from "@/lib/asistencia-datos";
+import { sinLeerConsejo } from "@/lib/chat";
 import { fechaCorta } from "@/lib/formato";
 import { exigirAdmin } from "@/lib/sesion";
 
@@ -35,7 +36,7 @@ export default async function Resumen() {
       n(db.select({ n: contar }).from(actividadMiembros).where(isNull(actividadMiembros.email))),
     ]);
   const sinCorreo = futSinCorreo + musSinCorreo + actSinCorreo;
-  const [cambios, agenda] = await Promise.all([db.select().from(registro).orderBy(desc(registro.id)).limit(20), agendaAsistencia()]);
+  const [cambios, agenda, privados] = await Promise.all([db.select().from(registro).orderBy(desc(registro.id)).limit(20), agendaAsistencia(), sinLeerConsejo()]);
 
   const tarjetas = [
     {
@@ -102,6 +103,15 @@ export default async function Resumen() {
       <div className="mt-6 rounded-3xl border-2 border-tinta bg-papel p-5">
         <h2 className="font-display text-lg uppercase">Pendiente de revisar</h2>
         <ul className="mt-2 space-y-1 text-sm">
+          {privados > 0 && (
+            <li>
+              💬{" "}
+              <Link className="font-semibold underline" href="/admin/chat">
+                {privados} {privados === 1 ? "mensaje privado sin leer" : "mensajes privados sin leer"}
+              </Link>{" "}
+              en el chat.
+            </li>
+          )}
           <li>
             👥 {personas} personas pueden entrar a la web con su correo.
           </li>

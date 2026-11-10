@@ -84,8 +84,9 @@ Todo desde el panel (`/admin`, botón «Admin» al entrar con un correo de `ADMI
 6. **Apuntar** fechas, lugares y resultados. **Fechas por bloques** pone la misma fecha y lugar a una mitad del cuadro (hasta su semifinal), a una ronda o a la final de una vez. El ganador avanza solo y la clasificación se calcula sola (campeón, subcampeón y, con 3er puesto, 3º y 4º).
    **Calendario** junta en una página, por días, todos los partidos, mesas y eventos para cambiar fecha, hora y lugar en la misma lista, y **mueve un día entero** a otro (huelgas, cambios de aula) manteniendo las horas.
 7. **Asistencia**: cada equipo (lo confirma el capitán), pareja (cualquiera de los dos), jugador de póker o participante de una actividad (si es un equipo, cualquiera de él) confirma en su página si viene el próximo día que juega o que es el evento, con un comentario si quiere. La respuesta vale para ese día: si cambia la fecha de su partido, su mesa o el evento, o pasa a jugar otro día (una final), se le vuelve a preguntar. Solo se pregunta por lo que tiene fecha: partidos, mesas y, en los eventos, la «Fecha y hora» de su ficha. En **Asistencia** están los recuentos de cada día, los correos de quien no ha respondido (para recordárselo) y botones para apuntar a mano lo que alguien avise por otro lado.
-8. **Dar por finalizado** cuando acabe: lo ve todo el que entra en la web, con el ganador arriba (se puede reabrir).
-9. **Nueva edición** (con el nombre escrito para confirmar): el ganador pasa a la lista de ganadores, se guarda una copia completa en el archivo y el torneo queda vacío para la siguiente edición.
+8. **Chat**: cada torneo y actividad tiene un botón «💬 Chat» en su página. Lo público va por días: cada uno lee y escribe en la sala del próximo día que juega (la final, los finalistas). En privado se escribe al Consejo. En **Chat** del panel contestáis los privados (primero los que tienen algo sin leer), escribís en la sala de un día o a todos los de un torneo, y podéis borrar cualquier mensaje (queda en el registro). Los mensajes llegan solos cada pocos segundos y nadie puede mandar más de 8 por minuto.
+9. **Dar por finalizado** cuando acabe: lo ve todo el que entra en la web, con el ganador arriba (se puede reabrir).
+10. **Nueva edición** (con el nombre escrito para confirmar): el ganador pasa a la lista de ganadores, se guarda una copia completa en el archivo y el torneo queda vacío para la siguiente edición.
 
 ### Actividades
 
@@ -109,6 +110,7 @@ Otro Nombre
 
 - Se entra con el correo de inscripción, **sin código de verificación**: quien sepa el correo de otra persona puede entrar como ella y, si es capitán, cambiar su plantilla (queda registrado en el panel). Es un equilibrio buscado entre comodidad y riesgo para un torneo entre estudiantes.
 - El panel exige estar en `ADMIN_EMAILS` **y** la contraseña. Tras 10 intentos fallidos en 15 minutos se bloquea; **cambiar `ADMIN_PASSWORD` cierra todas las sesiones de admin abiertas**. Usa una contraseña larga.
+- En el chat sale el nombre de la inscripción, no el que cada uno escribe al entrar. Aun así, con el acceso solo por correo, quien sepa el correo de otra persona podría escribir en su nombre: el Consejo puede borrar cualquier mensaje.
 - Ningún correo ni teléfono se envía a los navegadores de los participantes. Las tablas tienen RLS activado, así que la API pública de Supabase no puede leerlas.
 - Cada acción del servidor comprueba los permisos y valida los datos; la web envía cabeceras contra clickjacking y similares.
 

@@ -21,6 +21,14 @@ export function fechaLarga(iso: string | null): string | null {
   return `${dia} · ${hora}`;
 }
 
+/** "mar 10 nov" a partir de un día "2026-11-10". */
+export function diaCorto(dia: string): string {
+  return new Intl.DateTimeFormat("es-ES", { timeZone: "UTC", weekday: "short", day: "numeric", month: "short" })
+    .format(new Date(`${dia}T12:00:00Z`))
+    .replace(/\./g, "")
+    .replace(",", "");
+}
+
 /** "martes, 10 de noviembre" a partir de un día "2026-11-10". */
 export function diaLargo(dia: string): string {
   return new Intl.DateTimeFormat("es-ES", { timeZone: "UTC", weekday: "long", day: "numeric", month: "long" }).format(new Date(`${dia}T12:00:00Z`));

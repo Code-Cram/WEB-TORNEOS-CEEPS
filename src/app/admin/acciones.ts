@@ -12,6 +12,7 @@ import {
   futbolJugadores,
   futbolPartidos,
   infoTorneos,
+  mensajes,
   musIntegrantes,
   musPartidas,
   musParejas,
@@ -597,6 +598,9 @@ export async function editarUsuario(_prev: Resultado, f: FormData): Promise<Resu
         // En el póker la confirmación de asistencia va por correo: sin esto se perdería la que ya hubiera dado.
         await tx.update(asistencia).set({ unidad: nuevo.email! }).where(and(eq(asistencia.torneo, "poker"), eq(asistencia.unidad, actual)));
         await tx.update(asistencia).set({ email: nuevo.email! }).where(eq(asistencia.email, actual));
+        // Y sus mensajes del chat, para que siga viendo su conversación privada con el Consejo.
+        await tx.update(mensajes).set({ privadoCon: nuevo.email! }).where(eq(mensajes.privadoCon, actual));
+        await tx.update(mensajes).set({ email: nuevo.email! }).where(eq(mensajes.email, actual));
       }
       // Cada torneo guarda su copia del nombre (la de la inscripción): el nombre corregido se pone en todas.
       if (nombre && nombre !== persona.nombre) {

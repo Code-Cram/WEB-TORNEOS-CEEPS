@@ -1,6 +1,7 @@
 import {
   boolean,
   date,
+  index,
   integer,
   jsonb,
   pgSchema,
@@ -351,6 +352,39 @@ export const actividadPartidos = pgTable(
     notas: text("notas"),
   },
   (t) => [unique().on(t.actividadId, t.ronda, t.posicion)],
+).enableRLS();
+
+/* ──────────────────────────────── CHAT ──────────────────────────────── */
+
+/**
+ * Chat de cada torneo y actividad. Lo público va a la sala de un día de juego (la leen quienes juegan ese día) o, si es
+ * un aviso del Consejo para todos, sin día. Lo privado es una conversación entre un participante y el Consejo.
+ */
+export const mensajes = pgTable(
+  "mensajes",
+  {
+    id: serial("id").primaryKey(),
+    /** futbol | mus | poker | actividad */
+    torneo: text("torneo").notNull(),
+    actividadId: integer("actividad_id").references(() => actividades.id, { onDelete: "cascade" }),
+    /** Sala del día, en hora de Madrid. Null: aviso del Consejo para todos o conversación privada. */
+    dia: date("dia", { mode: "string" }),
+    /** Conversación privada con el Consejo: el correo del participante. Null: público. */
+    privadoCon: text("privado_con"),
+    /** Quién lo escribe: un participante o alguien del Consejo. */
+    email: text("email").notNull(),
+    /** Nombre que se enseña: el de la inscripción o «Consejo». */
+    nombre: text("nombre").notNull(),
+    /** Equipo, pareja o mesa de quien escribe. */
+    unidad: text("unidad"),
+    deConsejo: boolean("de_consejo").notNull().default(false),
+    texto: text("texto").notNull(),
+    /** Privados: ya lo ha leído la otra parte. */
+    leido: boolean("leido").notNull().default(false),
+    creadoEn: creadoEn(),
+    borradoEn: timestamp("borrado_en", { withTimezone: true }),
+  },
+  (t) => [index("mensajes_sala_idx").on(t.torneo, t.actividadId, t.dia, t.id), index("mensajes_privado_idx").on(t.privadoCon, t.id)],
 ).enableRLS();
 
 /* ───────────────────────── GANADORES Y ARCHIVO ───────────────────────── */

@@ -3,14 +3,17 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { TarjetaAsistencia } from "@/components/asistencia";
 import { Cabecera } from "@/components/cabecera";
+import { ChatFlotante } from "@/components/chat/chat-flotante";
 import { VistaCuadro } from "@/components/cuadro/vista-cuadro";
 import { db } from "@/db";
 import { AvisoTorneo, BannerGanador, FichaTorneo } from "@/components/ficha-torneo";
 import { Chip } from "@/components/pagina-torneo";
 import { Refresco } from "@/components/refresco";
 import { actividadPorSlug, contarParticipantes, cuadroDeActividad, infoDeActividad, miParticipacion } from "@/lib/actividades";
-import { citaDeActividad } from "@/lib/asistencia-datos";
+import { citaEn, unidadesDeActividad } from "@/lib/asistencia-datos";
+import { chatDe } from "@/lib/chat";
 import { campeonActividad } from "@/lib/ediciones";
+import { contextoEn } from "@/lib/sala-chat";
 import { esAdmin, exigirSesion } from "@/lib/sesion";
 
 // Título genérico: el nombre de la actividad no se enseña a quien no puede verla.
@@ -28,12 +31,16 @@ export default async function PaginaActividad(props: PageProps<"/actividades/[sl
   if (!admin && (!a || a.estado === "borrador" || (!yo && !torneoTerminado))) redirect("/torneos");
   if (!a) notFound();
 
-  const [total, cuadro, campeon, cita] = await Promise.all([
+  const [total, cuadro, campeon, unidades] = await Promise.all([
     contarParticipantes(a.id),
     a.tipo === "torneo" ? cuadroDeActividad(a.id, sesion.email) : null,
     torneoTerminado ? campeonActividad(db, a.id) : null,
-    yo ? citaDeActividad(a, sesion.email) : null,
+    yo ? unidadesDeActividad(a) : [],
   ]);
+  // Con los mismos participantes salen la confirmación de asistencia y el chat del día (solo en actividades activas).
+  const ahora = new Date();
+  const ctxChat = contextoEn(unidades, { torneo: "actividad", actividadId: a.id }, sesion.email, ahora);
+  const [cita, chat] = await Promise.all([citaEn(unidades, sesion.email, ahora), ctxChat ? chatDe(ctxChat) : null]);
   const paraTi = a.infoParticipantes || yo?.nota || (a.porEquipos && yo);
 
   return (
@@ -97,6 +104,7 @@ export default async function PaginaActividad(props: PageProps<"/actividades/[sl
         </section>
       </main>
       {a.tipo === "torneo" && <Refresco />}
+      {chat && <ChatFlotante t="actividad" a={a.id} titulo={a.nombre} inicial={chat} />}
     </>
   );
 }
