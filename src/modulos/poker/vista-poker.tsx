@@ -3,12 +3,16 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Modal } from "@/modulos/compartido/modal";
-import { ListaPremios } from "@/modulos/torneos/tarjeta-premios";
+import { ListaPremios } from "@/modulos/torneos/lista-premios";
 import { POKER } from "@/modulos/poker/config";
 import { fechaCorta, fechaLarga } from "@/modulos/compartido/formato";
 import { posicionAsiento } from "@/modulos/poker/mesas";
 import { nombreCorto } from "@/modulos/compartido/texto";
 import type { DatosPoker, MesaVista } from "@/modulos/poker/tipos";
+import { useIdioma, useT } from "@/modulos/idioma/cliente";
+import { fechasEn } from "@/modulos/idioma/fechas";
+import { Negritas } from "@/modulos/idioma/negritas";
+import { ordinal } from "@/modulos/idioma/traducir";
 
 const PALOS = ["♠", "♥", "♣", "♦"];
 
@@ -19,27 +23,30 @@ export function VistaPoker({ datos }: { datos: DatosPoker }) {
     datos.final && datos.clasificatorias.every((m) => m.ganador) ? "final" : "clasificatorias",
   );
   const [abierta, setAbierta] = useState<MesaVista | null>(null);
+  const t = useT();
+  const idioma = useIdioma();
 
   return (
     <>
       {datos.miEstado === "reserva" && (
         <Aviso>
-          Estás en la <strong>lista de reserva</strong>. Si alguien se da de baja, el Consejo te avisará y aparecerás en una mesa.
+          <Negritas texto={t("Estás en la **lista de reserva**. Si alguien se da de baja, el Consejo te avisará y aparecerás en una mesa.")} />
         </Aviso>
       )}
       {miMesa && (
         <Aviso>
-          Juegas en la <strong>mesa {miMesa.numero}</strong>
+          <Negritas texto={t("Juegas en la **mesa {n}**", { n: miMesa.numero })} />
           {/* Con fecha, el día ya va en ella: el nombre del turno sería repetirlo. */}
-          {miMesa.fecha ? <> · {fechaCorta(miMesa.fecha)}</> : miMesa.turno && <> · {miMesa.turno}</>}. ¡Suerte!
+          {miMesa.fecha ? <> · {fechaCorta(miMesa.fecha, idioma)}</> : miMesa.turno && <> · {fechasEn(miMesa.turno, idioma)}</>}
+          {t(". ¡Suerte!")}
         </Aviso>
       )}
 
       <div className="mb-5 inline-flex rounded-full border-2 border-tinta bg-papel p-0.5 font-mono text-xs font-bold uppercase">
         {(
           [
-            ["clasificatorias", "Fase clasificatoria"],
-            ["final", "Mesa final"],
+            ["clasificatorias", t("Fase clasificatoria")],
+            ["final", t("Mesa final")],
           ] as const
         ).map(([id, txt]) => (
           <button
@@ -56,8 +63,10 @@ export function VistaPoker({ datos }: { datos: DatosPoker }) {
         <>
           {!sorteado && (
             <p className="mb-4 rounded-2xl border-2 border-dashed border-tinta/40 bg-papel p-4 text-center text-sm text-tinta-suave">
-              🎲 Las mesas aún no se han sorteado. Así quedarán: {POKER.mesas} mesas de {POKER.asientos}; el ganador de cada una pasa a la mesa final
-              (los premios, en la pestaña «Mesa final»).
+              {t("🎲 Las mesas aún no se han sorteado. Así quedarán: {mesas} mesas de {asientos}; el ganador de cada una pasa a la mesa final (los premios, en la pestaña «Mesa final»).", {
+                mesas: POKER.mesas,
+                asientos: POKER.asientos,
+              })}
             </p>
           )}
           <div className="grid gap-x-6 gap-y-8 sm:grid-cols-2 xl:grid-cols-3">
@@ -74,15 +83,15 @@ export function VistaPoker({ datos }: { datos: DatosPoker }) {
         abierto={!!abierta}
         onCerrar={() => setAbierta(null)}
         cabecera="fondo-tapete text-white"
-        subtitulo={abierta ? [abierta.turno, fechaLarga(abierta.fecha)].filter(Boolean).join(" · ") || "Fecha por fijar" : ""}
-        titulo={abierta?.fase === "final" ? "Mesa final" : `Mesa ${abierta?.numero ?? ""}`}
+        subtitulo={abierta ? [abierta.turno && fechasEn(abierta.turno, idioma), fechaLarga(abierta.fecha, idioma)].filter(Boolean).join(" · ") || t("Fecha por fijar") : ""}
+        titulo={abierta?.fase === "final" ? t("Mesa final") : t("Mesa {n}", { n: abierta?.numero ?? "" })}
       >
         {abierta && (
           <div className="space-y-3">
             {abierta.lugar && <p className="text-sm">📍 {abierta.lugar}</p>}
             {abierta.ganador && (
               <p className="rounded-xl bg-oros/20 px-3 py-2 text-sm">
-                👑 <strong>{abierta.ganador}</strong> {abierta.fase === "final" ? "gana el torneo" : "pasa a la mesa final"}
+                👑 <strong>{abierta.ganador}</strong> {abierta.fase === "final" ? t("gana el torneo") : t("pasa a la mesa final")}
               </p>
             )}
             <ol className="space-y-1.5">
@@ -95,15 +104,15 @@ export function VistaPoker({ datos }: { datos: DatosPoker }) {
                     <>
                       <span className="grid size-7 shrink-0 place-items-center rounded-full bg-tapete font-mono text-xs font-bold text-white">{a.asiento}</span>
                       <span className="min-w-0 flex-1 truncate font-medium">{a.nombre}</span>
-                      {a.esYo && <span className="font-mono text-[10px] font-bold text-naranja">TÚ</span>}
+                      {a.esYo && <span className="font-mono text-[10px] font-bold text-naranja">{t("TÚ")}</span>}
                       {a.puesto === 1 && <span>👑</span>}
-                      {a.puesto && a.puesto > 1 && <span className="font-mono text-xs text-tinta-suave">{a.puesto}º</span>}
+                      {a.puesto && a.puesto > 1 && <span className="font-mono text-xs text-tinta-suave">{ordinal(a.puesto, idioma)}</span>}
                     </>
                   );
                   return (
                     <li key={a.asiento}>
                       {a.perfil ? (
-                        <Link href={`/perfil/${a.perfil}`} className={`${clase} transition hover:border-tinta`} title={`Perfil de ${a.nombre}`}>
+                        <Link href={`/perfil/${a.perfil}`} className={`${clase} transition hover:border-tinta`} title={t("Perfil de {nombre}", { nombre: a.nombre })}>
                           {contenido}
                           <span aria-hidden className="text-tinta-suave">
                             ›
@@ -146,12 +155,14 @@ function Mesa({ mesa, grande = false, onAbrir }: { mesa: MesaVista; grande?: boo
   const asientos = Array.from({ length: POKER.asientos }, (_, i) => mesa.asientos.find((a) => a.asiento === i + 1) ?? null);
   const mia = mesa.asientos.some((a) => a.esYo);
   const terminada = !!mesa.ganador;
+  const t = useT();
+  const idioma = useIdioma();
   return (
     <button
       onClick={onAbrir}
       disabled={!onAbrir}
       className={`group relative block w-full text-left ${grande ? "mx-auto max-w-3xl" : ""}`}
-      aria-label={`Mesa ${mesa.numero}`}
+      aria-label={t("Mesa {n}", { n: mesa.numero })}
     >
       <div className={`relative ${grande ? "aspect-[16/9]" : "aspect-[16/10]"} px-[9%] py-[13%]`}>
         {/* Madera + tapete */}
@@ -165,16 +176,16 @@ function Mesa({ mesa, grande = false, onAbrir }: { mesa: MesaVista; grande?: boo
                 <div className={grande ? "text-4xl" : "text-2xl"}>👑</div>
                 <div className={`font-display leading-tight uppercase ${grande ? "text-2xl" : "text-sm"}`}>{mesa.ganador}</div>
                 <div className="font-mono text-[10px] tracking-wider text-[#f3d98b] uppercase">
-                  {mesa.fase === "final" ? "Campeón del torneo" : "A la mesa final"}
+                  {mesa.fase === "final" ? t("Campeón del torneo") : t("A la mesa final")}
                 </div>
               </div>
             ) : (
               <div>
                 <div className={`font-display tracking-wide text-[#f3d98b] uppercase ${grande ? "text-3xl" : "text-lg"}`}>
-                  {mesa.fase === "final" ? "Mesa final" : `Mesa ${mesa.numero}`}
+                  {mesa.fase === "final" ? t("Mesa final") : t("Mesa {n}", { n: mesa.numero })}
                 </div>
                 <div className="font-mono text-[10px] opacity-80 sm:text-xs">
-                  {[mesa.turno, fechaCorta(mesa.fecha)?.split(" · ")[1]].filter(Boolean).join(" · ") || PALOS.join(" ")}
+                  {[mesa.turno && fechasEn(mesa.turno, idioma), fechaCorta(mesa.fecha, idioma)?.split(" · ")[1]].filter(Boolean).join(" · ") || PALOS.join(" ")}
                 </div>
               </div>
             )}
@@ -212,7 +223,7 @@ function Mesa({ mesa, grande = false, onAbrir }: { mesa: MesaVista; grande?: boo
                   a?.esYo ? "bg-naranja font-bold text-white" : eliminado ? "text-tinta-suave line-through" : "bg-crema/80 font-medium"
                 }`}
               >
-                {a ? (a.esYo ? "Tú" : nombreCorto(a.nombre)) : "—"}
+                {a ? (a.esYo ? t("Tú") : nombreCorto(a.nombre)) : "—"}
               </span>
             </div>
           );
@@ -245,30 +256,31 @@ function MesaFinal({ datos, onAbrir }: { datos: DatosPoker; onAbrir: (m: MesaVis
     asientos: [],
   };
   const clasificados = datos.clasificatorias.filter((m) => m.ganador).length;
+  const t = useT();
   return (
     <div className="space-y-8">
       <div>
         <p className="mb-2 text-center font-mono text-xs font-bold tracking-widest text-tinta-suave uppercase">
-          {clasificados}/{POKER.mesas} clasificados · el ganador de la mesa N se sienta en el asiento N
+          {t("{clasificados}/{mesas} clasificados · el ganador de la mesa N se sienta en el asiento N", { clasificados, mesas: POKER.mesas })}
         </p>
         <Mesa mesa={final} grande onAbrir={datos.final ? () => onAbrir(final) : undefined} />
       </div>
 
       <div className="mx-auto grid max-w-3xl gap-4 sm:grid-cols-2">
         <div className="rounded-3xl border-2 border-tinta bg-papel p-5 shadow-[5px_5px_0_var(--tinta)]">
-          <h2 className="font-display text-xl text-verde uppercase">Premios</h2>
-          <div className="mt-3">{datos.premios.length ? <ListaPremios premios={datos.premios} /> : <p className="text-sm text-tinta-suave">Por anunciar.</p>}</div>
+          <h2 className="font-display text-xl text-verde uppercase">{t("Premios")}</h2>
+          <div className="mt-3">{datos.premios.length ? <ListaPremios premios={datos.premios} /> : <p className="text-sm text-tinta-suave">{t("Por anunciar.")}</p>}</div>
         </div>
         <div className="rounded-3xl border-2 border-tinta bg-papel p-5 shadow-[5px_5px_0_var(--tinta)]">
-          <h2 className="font-display text-xl text-verde uppercase">Camino a la final</h2>
+          <h2 className="font-display text-xl text-verde uppercase">{t("Camino a la final")}</h2>
           <ul className="mt-3 grid grid-cols-2 gap-1.5 text-sm">
             {Array.from({ length: POKER.mesas }, (_, i) => {
               const m = datos.clasificatorias.find((x) => x.numero === i + 1);
               return (
                 <li key={i} className="flex items-center gap-2 rounded-lg bg-white px-2 py-1.5">
-                  <span className="font-mono text-xs text-tinta-suave">M{i + 1}</span>
+                  <span className="font-mono text-xs text-tinta-suave">{t("M{n}", { n: i + 1 })}</span>
                   <span className={`truncate ${m?.ganador ? "font-semibold" : "text-tinta-suave italic"}`}>
-                    {m?.ganador ? nombreCorto(m.ganador) : "pendiente"}
+                    {m?.ganador ? nombreCorto(m.ganador) : t("pendiente")}
                   </span>
                 </li>
               );

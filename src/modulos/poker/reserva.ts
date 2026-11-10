@@ -1,5 +1,7 @@
 import { diaMadrid } from "@/modulos/asistencia/logica";
 import { fechaCorta } from "@/modulos/compartido/formato";
+import type { Idioma } from "@/modulos/idioma/config";
+import { traductor, type T } from "@/modulos/idioma/traducir";
 
 /*
  * Plazas que pasan solas a la lista de reserva (lógica sin base de datos; lo aplica relevos.ts).
@@ -90,13 +92,14 @@ export function avisoDePlazo(d: {
   /** Si entró desde la reserva, cuándo. */
   entroEn: Date | null;
   ahora: Date;
-}): string | null {
+}, t: T = traductor("es"), idioma: Idioma = "es"): string | null {
   if (!d.activa || d.respuesta === true || d.esFinal) return null;
-  if (d.respuesta === undefined && d.entroEn && d.entroEn >= corteSinRespuesta(d.inicio)) return "Acabas de entrar desde la lista de reserva: confirma cuanto antes si vienes.";
+  if (d.respuesta === undefined && d.entroEn && d.entroEn >= corteSinRespuesta(d.inicio)) return t("Acabas de entrar desde la lista de reserva: confirma cuanto antes si vienes.");
   const corte = d.respuesta === false ? corteSiDiceNo(d.inicio) : corteSinRespuesta(d.inicio);
   if (corte < d.desde) return null;
-  if (corte <= d.ahora) return "Tu plaza puede pasar a la lista de reserva en cuanto haya alguien que pueda ocuparla.";
+  if (corte <= d.ahora) return t("Tu plaza puede pasar a la lista de reserva en cuanto haya alguien que pueda ocuparla.");
+  const cuando = fechaCorta(corte.toISOString(), idioma) ?? "";
   return d.respuesta === false
-    ? `Tu plaza pasará a la lista de reserva el ${fechaCorta(corte.toISOString())} (${HORAS_SI_DICE_NO} horas antes). Hasta entonces puedes cambiar tu respuesta.`
-    : `Si no confirmas antes del ${fechaCorta(corte.toISOString())}, tu plaza pasará a la lista de reserva.`;
+    ? t("Tu plaza pasará a la lista de reserva el {cuando} ({horas} horas antes). Hasta entonces puedes cambiar tu respuesta.", { cuando, horas: HORAS_SI_DICE_NO })
+    : t("Si no confirmas antes del {cuando}, tu plaza pasará a la lista de reserva.", { cuando });
 }

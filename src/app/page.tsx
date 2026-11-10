@@ -7,11 +7,14 @@ import { inscripcionAbierta, leerInfoTorneos } from "@/modulos/torneos/info";
 import { fechaLarga } from "@/modulos/compartido/formato";
 import { leerSesion } from "@/modulos/acceso/sesion";
 import { FormularioEntrar } from "@/modulos/acceso/formulario-entrar";
+import { traduccion } from "@/modulos/idioma/servidor";
+import { SelectorIdioma } from "@/modulos/idioma/selector";
 
 export default async function Inicio() {
   if (await leerSesion()) redirect("/torneos");
+  const { t, idioma } = await traduccion();
   // Si la base de datos no responde, la portada se sigue viendo (sin el bloque de inscripciones).
-  const [info, actividades] = await Promise.all([leerInfoTorneos(), listarActividades(false)]).catch((e) => {
+  const [info, actividades] = await Promise.all([leerInfoTorneos(idioma), listarActividades(false)]).catch((e) => {
     console.error(e);
     return [null, []] as const;
   });
@@ -19,12 +22,15 @@ export default async function Inicio() {
   const abiertas = [
     ...(info
       ? (Object.keys(TORNEOS) as TorneoId[])
-          .filter((t) => inscripcionAbierta(info[t]))
-          .map((t) => ({ clave: t, etiqueta: `${TORNEOS[t].icono} ${TORNEOS[t].corto}`, ...info[t] }))
+          .filter((id) => inscripcionAbierta(info[id]))
+          .map((id) => ({ clave: id, etiqueta: `${TORNEOS[id].icono} ${t(TORNEOS[id].corto)}`, ...info[id] }))
       : []),
     ...actividades
       .filter((a) => a.estado === "activa")
-      .map((a) => ({ clave: a.slug, etiqueta: `${a.icono} ${a.nombre}`, ...infoDeActividad(a) }))
+      .map((a) => {
+        const info = infoDeActividad(a, idioma);
+        return { clave: a.slug, etiqueta: `${a.icono} ${info.nombre}`, ...info };
+      })
       .filter((a) => inscripcionAbierta(a)),
   ];
   const cierres = [...new Set(abiertas.map((a) => a.cierreInscripcion))];
@@ -36,14 +42,17 @@ export default async function Inicio() {
       <div aria-hidden className="absolute top-[42%] -right-24 h-40 w-56 rounded-l-full bg-verde sm:-right-10 sm:w-72" />
       <div aria-hidden className="absolute -bottom-20 -left-16 h-48 w-48 rounded-full bg-verde-oscuro sm:h-64 sm:w-64" />
 
+      <div className="absolute top-3 right-3 z-20">
+        <SelectorIdioma idioma={idioma} />
+      </div>
       <div className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-5 py-10">
         <div className="mb-6 flex flex-col items-center text-center">
-          <Image src="/marca/ceeps.svg" alt="Consejo de Estudiantes EPS" width={120} height={120} priority className="drop-shadow-sm" />
+          <Image src="/marca/ceeps.svg" alt={t("Consejo de Estudiantes EPS")} width={120} height={120} priority className="drop-shadow-sm" />
           <h1 className="mt-4 font-display text-5xl leading-none tracking-tight text-verde uppercase sm:text-6xl">
             Torneos
             <span className="titulo-contorno block text-naranja">CEEPS</span>
           </h1>
-          <p className="mt-3 font-mono text-sm text-tinta-suave">Consejo de Estudiantes · Escuela Politécnica Superior</p>
+          <p className="mt-3 font-mono text-sm text-tinta-suave">{t("Consejo de Estudiantes · Escuela Politécnica Superior")}</p>
         </div>
 
         <div className="rounded-3xl border-2 border-tinta bg-papel p-5 shadow-[6px_6px_0_var(--tinta)] sm:p-6">
@@ -52,7 +61,7 @@ export default async function Inicio() {
 
         {abiertas.length > 0 ? (
           <div className="mt-6 rounded-3xl border-2 border-dashed border-tinta/40 bg-papel/80 p-4 text-center">
-            <p className="font-display text-sm text-verde uppercase">¿Aún no te has apuntado?</p>
+            <p className="font-display text-sm text-verde uppercase">{t("¿Aún no te has apuntado?")}</p>
             <div className="mt-2 flex flex-wrap justify-center gap-2">
               {abiertas.map((a) => (
                 <a
@@ -67,13 +76,13 @@ export default async function Inicio() {
               ))}
             </div>
             <p className="mt-2 text-xs text-tinta-suave">
-              {cierres.length === 1 && cierres[0] ? `Inscripciones abiertas hasta el ${fechaLarga(cierres[0])}. ` : ""}
-              Podrás entrar con tu correo en cuanto el Consejo actualice la lista de inscritos.
+              {cierres.length === 1 && cierres[0] ? `${t("Inscripciones abiertas hasta el {fecha}.", { fecha: fechaLarga(cierres[0], idioma) ?? "" })} ` : ""}
+              {t("Podrás entrar con tu correo en cuanto el Consejo actualice la lista de inscritos.")}
             </p>
           </div>
         ) : (
           <div className="mt-8 flex justify-center gap-2 font-mono text-xs text-tinta-suave">
-            <span>⚽ Fútbol Sala</span>·<span>🂡 Mus</span>·<span>♠ Póker</span>
+            <span>⚽ {t("Fútbol Sala")}</span>·<span>🂡 {t("Mus")}</span>·<span>♠ {t("Póker")}</span>
           </div>
         )}
       </div>

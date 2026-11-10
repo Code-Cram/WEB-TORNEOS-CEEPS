@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type ReactNode } from "react";
+import { useT } from "@/modulos/idioma/cliente";
 
 /** Ventana modal accesible: hoja inferior en móvil, centrada en escritorio. */
 export function Modal({
@@ -21,6 +22,7 @@ export function Modal({
   children: ReactNode;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const t = useT();
   // Solo avisamos de cierre si lo pide el usuario (Esc, fondo); no cuando se cierra por cambiar de vista.
   const abiertoRef = useRef(abierto);
   useEffect(() => {
@@ -49,7 +51,7 @@ export function Modal({
         <div className="animar-entrada flex max-h-[88dvh] flex-col">
           <div className={`flex items-start gap-3 border-b-2 border-tinta px-5 py-4 ${cabecera}`}>
             {onVolver && (
-              <button onClick={onVolver} className="-ml-1 rounded-full px-2 py-1 font-mono text-sm font-bold hover:bg-black/15" aria-label="Volver">
+              <button onClick={onVolver} className="-ml-1 rounded-full px-2 py-1 font-mono text-sm font-bold hover:bg-black/15" aria-label={t("Volver")}>
                 ←
               </button>
             )}
@@ -60,7 +62,7 @@ export function Modal({
             <button
               onClick={onCerrar}
               className="-mr-1 grid size-9 shrink-0 place-items-center rounded-full text-xl hover:bg-black/15"
-              aria-label="Cerrar"
+              aria-label={t("Cerrar")}
             >
               ×
             </button>

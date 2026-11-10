@@ -6,6 +6,7 @@ import { mensajes } from "@/db/schema";
 import { contextoChat, filtroPrivado } from "@/modulos/chat/datos";
 import { LARGO_MAXIMO_MENSAJE, limpiarMensaje, MAXIMO_POR_MINUTO, origenDe } from "@/modulos/chat/sala";
 import { leerSesion } from "@/modulos/acceso/sesion";
+import { traduccion } from "@/modulos/idioma/servidor";
 
 export type EstadoChat = { ok?: boolean; error?: string; t?: number };
 
@@ -17,25 +18,26 @@ const fallo = (error: string): EstadoChat => ({ error, t: Date.now() });
  */
 export async function enviarMensaje(_prev: EstadoChat, f: FormData): Promise<EstadoChat> {
   const sesion = await leerSesion();
-  if (!sesion) return fallo("Tu sesión ha caducado. Vuelve a entrar.");
+  const { t } = await traduccion();
+  if (!sesion) return fallo(t("Tu sesión ha caducado. Vuelve a entrar."));
   const o = origenDe(f.get("t"), f.get("a"));
-  if (!o) return fallo("Chat no válido: recarga la página.");
+  if (!o) return fallo(t("Chat no válido: recarga la página."));
   const texto = limpiarMensaje(f.get("texto"));
-  if (!texto) return fallo("Escribe algo.");
-  if (texto.length > LARGO_MAXIMO_MENSAJE) return fallo(`Como mucho ${LARGO_MAXIMO_MENSAJE} caracteres.`);
+  if (!texto) return fallo(t("Escribe algo."));
+  if (texto.length > LARGO_MAXIMO_MENSAJE) return fallo(t("Como mucho {n} caracteres.", { n: LARGO_MAXIMO_MENSAJE }));
   const privado = f.get("canal") === "privado";
   try {
     const ctx = await contextoChat(o, sesion.email);
-    if (!ctx) return fallo("No participas en este torneo.");
+    if (!ctx) return fallo(t("No participas en este torneo."));
     if (!privado) {
-      if (!ctx.dia) return fallo("Todavía no tienes un día de juego con fecha: de momento puedes escribir al Consejo en privado.");
-      if (ctx.dia !== String(f.get("dia") ?? "")) return fallo("Tu día de juego ha cambiado: recarga la página.");
+      if (!ctx.dia) return fallo(t("Todavía no tienes un día de juego con fecha: de momento puedes escribir al Consejo en privado."));
+      if (ctx.dia !== String(f.get("dia") ?? "")) return fallo(t("Tu día de juego ha cambiado: recarga la página."));
     }
     const [{ n }] = await db
       .select({ n: count() })
       .from(mensajes)
       .where(and(eq(mensajes.email, sesion.email), gt(mensajes.creadoEn, sql`now() - interval '1 minute'`)));
-    if (n >= MAXIMO_POR_MINUTO) return fallo("Vas muy deprisa: espera un momento antes de escribir otra vez.");
+    if (n >= MAXIMO_POR_MINUTO) return fallo(t("Vas muy deprisa: espera un momento antes de escribir otra vez."));
     await db.insert(mensajes).values({
       torneo: o.torneo,
       actividadId: o.actividadId,
@@ -49,7 +51,7 @@ export async function enviarMensaje(_prev: EstadoChat, f: FormData): Promise<Est
     return { ok: true, t: Date.now() };
   } catch (e) {
     console.error(e);
-    return fallo("No se ha podido enviar. Vuelve a intentarlo en un momento.");
+    return fallo(t("No se ha podido enviar. Vuelve a intentarlo en un momento."));
   }
 }
 

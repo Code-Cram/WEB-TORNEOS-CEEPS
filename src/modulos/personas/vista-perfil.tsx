@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { fechaCorta } from "@/modulos/compartido/formato";
+import type { Idioma } from "@/modulos/idioma/config";
+import { traductor, type T } from "@/modulos/idioma/traducir";
 import type { PerfilVista, TorneoPerfil } from "./tipos";
 
 /* Perfil de una persona: sus títulos, cómo le va este año en cada torneo y actividad, y las ediciones anteriores. */
@@ -24,7 +26,8 @@ export function iniciales(nombre: string) {
     .toUpperCase();
 }
 
-export function VistaPerfil({ perfil }: { perfil: PerfilVista }) {
+export function VistaPerfil({ perfil, idioma }: { perfil: PerfilVista; idioma: Idioma }) {
+  const t = traductor(idioma);
   return (
     <>
       <div className="flex items-center gap-4">
@@ -32,14 +35,14 @@ export function VistaPerfil({ perfil }: { perfil: PerfilVista }) {
           {iniciales(perfil.nombre)}
         </span>
         <div className="min-w-0">
-          <p className={etiqueta}>Perfil{perfil.esYo ? " · eres tú" : ""}</p>
+          <p className={etiqueta}>{perfil.esYo ? t("Perfil · eres tú") : t("Perfil")}</p>
           <h1 className="font-display text-3xl break-words text-verde uppercase sm:text-4xl">{perfil.nombre}</h1>
         </div>
       </div>
 
       {perfil.titulos.length > 0 && (
         <section className="mt-7">
-          <h2 className={etiqueta}>Títulos</h2>
+          <h2 className={etiqueta}>{t("Títulos")}</h2>
           <ul className="mt-2 grid gap-2 sm:grid-cols-2">
             {perfil.titulos.map((t, i) => (
               <li key={i} className="flex items-center gap-3 rounded-2xl border-2 border-oros bg-oros/15 px-4 py-3">
@@ -57,18 +60,18 @@ export function VistaPerfil({ perfil }: { perfil: PerfilVista }) {
       )}
 
       <section className="mt-7">
-        <h2 className={etiqueta}>Este año</h2>
+        <h2 className={etiqueta}>{t("Este año")}</h2>
         <div className="mt-2 space-y-4">
-          {perfil.torneos.map((t) => (
-            <TarjetaTorneo key={t.clave} t={t} />
+          {perfil.torneos.map((tp) => (
+            <TarjetaTorneo key={tp.clave} t={tp} tr={t} idioma={idioma} />
           ))}
-          {!perfil.torneos.length && <p className="text-sm text-tinta-suave">Este año no está en ningún torneo ni actividad.</p>}
+          {!perfil.torneos.length && <p className="text-sm text-tinta-suave">{t("Este año no está en ningún torneo ni actividad.")}</p>}
         </div>
       </section>
 
       {perfil.anteriores.length > 0 && (
         <section className="mt-7">
-          <h2 className={etiqueta}>Ediciones anteriores</h2>
+          <h2 className={etiqueta}>{t("Ediciones anteriores")}</h2>
           <ul className="mt-2 flex flex-wrap gap-1.5">
             {perfil.anteriores.map((a) => (
               <li key={a} className="rounded-full border-2 border-linea bg-white px-3 py-1 text-sm">
@@ -82,7 +85,7 @@ export function VistaPerfil({ perfil }: { perfil: PerfilVista }) {
   );
 }
 
-function TarjetaTorneo({ t }: { t: TorneoPerfil }) {
+function TarjetaTorneo({ t, tr, idioma }: { t: TorneoPerfil; tr: T; idioma: Idioma }) {
   return (
     <article className="overflow-hidden rounded-3xl border-2 border-tinta bg-white shadow-[5px_5px_0_var(--tinta)]">
       <header className={`relative overflow-hidden px-5 py-4 ${FONDOS[t.tema]}`}>
@@ -94,7 +97,7 @@ function TarjetaTorneo({ t }: { t: TorneoPerfil }) {
           {t.unidad && (
             <span className={chip}>
               {t.unidad}
-              {t.capitania ? " · capitanía" : ""}
+              {t.capitania ? ` · ${tr("capitanía")}` : ""}
             </span>
           )}
           <span className={chip}>{t.estado}</span>
@@ -110,14 +113,14 @@ function TarjetaTorneo({ t }: { t: TorneoPerfil }) {
                     className={`grid size-6 shrink-0 place-items-center rounded-md font-mono text-xs font-bold ${
                       p.resultado === "V" ? "bg-verde text-crema" : p.resultado === "D" ? "bg-copas text-white" : "bg-linea text-tinta-suave"
                     }`}
-                    aria-label={p.resultado === "V" ? "Victoria" : p.resultado === "D" ? "Derrota" : "Por jugar"}
+                    aria-label={p.resultado === "V" ? tr("Victoria") : p.resultado === "D" ? tr("Derrota") : tr("Por jugar")}
                   >
                     {p.resultado ?? "·"}
                   </span>
                   <span className="w-24 shrink-0 font-mono text-[11px] text-tinta-suave uppercase sm:w-32">{p.ronda}</span>
                   <span className="min-w-0 flex-1">
-                    {(p.rival || t.tema !== "poker") && <span className="block truncate">vs {p.rival ?? "por decidir"}</span>}
-                    {p.resultado === null && p.fecha && <span className="block text-xs text-tinta-suave">{fechaCorta(p.fecha)}</span>}
+                    {(p.rival || t.tema !== "poker") && <span className="block truncate">vs {p.rival ?? tr("por decidir")}</span>}
+                    {p.resultado === null && p.fecha && <span className="block text-xs text-tinta-suave">{fechaCorta(p.fecha, idioma)}</span>}
                   </span>
                   {p.marcador && <span className="shrink-0 font-mono font-bold">{p.marcador}</span>}
                 </li>
@@ -144,7 +147,7 @@ function TarjetaTorneo({ t }: { t: TorneoPerfil }) {
           )}
           {t.href && (
             <Link href={t.href} className="inline-block font-mono text-xs font-bold text-verde uppercase underline-offset-4 hover:underline">
-              {t.tema === "poker" ? "Ver las mesas" : t.partidos.length ? "Ver el cuadro" : "Ver la actividad"} →
+              {t.tema === "poker" ? tr("Ver las mesas") : t.partidos.length ? tr("Ver el cuadro") : tr("Ver la actividad")} →
             </Link>
           )}
         </div>

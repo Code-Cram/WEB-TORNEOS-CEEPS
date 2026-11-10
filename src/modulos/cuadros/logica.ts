@@ -5,6 +5,8 @@
  * El partido por el 3er y 4º puesto (solo si el torneo lo tiene) es la ronda 0: lo juegan los perdedores de semifinales.
  */
 
+import { traductor, type T } from "@/modulos/idioma/traducir";
+
 export const RONDA_TERCER_PUESTO = 0;
 
 export function tamanoCuadro(participantes: number): number {
@@ -44,16 +46,19 @@ export function resumenCuadro(n: number): { tamano: number; rondas: number; part
   return { tamano, rondas: totalRondas(tamano), partidosPrimera: Math.max(0, (n - pasesDirectos) / 2), pasesDirectos };
 }
 
-/** «cuadro de 16 con 4 partidos en octavos de final y 4 pases directos a cuartos de final» ("" si no hay cuadro posible). */
-export function describirCuadro(n: number, [uno, varios]: [string, string] = ["partido", "partidos"]): string {
+/**
+ * «cuadro de 16 con 4 partidos en octavos de final y 4 pases directos a cuartos de final» ("" si no hay cuadro posible).
+ * Con `t`, en el idioma de quien lo lee (`uno` y `varios` ya traducidos).
+ */
+export function describirCuadro(n: number, [uno, varios]: [string, string] = ["partido", "partidos"], t: T = traductor("es")): string {
   if (n < 2) return "";
   const { tamano, rondas, partidosPrimera, pasesDirectos } = resumenCuadro(n);
-  if (rondas === 1) return "solo la final";
+  if (rondas === 1) return t("solo la final");
   const cuantos = (k: number, a: string, b: string) => `${k} ${k === 1 ? a : b}`;
-  const texto = `cuadro de ${tamano} con ${cuantos(partidosPrimera, uno, varios)} en ${nombreRonda(1, rondas).toLowerCase()}`;
+  const texto = t("cuadro de {tamano} con {partidos} en {ronda}", { tamano, partidos: cuantos(partidosPrimera, uno, varios), ronda: t(nombreRonda(1, rondas)).toLowerCase() });
   if (!pasesDirectos) return texto;
-  const siguiente = rondas === 2 ? "la final" : nombreRonda(2, rondas).toLowerCase();
-  return `${texto} y ${cuantos(pasesDirectos, "pase directo", "pases directos")} a ${siguiente}`;
+  const pases = cuantos(pasesDirectos, t("pase directo"), t("pases directos"));
+  return rondas === 2 ? t("{texto} y {pases} a la final", { texto, pases }) : t("{texto} y {pases} a {ronda}", { texto, pases, ronda: t(nombreRonda(2, rondas)).toLowerCase() });
 }
 
 /* ───────────── Bloques de partidos (para poner la misma fecha a varios a la vez) ───────────── */

@@ -7,8 +7,12 @@ import { datosFutbol } from "@/modulos/futbol/datos";
 import { leerInfoTorneos } from "@/modulos/torneos/info";
 import { torneosDe } from "@/modulos/acceso/inscripciones";
 import { esAdmin, exigirSesion } from "@/modulos/acceso/sesion";
+import { traduccion } from "@/modulos/idioma/servidor";
 
-export const metadata: Metadata = { title: "Fútbol Sala" };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await traduccion();
+  return { title: t("Fútbol Sala") };
+}
 
 export default async function Futbol() {
   const sesion = await exigirSesion();
@@ -17,6 +21,7 @@ export default async function Futbol() {
   if (!inscripcion && !(await esAdmin()) && !(await leerInfoTorneos()).futbol.finalizado) redirect("/torneos");
   const datos = await datosFutbol(sesion.email);
   const mio = datos.equipos.find((e) => e.esMio);
+  const { t } = await traduccion();
 
   return (
     <PaginaTorneo
@@ -24,8 +29,8 @@ export default async function Futbol() {
       sesion={sesion}
       info={
         <>
-          <Chip>{datos.equipos.length} equipos</Chip>
-          {mio && <Chip>Tu equipo: {mio.nombre}</Chip>}
+          <Chip>{t("{n} equipos", { n: datos.equipos.length })}</Chip>
+          {mio && <Chip>{t("Tu equipo: {nombre}", { nombre: mio.nombre })}</Chip>}
         </>
       }
       acciones={
@@ -34,7 +39,7 @@ export default async function Futbol() {
             href="/futbol/mi-equipo"
             className="rounded-full border-2 border-white bg-white px-4 py-2 font-mono text-xs font-bold text-verde uppercase transition hover:bg-transparent hover:text-white"
           >
-            ✎ Gestionar mi equipo
+            {t("✎ Gestionar mi equipo")}
           </Link>
         )
       }

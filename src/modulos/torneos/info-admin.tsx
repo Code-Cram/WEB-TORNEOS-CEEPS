@@ -2,13 +2,17 @@ import type { ReactNode } from "react";
 import { estiloInput } from "@/modulos/panel/estilos";
 import { FormAccion } from "@/modulos/panel/form-accion";
 import type { TorneoId } from "@/modulos/torneos/config";
-import { leerInfoTorneos } from "@/modulos/torneos/info";
+import { infoEnInglesGuardada, leerInfoTorneos } from "@/modulos/torneos/info";
+import { TORNEOS_EN } from "@/modulos/torneos/config-en";
 import { paraInputFecha } from "@/modulos/compartido/formato";
 import { guardarInfoTorneo } from "@/modulos/torneos/acciones";
 
 /** Lo que se ve en la página del torneo: nombre, calendario, lugar, formato, premios, chuleta de reglas, aviso e inscripción. */
 export async function InfoTorneoAdmin({ torneo }: { torneo: TorneoId }) {
-  const info = (await leerInfoTorneos())[torneo];
+  const [todas, enIngles] = await Promise.all([leerInfoTorneos(), infoEnInglesGuardada()]);
+  const info = todas[torneo];
+  const en = enIngles[torneo] ?? {};
+  const porDefecto = TORNEOS_EN[torneo];
   return (
     <details className="group mb-8 rounded-3xl border-2 border-tinta bg-papel p-4 sm:p-5">
       <summary className="flex cursor-pointer list-none items-center gap-2">
@@ -66,6 +70,41 @@ export async function InfoTorneoAdmin({ torneo }: { torneo: TorneoId }) {
               className={`${estiloInput} w-full`}
             />
           </Campo>
+          <details className="rounded-2xl border-2 border-linea bg-white p-3">
+            <summary className="cursor-pointer text-sm font-semibold">🇬🇧 Versión en inglés (para Erasmus)</summary>
+            <p className="mt-1 text-xs text-tinta-suave">
+              Lo que ve quien tiene la web en inglés. Un campo vacío usa el texto en inglés por defecto (el que sale en gris) mientras no cambiéis el
+              español; si lo habéis cambiado, sale en español hasta que escribáis aquí su versión.
+            </p>
+            <div className="mt-3 space-y-2">
+              <div className="grid gap-2 sm:grid-cols-3">
+                <Campo etiqueta="Name">
+                  <input name="en_nombre" defaultValue={en.nombre ?? ""} placeholder={porDefecto.nombre} className={`${estiloInput} w-full`} />
+                </Campo>
+                <Campo etiqueta="Subtitle">
+                  <input name="en_lema" defaultValue={en.lema ?? ""} placeholder={porDefecto.lema} className={`${estiloInput} w-full`} />
+                </Campo>
+                <Campo etiqueta="Place">
+                  <input name="en_lugar" defaultValue={en.lugar ?? ""} placeholder={porDefecto.lugar} className={`${estiloInput} w-full`} />
+                </Campo>
+              </div>
+              <Campo etiqueta="Notice">
+                <textarea name="en_aviso" rows={2} defaultValue={en.aviso ?? ""} placeholder="Due to Thursday's strike, the first round moves to Monday 10." className={`${estiloInput} w-full`} />
+              </Campo>
+              <Campo etiqueta="Calendar">
+                <textarea name="en_calendario" rows={3} defaultValue={en.calendario ?? ""} placeholder={porDefecto.calendario} className={`${estiloInput} w-full`} />
+              </Campo>
+              <Campo etiqueta="Format">
+                <textarea name="en_formato" rows={3} defaultValue={en.formato ?? ""} placeholder={porDefecto.formato} className={`${estiloInput} w-full`} />
+              </Campo>
+              <Campo etiqueta="Prizes · 1st, 2nd… (or 1º, 2º…) at the start of each line">
+                <textarea name="en_premios" rows={4} defaultValue={en.premios ?? ""} placeholder={porDefecto.premios} className={`${estiloInput} w-full`} />
+              </Campo>
+              <Campo etiqueta="Rules · same format as the Spanish ones («Note: …» goes in small print)">
+                <textarea name="en_reglas" rows={8} defaultValue={en.reglas ?? ""} placeholder={porDefecto.reglas} className={`${estiloInput} w-full`} />
+              </Campo>
+            </div>
+          </details>
         </FormAccion>
       </div>
     </details>

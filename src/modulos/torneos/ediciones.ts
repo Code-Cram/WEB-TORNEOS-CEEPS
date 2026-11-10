@@ -1,6 +1,8 @@
 import { and, asc, desc, eq, inArray, notExists, sql } from "drizzle-orm";
 import type { Db, Tx } from "@/db/client";
 import { actividades, actividadMiembros, actividadParticipantes, actividadPartidos, futbolEquipos, futbolJugadores, futbolPartidos, infoTorneos, musIntegrantes, musPartidas, musParejas, musPartidos, pokerAsientos, pokerJugadores, pokerMesas, usuarios } from "@/db/schema";
+import type { Idioma } from "@/modulos/idioma/config";
+import { traductor } from "@/modulos/idioma/traducir";
 import type { TorneoId } from "@/modulos/torneos/config";
 
 /* Cerrar una edición: copia completa al archivo, campeón a la lista de ganadores y vaciar para la siguiente. */
@@ -32,12 +34,13 @@ export async function copiaTorneo(tx: Tx, torneo: TorneoId) {
 }
 
 /** Ganador de la edición de un torneo fijo, si ya hay final jugada. */
-export async function campeonTorneo(tx: Db | Tx, torneo: TorneoId): Promise<Campeon | null> {
+export async function campeonTorneo(tx: Db | Tx, torneo: TorneoId, idioma: Idioma = "es"): Promise<Campeon | null> {
+  const t = traductor(idioma);
   if (torneo === "poker") {
     const [final] = await tx.select().from(pokerMesas).where(eq(pokerMesas.fase, "final"));
     if (!final?.ganadorEmail) return null;
     const [j] = await tx.select({ nombre: pokerJugadores.nombre }).from(pokerJugadores).where(eq(pokerJugadores.email, final.ganadorEmail));
-    return j ? { campeon: j.nombre, detalle: "Ganador de la mesa final", emails: [final.ganadorEmail] } : null;
+    return j ? { campeon: j.nombre, detalle: t("Ganador de la mesa final"), emails: [final.ganadorEmail] } : null;
   }
   if (torneo === "futbol") {
     const [f] = await tx.select().from(futbolPartidos).orderBy(desc(futbolPartidos.ronda)).limit(1);
@@ -45,12 +48,15 @@ export async function campeonTorneo(tx: Db | Tx, torneo: TorneoId): Promise<Camp
     const nombres = new Map((await tx.select({ id: futbolEquipos.id, nombre: futbolEquipos.nombre }).from(futbolEquipos)).map((e) => [e.id, e.nombre]));
     const rival = f.ganadorId === f.localId ? f.visitanteId : f.localId;
     const marcador = f.ganadorId === f.localId ? `${f.golesLocal}-${f.golesVisitante}` : `${f.golesVisitante}-${f.golesLocal}`;
-    const penaltis = f.penaltisLocal !== null && f.penaltisVisitante !== null ? ` (penaltis ${f.ganadorId === f.localId ? `${f.penaltisLocal}-${f.penaltisVisitante}` : `${f.penaltisVisitante}-${f.penaltisLocal}`})` : "";
+    const penaltis =
+      f.penaltisLocal !== null && f.penaltisVisitante !== null
+        ? t(" (penaltis {marcador})", { marcador: f.ganadorId === f.localId ? `${f.penaltisLocal}-${f.penaltisVisitante}` : `${f.penaltisVisitante}-${f.penaltisLocal}` })
+        : "";
     const [equipo] = await tx.select({ capitan: futbolEquipos.capitanEmail }).from(futbolEquipos).where(eq(futbolEquipos.id, f.ganadorId));
     const jugadores = await tx.select({ email: futbolJugadores.email }).from(futbolJugadores).where(eq(futbolJugadores.equipoId, f.ganadorId));
     return {
       campeon: nombres.get(f.ganadorId) ?? "?",
-      detalle: `Final: ${marcador}${penaltis} contra ${rival ? nombres.get(rival) : "?"}`,
+      detalle: t("Final: {marcador} contra {rival}", { marcador: `${marcador}${penaltis}`, rival: (rival && nombres.get(rival)) || "?" }),
       emails: conCorreo([{ email: equipo?.capitan ?? null }, ...jugadores]),
     };
   }
@@ -62,7 +68,7 @@ export async function campeonTorneo(tx: Db | Tx, torneo: TorneoId): Promise<Camp
   const integrantes = await tx.select({ email: musIntegrantes.email }).from(musIntegrantes).where(eq(musIntegrantes.parejaId, f.ganadorId));
   return {
     campeon: nombres.get(f.ganadorId) ?? "?",
-    detalle: `Final: ${marcador} en partidas contra ${rival ? nombres.get(rival) : "?"}`,
+    detalle: t("Final: {marcador} en partidas contra {rival}", { marcador, rival: (rival && nombres.get(rival)) || "?" }),
     emails: conCorreo(integrantes),
   };
 }
@@ -93,7 +99,8 @@ export async function copiaActividad(tx: Tx, actividadId: number) {
   return { actividad, participantes, miembros, partidos };
 }
 
-export async function campeonActividad(tx: Db | Tx, actividadId: number): Promise<Campeon | null> {
+export async function campeonActividad(tx: Db | Tx, actividadId: number, idioma: Idioma = "es"): Promise<Campeon | null> {
+  const t = traductor(idioma);
   const [f] = await tx.select().from(actividadPartidos).where(eq(actividadPartidos.actividadId, actividadId)).orderBy(desc(actividadPartidos.ronda)).limit(1);
   if (!f?.ganadorId) return null;
   const participantes = await tx.select().from(actividadParticipantes).where(eq(actividadParticipantes.actividadId, actividadId));
@@ -101,7 +108,7 @@ export async function campeonActividad(tx: Db | Tx, actividadId: number): Promis
   const rival = f.ganadorId === f.aId ? f.bId : f.aId;
   const marcador = f.ganadorId === f.aId ? `${f.puntosA}-${f.puntosB}` : `${f.puntosB}-${f.puntosA}`;
   const miembros = await tx.select({ email: actividadMiembros.email }).from(actividadMiembros).where(eq(actividadMiembros.participanteId, f.ganadorId));
-  return { campeon: nombre(f.ganadorId), detalle: `Final: ${marcador} contra ${nombre(rival)}`, emails: conCorreo(miembros) };
+  return { campeon: nombre(f.ganadorId), detalle: t("Final: {marcador} contra {rival}", { marcador, rival: nombre(rival) }), emails: conCorreo(miembros) };
 }
 
 export async function vaciarActividad(tx: Tx, actividadId: number) {

@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { salirAdmin } from "@/modulos/acceso/acciones-admin";
+import { ProveedorIdioma } from "@/modulos/idioma/cliente";
 
 const SECCIONES = [
   ["/admin", "Resumen"],
@@ -21,7 +22,7 @@ const SECCIONES = [
 
 export function MarcoAdmin({ actual, titulo, children }: { actual: string; titulo: string; children: ReactNode }) {
   return (
-    <>
+    <ProveedorIdioma idioma="es">
       <header className="sticky top-0 z-30 border-b-2 border-tinta bg-tinta text-crema">
         <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-2">
           <Image src="/marca/ceeps.svg" alt="" width={30} height={30} className="rounded-full bg-crema" />
@@ -53,7 +54,7 @@ export function MarcoAdmin({ actual, titulo, children }: { actual: string; titul
         <h1 className="mb-5 font-display text-3xl text-verde uppercase">{titulo}</h1>
         {children}
       </main>
-    </>
+    </ProveedorIdioma>
   );
 }
 

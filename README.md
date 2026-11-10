@@ -1,6 +1,6 @@
 # Torneos CEEPS
 
-Web para organizar los torneos y actividades del Consejo de Estudiantes de la Escuela Politécnica Superior (UAM): los torneos de **fútbol sala**, **mus** y **póker** y **cualquier otra actividad** que se cree desde el panel (una chocolatada solidaria, una charla, un torneo de ping-pong…). Funciona en el móvil y en el ordenador.
+Web para organizar los torneos y actividades del Consejo de Estudiantes de la Escuela Politécnica Superior (UAM): los torneos de **fútbol sala**, **mus** y **póker** y **cualquier otra actividad** que se cree desde el panel (una chocolatada solidaria, una charla, un torneo de ping-pong…). Funciona en el móvil y en el ordenador, en **español y en inglés** (para Erasmus): cada uno la ve en el idioma de su móvil y lo cambia con los botones ES / EN. El panel del Consejo va siempre en español.
 
 - Cada participante entra con el correo con el que se inscribió y ve lo suyo: cuadro eliminatorio, mesas de póker, horarios, lugares, premios, resultados y clasificación (se actualizan solos) y, en las actividades, la información para todos y su nota personal (p. ej. su recompensa).
 - Cada persona tiene un **perfil**, que se abre tocando su nombre en un equipo, una pareja o una mesa: sus torneos y actividades del año, cómo le va (partidos, puesto en su mesa), sus compañeros, sus títulos y las ediciones anteriores en las que jugó. Lo ve cualquiera que haya entrado en la web.
@@ -77,7 +77,7 @@ Las funciones se ejecutan en Dublín (`vercel.json`), cerca de la base de datos 
 
 Todo desde el panel (`/admin`, botón «Admin» al entrar con un correo de `ADMIN_EMAILS`):
 
-1. **Información de cada torneo**: calendario, lugar, formato, premios, enlace y cierre de inscripción, y un aviso destacado para cambios de última hora. Los premios, uno por línea empezando por el puesto (`1º Tarjeta regalo de 100 €`, también `1º-4º`); las líneas que empiezan por `-` son detalles del premio de encima y el resto, notas para todos.
+1. **Información de cada torneo**: calendario, lugar, formato, premios, enlace y cierre de inscripción, y un aviso destacado para cambios de última hora. En «🇬🇧 Versión en inglés» se escribe lo que ve quien tiene la web en inglés; lo que se deja vacío sale con el texto por defecto en inglés (mientras no se cambie el español) o, si no, en español. Los premios, uno por línea empezando por el puesto (`1º Tarjeta regalo de 100 €`, también `1º-4º`); las líneas que empiezan por `-` son detalles del premio de encima y el resto, notas para todos.
    La **chuleta de reglas** de cada torneo también se escribe ahí, una idea por línea: `Título: texto` pone el título en negrita, `- …` son viñetas, `1. …` pasos numerados en casillas, `Nota: …` va en pequeño al final y `**texto**` en negrita. Si se deja vacía, no sale.
 2. **Importar** las inscripciones: el CSV de Forms (o el Excel de Forms guardado como CSV) y súbelo. Se pueden subir varios a la vez; reimportar es seguro (no duplica ni pisa tus correcciones). Las parejas de mus incompletas no se importan, y un equipo inscrito dos veces con distinto capitán (mismo nombre y casi la misma plantilla) cuenta como uno, con la inscripción más reciente.
 3. **Personas**: **añadir personas** con su correo, una a una o pegando una lista (vale copiar dos columnas de un Excel), a un equipo de fútbol, a la lista de reserva o a las plazas del póker (si hay un asiento libre en una mesa de su día, se sienta sola) o a una actividad; se guardan al momento, pueden entrar en la web en cuanto se apuntan y, si se marca, reciben un correo con el enlace. Lista completa con buscador y filtros, botón para copiar los correos (para el CCO de un email), descarga en Excel, corrección de nombres y correos (el nombre cambia también en sus equipos, parejas, mesas y actividades) y una sección con quien todavía no tiene correo para ponérselo.
@@ -96,7 +96,7 @@ Todo desde el panel (`/admin`, botón «Admin» al entrar con un correo de `ADMI
 
 ### Actividades
 
-En el panel, **Actividades → +**. Cada actividad tiene nombre, icono, fechas, lugar, fecha y hora (con ella, en los eventos, sus participantes confirman si vienen), de qué va, un texto para todos los participantes (p. ej. «Tu recompensa: chocolate con bizcocho») y un estado (borrador, activa o terminada). Hay dos tipos:
+En el panel, **Actividades → +**. Cada actividad tiene nombre, icono, fechas, lugar, fecha y hora (con ella, en los eventos, sus participantes confirman si vienen), de qué va, un texto para todos los participantes (p. ej. «Tu recompensa: chocolate con bizcocho») y un estado (borrador, activa o terminada), con su versión en inglés si se quiere. Hay dos tipos:
 
 - **Evento con lista**: se apunta a la gente uno a uno (pensado para hacerlo desde el móvil en el propio evento), pegando una lista o con el CSV de un Forms. Cada persona puede tener una **nota personal** que solo ve ella.
 - **Torneo eliminatorio**, individual o por equipos: con sorteo, cuadro, resultados por puntos y clasificación, como el fútbol y el mus.
@@ -157,12 +157,14 @@ npm run lint
 | `redes` | Publicaciones para WhatsApp, X e Instagram y sus imágenes (las fuentes, con licencia OFL, en `fuentes/`). |
 | `importacion` | Leer los CSV de Forms e importarlos sin duplicar ni pisar correcciones. |
 | `panel` | Piezas comunes del panel: marco, formularios con resultado, intercambiar y validación de lo que llega del navegador. |
+| `idioma` | Español e inglés: el idioma de cada uno, los botones ES / EN y las traducciones (`en.ts`). |
 | `compartido` | Utilidades de toda la web: fechas, textos, cabecera, ventanas y refresco. |
 
 ## Adaptarla a tu asociación
 
 - Nombres, calendario, formato, premios y chuleta de reglas por defecto y partido por el 3er puesto: `src/modulos/torneos/config.ts`; número de mesas y asientos del póker: `src/modulos/poker/config.ts`. Para cualquier otra cosa no hace falta tocar código: créala como actividad desde el panel.
 - Logos: `public/marca/` y `src/app/icon.svg`. Colores: `src/app/globals.css`.
+- Textos en inglés: `src/modulos/idioma/en.ts` (la clave es el texto en español tal cual; `npm test` avisa si alguno se queda sin traducir) y los textos por defecto de cada torneo en `src/modulos/torneos/config-en.ts`.
 - Estructura de la base de datos: `src/db/schema.ts`.
 
 ## Licencia

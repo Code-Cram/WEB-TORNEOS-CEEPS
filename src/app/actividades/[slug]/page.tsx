@@ -9,7 +9,8 @@ import { db } from "@/db";
 import { AvisoTorneo, BannerGanador, FichaTorneo } from "@/modulos/torneos/ficha";
 import { Chip } from "@/modulos/torneos/pagina-torneo";
 import { Refresco } from "@/modulos/compartido/refresco";
-import { actividadPorSlug, contarParticipantes, cuadroDeActividad, infoDeActividad, miParticipacion } from "@/modulos/actividades/datos";
+import { actividadPorSlug, contarParticipantes, cuadroDeActividad, enSuIdioma, infoDeActividad, miParticipacion } from "@/modulos/actividades/datos";
+import { traduccion } from "@/modulos/idioma/servidor";
 import { citaEn, unidadesDeActividad } from "@/modulos/asistencia/datos";
 import { chatDe } from "@/modulos/chat/datos";
 import { campeonActividad } from "@/modulos/torneos/ediciones";
@@ -17,13 +18,19 @@ import { contextoEn } from "@/modulos/chat/sala";
 import { esAdmin, exigirSesion } from "@/modulos/acceso/sesion";
 
 // Título genérico: el nombre de la actividad no se enseña a quien no puede verla.
-export const metadata: Metadata = { title: "Actividad" };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await traduccion();
+  return { title: t("Actividad") };
+}
 
 const TEMA_EQUIPOS = { unidad: "equipo", Unidades: "Equipos", unidades: "equipos", miembros: "integrantes" };
 
 export default async function PaginaActividad(props: PageProps<"/actividades/[slug]">) {
   const sesion = await exigirSesion();
-  const [a, admin] = await Promise.all([actividadPorSlug((await props.params).slug), esAdmin()]);
+  const { t, idioma } = await traduccion();
+  const [original, admin] = await Promise.all([actividadPorSlug((await props.params).slug), esAdmin()]);
+  // Sus textos, en el idioma de quien la ve (lo que el Consejo haya escrito en inglés; lo demás, en español).
+  const a = original && enSuIdioma(original, idioma);
   const yo = a ? await miParticipacion(a.id, sesion.email) : null;
   // La ven sus participantes y, si es un torneo terminado, todo el que entra; los borradores, solo el Consejo.
   // A quien no puede verla se le responde igual exista o no, para no revelar qué actividades hay.
@@ -34,7 +41,7 @@ export default async function PaginaActividad(props: PageProps<"/actividades/[sl
   const [total, cuadro, campeon, unidades] = await Promise.all([
     contarParticipantes(a.id),
     a.tipo === "torneo" ? cuadroDeActividad(a.id, sesion.email) : null,
-    torneoTerminado ? campeonActividad(db, a.id) : null,
+    torneoTerminado ? campeonActividad(db, a.id, idioma) : null,
     yo ? unidadesDeActividad(a) : [],
   ]);
   // Con los mismos participantes salen la confirmación de asistencia y el chat del día (solo en actividades activas).
@@ -52,23 +59,23 @@ export default async function PaginaActividad(props: PageProps<"/actividades/[sl
         </span>
         <div className="relative mx-auto max-w-6xl px-4 pt-5 pb-6">
           <Link href="/torneos" className="font-mono text-xs font-bold tracking-wider uppercase opacity-80 hover:opacity-100">
-            ← Mis actividades
+            {t("← Mis actividades")}
           </Link>
           <h1 className="mt-2 font-display text-3xl leading-none uppercase sm:text-5xl">{a.nombre}</h1>
           {a.lema && <p className="mt-2 font-mono text-sm opacity-90">{a.lema}</p>}
           <div className="mt-3 flex flex-wrap gap-2 text-sm">
             <Chip>
-              {total} {a.porEquipos ? (total === 1 ? "equipo" : "equipos") : total === 1 ? "participante" : "participantes"}
+              {total} {t(a.porEquipos ? (total === 1 ? "equipo" : "equipos") : total === 1 ? "participante" : "participantes")}
             </Chip>
-            {a.estado === "terminada" && <Chip>Terminada</Chip>}
-            {a.estado === "borrador" && <Chip>Borrador: solo lo ve el Consejo</Chip>}
+            {a.estado === "terminada" && <Chip>{t("Terminada")}</Chip>}
+            {a.estado === "borrador" && <Chip>{t("Borrador: solo lo ve el Consejo")}</Chip>}
           </div>
           {admin && (
             <Link
               href={`/admin/actividades/${a.id}`}
               className="mt-4 inline-block rounded-full border-2 border-crema bg-crema px-4 py-2 font-mono text-xs font-bold text-verde uppercase transition hover:bg-transparent hover:text-crema"
             >
-              ✎ Editar en el panel
+              {t("✎ Editar en el panel")}
             </Link>
           )}
         </div>
@@ -81,17 +88,17 @@ export default async function PaginaActividad(props: PageProps<"/actividades/[sl
 
         {paraTi && (
           <div className="mb-6 rounded-3xl border-2 border-naranja bg-naranja/10 p-5">
-            <h2 className="font-display text-xl text-naranja uppercase">Para ti</h2>
+            <h2 className="font-display text-xl text-naranja uppercase">{t("Para ti")}</h2>
             {a.infoParticipantes && <p className="mt-2 whitespace-pre-line">{a.infoParticipantes}</p>}
             {yo?.nota && (
               <p className="mt-3 rounded-2xl bg-white px-4 py-3 whitespace-pre-line">
-                <span className="block font-mono text-xs font-bold text-tinta-suave uppercase">Solo para ti</span>
+                <span className="block font-mono text-xs font-bold text-tinta-suave uppercase">{t("Solo para ti")}</span>
                 {yo.nota}
               </p>
             )}
             {a.porEquipos && yo && (
               <p className="mt-3 text-sm">
-                Tu equipo: <strong>{yo.nombre}</strong> · {yo.miembros.map((m) => (m.esYo ? `${m.nombre} (tú)` : m.nombre)).join(", ")}
+                {t("Tu equipo:")} <strong>{yo.nombre}</strong> · {yo.miembros.map((m) => (m.esYo ? t("{nombre} (tú)", { nombre: m.nombre }) : m.nombre)).join(", ")}
               </p>
             )}
           </div>

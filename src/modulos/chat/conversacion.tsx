@@ -5,14 +5,16 @@ import type { EstadoChat } from "@/modulos/chat/acciones";
 import { fechaCorta } from "@/modulos/compartido/formato";
 import { LARGO_MAXIMO_MENSAJE } from "@/modulos/chat/sala";
 import type { MensajeVista } from "@/modulos/chat/tipos";
+import type { Idioma } from "@/modulos/idioma/config";
+import { useIdioma, useT } from "@/modulos/idioma/cliente";
 
 /** Cada cuánto se preguntan los mensajes nuevos mientras la conversación está a la vista. */
 const CADA_MS = 4000;
 
 /** «16:05» si es de hoy; si no, «lun 9 nov · 18:00». */
-function hora(iso: string) {
-  const [dia, h] = fechaCorta(iso)!.split(" · ");
-  return dia === fechaCorta(new Date().toISOString())!.split(" · ")[0] ? h : `${dia} · ${h}`;
+function hora(iso: string, idioma: Idioma) {
+  const [dia, h] = fechaCorta(iso, idioma)!.split(" · ");
+  return dia === fechaCorta(new Date().toISOString(), idioma)!.split(" · ")[0] ? h : `${dia} · ${h}`;
 }
 
 /**
@@ -50,6 +52,10 @@ export function Conversacion({
   placeholder: string;
   vacio: string;
 }) {
+  const t = useT();
+  const idioma = useIdioma();
+  // En el póker, la unidad es la mesa («Mesa 3», «Mesa final»): se guarda en español con el mensaje.
+  const unidadEnSuIdioma = (u: string) => (u === "Mesa final" ? t("Mesa final") : /^Mesa \d+$/.test(u) ? t("Mesa {n}", { n: u.slice(5) }) : u);
   const [lista, setLista] = useState(inicial);
   const [pendiente, setPendiente] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -102,26 +108,26 @@ export function Conversacion({
               }`}
             >
               <p className="text-xs font-bold opacity-80">
-                {m.deConsejo ? "📢 Consejo" : m.nombre}
-                {m.unidad && <span className="font-normal"> · {m.unidad}</span>}
-                {m.paraTodos && <span className="font-normal"> · para todos</span>}
+                {m.deConsejo ? t("📢 Consejo") : m.nombre}
+                {m.unidad && <span className="font-normal"> · {unidadEnSuIdioma(m.unidad)}</span>}
+                {m.paraTodos && <span className="font-normal"> · {t("para todos")}</span>}
               </p>
-              {m.texto === null ? <p className="italic opacity-60">Mensaje borrado</p> : <p className="break-words whitespace-pre-line">{m.texto}</p>}
+              {m.texto === null ? <p className="italic opacity-60">{t("Mensaje borrado")}</p> : <p className="break-words whitespace-pre-line">{m.texto}</p>}
               <p className="mt-0.5 flex gap-2 text-[11px] opacity-70">
                 <time dateTime={m.creadoEn} suppressHydrationWarning>
-                  {hora(m.creadoEn)}
+                  {hora(m.creadoEn, idioma)}
                 </time>
                 {(m.mio || borrarTodos) && m.texto !== null && (
                   <button
                     type="button"
                     onClick={async () => {
-                      if (!window.confirm("¿Borrar este mensaje?")) return;
+                      if (!window.confirm(t("¿Borrar este mensaje?"))) return;
                       await borrar(m.id);
                       leer();
                     }}
                     className="underline"
                   >
-                    Borrar
+                    {t("Borrar")}
                   </button>
                 )}
               </p>
@@ -159,7 +165,7 @@ export function Conversacion({
               required
               maxLength={LARGO_MAXIMO_MENSAJE}
               placeholder={placeholder}
-              aria-label="Mensaje"
+              aria-label={t("Mensaje")}
               // Intro envía; Mayúsculas + Intro hace un salto de línea.
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
@@ -170,7 +176,7 @@ export function Conversacion({
               className="min-w-0 flex-1 resize-none rounded-xl border-2 border-linea bg-white px-3 py-2 text-sm outline-none focus:border-verde"
             />
             <button disabled={pendiente} className="rounded-full bg-verde px-4 py-2 font-mono text-xs font-bold text-crema uppercase transition hover:bg-verde-oscuro disabled:opacity-50">
-              {pendiente ? "…" : "Enviar"}
+              {pendiente ? "…" : t("Enviar")}
             </button>
           </div>
           {!pendiente && error && (

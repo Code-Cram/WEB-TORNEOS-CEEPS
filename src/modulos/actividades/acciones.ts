@@ -10,6 +10,7 @@ import { leerCsv } from "@/modulos/importacion/csv";
 import { parsearParticipantes } from "@/modulos/importacion/parsers";
 import { parsearPlantilla, type LineaJugador } from "@/modulos/personas/plantilla";
 import { correosEnActividad, guardarMiembros, recalcularActividad, sortearActividad } from "@/modulos/actividades/operaciones";
+import { CAMPOS_ACTIVIDAD_EN_INGLES } from "@/modulos/actividades/datos";
 import { exigirAdmin } from "@/modulos/acceso/sesion";
 import { limpiarNombre, normalizarCorreo, slugify } from "@/modulos/compartido/texto";
 import { entero, fecha, hecho, idDe, intentar, texto, textoONull, type Resultado } from "@/modulos/panel/comun";
@@ -50,6 +51,10 @@ function datosFicha(f: FormData) {
     enlaceInscripcion: enlace || null,
     cierreInscripcion: fecha(f, "cierreInscripcion"),
     estado,
+    // La versión en inglés: solo lo escrito (lo vacío sale en español). Sin los campos (página vieja), no se toca.
+    ...(f.has("en_nombre")
+      ? { en: Object.fromEntries(CAMPOS_ACTIVIDAD_EN_INGLES.map((c) => [c, texto(f, `en_${c}`, c === "nombre" ? 120 : 3000)]).filter(([, v]) => v)) }
+      : {}),
   };
 }
 

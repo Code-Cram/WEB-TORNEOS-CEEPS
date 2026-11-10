@@ -91,6 +91,35 @@ export function FormularioActividad({ a }: { a?: Actividad }) {
           <option value="terminada">Terminada: si es torneo, lo ve todo el mundo con su ganador</option>
         </select>
       </Campo>
+      <details className="rounded-2xl border-2 border-linea bg-white p-3">
+        <summary className="cursor-pointer text-sm font-semibold">🇬🇧 Versión en inglés (para Erasmus)</summary>
+        <p className="mt-1 text-xs text-tinta-suave">Lo que ve quien tiene la web en inglés. Lo que dejéis vacío sale en español.</p>
+        <div className="mt-3 space-y-2">
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Campo etiqueta="Name">
+              <input name="en_nombre" maxLength={120} defaultValue={a?.en?.nombre ?? ""} placeholder="Charity hot chocolate" className={`${estiloInput} w-full`} />
+            </Campo>
+            <Campo etiqueta="Subtitle">
+              <input name="en_lema" maxLength={200} defaultValue={a?.en?.lema ?? ""} placeholder="For the food bank" className={`${estiloInput} w-full`} />
+            </Campo>
+            <Campo etiqueta="Place">
+              <input name="en_lugar" maxLength={200} defaultValue={a?.en?.lugar ?? ""} placeholder="EPS hall" className={`${estiloInput} w-full`} />
+            </Campo>
+            <Campo etiqueta="Calendar">
+              <textarea name="en_calendario" rows={2} maxLength={3000} defaultValue={a?.en?.calendario ?? ""} placeholder="Thursday 13 Nov · 12:00–15:00" className={`${estiloInput} w-full`} />
+            </Campo>
+          </div>
+          <Campo etiqueta="What it's about · one point per line">
+            <textarea name="en_descripcion" rows={3} maxLength={3000} defaultValue={a?.en?.descripcion ?? ""} className={`${estiloInput} w-full`} />
+          </Campo>
+          <Campo etiqueta="For all participants">
+            <textarea name="en_infoParticipantes" rows={2} maxLength={2000} defaultValue={a?.en?.infoParticipantes ?? ""} placeholder="Your reward: hot chocolate and sponge cake" className={`${estiloInput} w-full`} />
+          </Campo>
+          <Campo etiqueta="Notice">
+            <textarea name="en_aviso" rows={2} maxLength={2000} defaultValue={a?.en?.aviso ?? ""} className={`${estiloInput} w-full`} />
+          </Campo>
+        </div>
+      </details>
     </FormAccion>
   );
 }

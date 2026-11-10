@@ -26,7 +26,7 @@ export function parsearReglas(texto: string): BloqueReglas[] {
       if (ultimo && ultimo.tipo !== "parrafo") bloques.push({ tipo: "parrafo", titulo: null, texto: "" });
       continue;
     }
-    const nota = linea.match(/^nota\s*:\s*(.+)$/i);
+    const nota = linea.match(/^(?:nota|note)\s*:\s*(.+)$/i);
     const vineta = linea.match(/^[-•·*]\s+(.+)$/);
     const paso = linea.match(/^(\d{1,2})[.)]\s+(.+)$/);
     if (nota) bloques.push({ tipo: "nota", texto: nota[1] });

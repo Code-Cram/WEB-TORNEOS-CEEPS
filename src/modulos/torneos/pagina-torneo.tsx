@@ -16,6 +16,8 @@ import { leerInfoTorneos } from "@/modulos/torneos/info";
 import { campeonTorneo } from "@/modulos/torneos/ediciones";
 import { contextoEn } from "@/modulos/chat/sala";
 import type { Sesion } from "@/modulos/acceso/sesion";
+import { traduccion } from "@/modulos/idioma/servidor";
+import type { T } from "@/modulos/idioma/traducir";
 
 const BANDA: Record<TorneoId, string> = {
   futbol: "fondo-cesped text-white",
@@ -39,27 +41,28 @@ export async function PaginaTorneo({
   /** Tarjeta de premios junto a la ficha (el póker los enseña en la pestaña de la mesa final). */
   premiosEnFicha?: boolean;
   /** Aviso del plazo para confirmar (el póker: cuándo pasa la plaza a la reserva). */
-  plazoAsistencia?: (cita: Cita) => string | null;
+  plazoAsistencia?: (cita: Cita, t: T) => string | null;
   children: ReactNode;
 }) {
-  const t = TORNEOS[torneo];
+  const config = TORNEOS[torneo];
   const ahora = new Date();
-  const [infos, unidades] = await Promise.all([leerInfoTorneos(), unidadesDe(torneo)]);
+  const { t, idioma } = await traduccion();
+  const [infos, unidades] = await Promise.all([leerInfoTorneos(idioma), unidadesDe(torneo)]);
   const ficha = infos[torneo];
   // Con los mismos equipos, parejas o jugadores salen la confirmación de asistencia y el chat del día.
   const ctxChat = contextoEn(unidades, { torneo, actividadId: null }, sesion.email, ahora);
   const [cita, chat] = await Promise.all([citaEn(unidades, sesion.email, ahora), ctxChat ? chatDe(ctxChat) : null]);
-  const campeon = ficha.finalizado ? await campeonTorneo(db, torneo) : null;
+  const campeon = ficha.finalizado ? await campeonTorneo(db, torneo, idioma) : null;
   return (
     <>
       <Cabecera sesion={sesion} />
       <section className={`relative overflow-hidden ${BANDA[torneo]}`}>
         <span aria-hidden className="pointer-events-none absolute -right-4 -bottom-10 text-[9rem] leading-none opacity-15 select-none sm:text-[12rem]">
-          {t.icono}
+          {config.icono}
         </span>
         <div className="relative mx-auto max-w-6xl px-4 pt-5 pb-6">
           <Link href="/torneos" className="font-mono text-xs font-bold tracking-wider uppercase opacity-80 hover:opacity-100">
-            ← Torneos
+            {t("← Torneos")}
           </Link>
           <h1 className="mt-2 font-display text-3xl leading-none uppercase sm:text-5xl">{ficha.nombre}</h1>
           {ficha.lema && <p className="mt-2 font-mono text-sm opacity-90">{ficha.lema}</p>}
@@ -70,7 +73,7 @@ export async function PaginaTorneo({
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
         {ficha.finalizado && <BannerGanador campeon={campeon?.campeon ?? null} detalle={campeon?.detalle} />}
         <AvisoTorneo texto={ficha.aviso} />
-        {cita && <TarjetaAsistencia cita={cita} yo={sesion.email} lugarTorneo={ficha.lugar} plazo={plazoAsistencia?.(cita) ?? null} />}
+        {cita && <TarjetaAsistencia cita={cita} yo={sesion.email} lugarTorneo={ficha.lugar} plazo={plazoAsistencia?.(cita, t) ?? null} />}
         {children}
         <section className="mt-10 grid items-start gap-4 lg:grid-cols-2">
           <FichaTorneo info={ficha} />

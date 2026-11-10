@@ -2,6 +2,7 @@ import "server-only";
 import { and, asc, desc, eq, inArray, ne } from "drizzle-orm";
 import { db } from "@/db";
 import { actividades, actividadMiembros, actividadParticipantes, actividadPartidos } from "@/db/schema";
+import type { Idioma } from "@/modulos/idioma/config";
 import type { InfoTorneo } from "@/modulos/torneos/info";
 import type { DatosCuadro } from "@/modulos/cuadros/tipos";
 import { perfilesPorCorreo } from "@/modulos/personas/perfiles";
@@ -52,8 +53,19 @@ export async function actividadesDe(email: string) {
   return filas.filter((f, i) => filas.findIndex((g) => g.id === f.id) === i);
 }
 
+/** Textos de una actividad que el Consejo puede escribir también en inglés (columna `en`). */
+export const CAMPOS_ACTIVIDAD_EN_INGLES = ["nombre", "lema", "lugar", "aviso", "calendario", "descripcion", "infoParticipantes"] as const;
+
+/** La actividad con sus textos en el idioma de quien la ve: en inglés, lo que haya escrito el Consejo; lo demás, en español. */
+export function enSuIdioma(a: Actividad, idioma: Idioma): Actividad {
+  if (idioma === "es") return a;
+  const en = a.en ?? {};
+  return { ...a, ...Object.fromEntries(CAMPOS_ACTIVIDAD_EN_INGLES.filter((c) => en[c]?.trim()).map((c) => [c, en[c]])) };
+}
+
 /** La ficha de la actividad con el mismo formato que la de los torneos fijos. */
-export function infoDeActividad(a: Actividad): InfoTorneo {
+export function infoDeActividad(original: Actividad, idioma: Idioma = "es"): InfoTorneo {
+  const a = enSuIdioma(original, idioma);
   return {
     nombre: a.nombre,
     lema: a.lema ?? "",

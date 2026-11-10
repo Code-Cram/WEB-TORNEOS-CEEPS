@@ -1,37 +1,41 @@
-const ZONA = "Europe/Madrid";
+import type { Idioma } from "@/modulos/idioma/config";
 
-/** "mar 27 oct · 17:00" */
-export function fechaCorta(iso: string | null): string | null {
+const ZONA = "Europe/Madrid";
+/** Formato de fecha de cada idioma: «mar 27 oct» / «Tue 27 Oct» (el inglés británico usa 24 h, como aquí). */
+const LOCALE: Record<Idioma, string> = { es: "es-ES", en: "en-GB" };
+
+/** "mar 27 oct · 17:00" (en inglés, "Tue 27 Oct · 17:00") */
+export function fechaCorta(iso: string | null, idioma: Idioma = "es"): string | null {
   if (!iso) return null;
   const d = new Date(iso);
-  const dia = new Intl.DateTimeFormat("es-ES", { timeZone: ZONA, weekday: "short", day: "numeric", month: "short" })
+  const dia = new Intl.DateTimeFormat(LOCALE[idioma], { timeZone: ZONA, weekday: "short", day: "numeric", month: "short" })
     .format(d)
     .replace(/\./g, "")
     .replace(",", "");
-  const hora = new Intl.DateTimeFormat("es-ES", { timeZone: ZONA, hour: "2-digit", minute: "2-digit" }).format(d);
+  const hora = new Intl.DateTimeFormat(LOCALE[idioma], { timeZone: ZONA, hour: "2-digit", minute: "2-digit" }).format(d);
   return `${dia} · ${hora}`;
 }
 
-/** "martes, 27 de octubre · 17:00" */
-export function fechaLarga(iso: string | null): string | null {
+/** "martes, 27 de octubre · 17:00" (en inglés, "Tuesday 27 October · 17:00") */
+export function fechaLarga(iso: string | null, idioma: Idioma = "es"): string | null {
   if (!iso) return null;
   const d = new Date(iso);
-  const dia = new Intl.DateTimeFormat("es-ES", { timeZone: ZONA, weekday: "long", day: "numeric", month: "long" }).format(d);
-  const hora = new Intl.DateTimeFormat("es-ES", { timeZone: ZONA, hour: "2-digit", minute: "2-digit" }).format(d);
+  const dia = new Intl.DateTimeFormat(LOCALE[idioma], { timeZone: ZONA, weekday: "long", day: "numeric", month: "long" }).format(d);
+  const hora = new Intl.DateTimeFormat(LOCALE[idioma], { timeZone: ZONA, hour: "2-digit", minute: "2-digit" }).format(d);
   return `${dia} · ${hora}`;
 }
 
 /** "mar 10 nov" a partir de un día "2026-11-10". */
-export function diaCorto(dia: string): string {
-  return new Intl.DateTimeFormat("es-ES", { timeZone: "UTC", weekday: "short", day: "numeric", month: "short" })
+export function diaCorto(dia: string, idioma: Idioma = "es"): string {
+  return new Intl.DateTimeFormat(LOCALE[idioma], { timeZone: "UTC", weekday: "short", day: "numeric", month: "short" })
     .format(new Date(`${dia}T12:00:00Z`))
     .replace(/\./g, "")
     .replace(",", "");
 }
 
 /** "martes, 10 de noviembre" a partir de un día "2026-11-10". */
-export function diaLargo(dia: string): string {
-  return new Intl.DateTimeFormat("es-ES", { timeZone: "UTC", weekday: "long", day: "numeric", month: "long" }).format(new Date(`${dia}T12:00:00Z`));
+export function diaLargo(dia: string, idioma: Idioma = "es"): string {
+  return new Intl.DateTimeFormat(LOCALE[idioma], { timeZone: "UTC", weekday: "long", day: "numeric", month: "long" }).format(new Date(`${dia}T12:00:00Z`));
 }
 
 /** Valor para <input type="datetime-local"> en hora de Madrid. */

@@ -6,8 +6,12 @@ import { datosMus } from "@/modulos/mus/datos";
 import { leerInfoTorneos } from "@/modulos/torneos/info";
 import { torneosDe } from "@/modulos/acceso/inscripciones";
 import { esAdmin, exigirSesion } from "@/modulos/acceso/sesion";
+import { traduccion } from "@/modulos/idioma/servidor";
 
-export const metadata: Metadata = { title: "Mus" };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await traduccion();
+  return { title: t("Mus") };
+}
 
 export default async function Mus() {
   const sesion = await exigirSesion();
@@ -15,6 +19,7 @@ export default async function Mus() {
   if (!(await torneosDe(sesion.email)).mus && !(await esAdmin()) && !(await leerInfoTorneos()).mus.finalizado) redirect("/torneos");
   const datos = await datosMus(sesion.email);
   const mia = datos.equipos.find((e) => e.esMio);
+  const { t } = await traduccion();
 
   return (
     <PaginaTorneo
@@ -22,8 +27,8 @@ export default async function Mus() {
       sesion={sesion}
       info={
         <>
-          <Chip claro>{datos.equipos.length} parejas</Chip>
-          {mia && <Chip claro>Tu pareja: {mia.nombre}</Chip>}
+          <Chip claro>{t("{n} parejas", { n: datos.equipos.length })}</Chip>
+          {mia && <Chip claro>{t("Tu pareja: {nombre}", { nombre: mia.nombre })}</Chip>}
         </>
       }
     >

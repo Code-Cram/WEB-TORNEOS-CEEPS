@@ -5,6 +5,7 @@ import { borrarMiMensaje, enviarMensaje, marcarLeidos } from "@/modulos/chat/acc
 import { diaCorto, diaLargo } from "@/modulos/compartido/formato";
 import type { DatosChat } from "@/modulos/chat/tipos";
 import { Conversacion } from "@/modulos/chat/conversacion";
+import { useIdioma, useT } from "@/modulos/idioma/cliente";
 
 /* Hasta qué mensaje público se ha visto, por sala: en este navegador (y en memoria si no deja guardar nada). */
 const memoria = new Map<string, number>();
@@ -44,6 +45,8 @@ function suscribir(f: () => void) {
 export function ChatFlotante({ t, a, titulo, inicial }: { t: string; a: number | null; titulo: string; inicial: DatosChat }) {
   const [abierto, setAbierto] = useState(false);
   const [pestana, setPestana] = useState<"publico" | "privado">("publico");
+  const tr = useT();
+  const idioma = useIdioma();
   const fuente = `/api/chat?t=${t}${a !== null ? `&a=${a}` : ""}`;
   const ocultos = { t, ...(a !== null ? { a: String(a) } : {}) };
 
@@ -66,7 +69,7 @@ export function ChatFlotante({ t, a, titulo, inicial }: { t: string; a: number |
     <>
       <button
         onClick={() => setAbierto(true)}
-        aria-label={`Abrir el chat${avisos ? ` (${avisos} sin leer)` : ""}`}
+        aria-label={avisos ? tr("Abrir el chat ({n} sin leer)", { n: avisos }) : tr("Abrir el chat")}
         className={`fixed right-4 bottom-4 z-40 flex items-center gap-2 rounded-full border-2 border-tinta bg-verde px-5 py-3 font-mono text-sm font-bold text-crema uppercase shadow-[4px_4px_0_var(--tinta)] transition hover:-translate-y-0.5 ${abierto ? "hidden" : ""}`}
       >
         💬 Chat
@@ -82,15 +85,15 @@ export function ChatFlotante({ t, a, titulo, inicial }: { t: string; a: number |
           <div className="flex items-center gap-2 border-b-2 border-tinta bg-verde px-4 py-2.5 text-crema sm:rounded-t-[1.3rem]">
             <span className="font-display uppercase">💬 Chat</span>
             <span className="min-w-0 truncate text-sm opacity-80">{titulo}</span>
-            <button onClick={() => setAbierto(false)} aria-label="Cerrar el chat" className="ml-auto rounded-full px-2 text-xl leading-none hover:bg-white/15">
+            <button onClick={() => setAbierto(false)} aria-label={tr("Cerrar el chat")} className="ml-auto rounded-full px-2 text-xl leading-none hover:bg-white/15">
               ✕
             </button>
           </div>
           <div role="tablist" className="flex gap-1 border-b-2 border-linea p-1.5 font-mono text-xs font-bold uppercase">
             {(
               [
-                ["publico", `Público${inicial.dia ? ` · ${diaCorto(inicial.dia)}` : ""}`, nuevos],
-                ["privado", "🔒 Consejo", inicial.noLeidos],
+                ["publico", `${tr("Público")}${inicial.dia ? ` · ${diaCorto(inicial.dia, idioma)}` : ""}`, nuevos],
+                ["privado", tr("🔒 Consejo"), inicial.noLeidos],
               ] as const
             ).map(([id, texto, n]) => (
               <button
@@ -107,10 +110,10 @@ export function ChatFlotante({ t, a, titulo, inicial }: { t: string; a: number |
           </div>
           <p className="px-3 pt-2 text-[11px] text-tinta-suave">
             {pestana === "privado"
-              ? "Solo lo leéis tú y el Consejo."
+              ? tr("Solo lo leéis tú y el Consejo.")
               : inicial.dia
-                ? `Lo leen quienes juegan el ${diaLargo(inicial.dia)} y el Consejo.`
-                : "Aquí salen los avisos del Consejo para todos."}
+                ? tr("Lo leen quienes juegan el {dia} y el Consejo.", { dia: diaLargo(inicial.dia, idioma) })
+                : tr("Aquí salen los avisos del Consejo para todos.")}
           </p>
           {pestana === "publico" ? (
             <Conversacion
@@ -123,10 +126,10 @@ export function ChatFlotante({ t, a, titulo, inicial }: { t: string; a: number |
               borrar={borrarMiMensaje}
               alVer={verPublico}
               sinEscribir={
-                inicial.dia ? null : "Cuando tengas un día de juego con fecha podrás escribir aquí a quienes juegan ese día. Mientras, al Consejo puedes escribirle en privado."
+                inicial.dia ? null : tr("Cuando tengas un día de juego con fecha podrás escribir aquí a quienes juegan ese día. Mientras, al Consejo puedes escribirle en privado.")
               }
-              placeholder="Escribe a los de tu día…"
-              vacio="Todavía no hay mensajes. ¡Saluda!"
+              placeholder={tr("Escribe a los de tu día…")}
+              vacio={tr("Todavía no hay mensajes. ¡Saluda!")}
             />
           ) : (
             <Conversacion
@@ -138,8 +141,8 @@ export function ChatFlotante({ t, a, titulo, inicial }: { t: string; a: number |
               ocultos={{ ...ocultos, canal: "privado" }}
               borrar={borrarMiMensaje}
               alVer={verPrivado}
-              placeholder="Escribe al Consejo…"
-              vacio="¿Dudas, cambios, un aviso? Escríbenos: solo lo leemos el Consejo."
+              placeholder={tr("Escribe al Consejo…")}
+              vacio={tr("¿Dudas, cambios, un aviso? Escríbenos: solo lo leemos el Consejo.")}
             />
           )}
         </div>

@@ -1,6 +1,7 @@
 import { Fragment } from "react";
 import { TORNEOS, type TorneoId } from "@/modulos/torneos/config";
 import { conNegritas, parsearReglas, type LineaRegla } from "@/modulos/torneos/reglas";
+import { traduccion } from "@/modulos/idioma/servidor";
 
 /** Color del título y de los números de los pasos, a juego con cada torneo (en las cartas, los palos de su baraja). */
 const TEMA: Record<TorneoId, { titulo: string; pasos: string[] }> = {
@@ -10,14 +11,15 @@ const TEMA: Record<TorneoId, { titulo: string; pasos: string[] }> = {
 };
 
 /** Chuleta de reglas de la página de un torneo (el texto se escribe en el panel; si está vacío, no sale). */
-export function TarjetaReglas({ torneo, texto }: { torneo: TorneoId; texto: string }) {
+export async function TarjetaReglas({ torneo, texto }: { torneo: TorneoId; texto: string }) {
   const bloques = parsearReglas(texto);
   if (!bloques.length) return null;
+  const { t } = await traduccion();
   const tema = TEMA[torneo];
   return (
     <details className="group rounded-3xl border-2 border-tinta bg-papel p-5 shadow-[5px_5px_0_var(--tinta)]" open>
       <summary className={`flex cursor-pointer list-none items-center justify-between font-display text-2xl uppercase ${tema.titulo}`}>
-        Chuleta de {TORNEOS[torneo].corto.toLowerCase()}
+        {t("Chuleta de {juego}", { juego: t(TORNEOS[torneo].corto).toLowerCase() })}
         <span className="font-mono text-sm text-tinta-suave transition group-open:rotate-180">▾</span>
       </summary>
       <div className="mt-3 space-y-3 text-sm">
@@ -25,9 +27,9 @@ export function TarjetaReglas({ torneo, texto }: { torneo: TorneoId; texto: stri
           if (b.tipo === "lista")
             return (
               <ul key={i} className="list-disc space-y-0.5 pl-4">
-                {b.items.map((t, j) => (
+                {b.items.map((item, j) => (
                   <li key={j}>
-                    <Texto texto={t} />
+                    <Texto texto={item} />
                   </li>
                 ))}
               </ul>

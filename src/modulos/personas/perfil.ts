@@ -12,19 +12,23 @@ import { datosPoker } from "@/modulos/poker/datos";
 import { TORNEOS } from "@/modulos/torneos/config";
 import { leerInfoTorneos } from "@/modulos/torneos/info";
 import { recorrido, recorridoPoker } from "./perfil-logica";
+import { enSuIdioma } from "@/modulos/actividades/datos";
+import type { Idioma } from "@/modulos/idioma/config";
+import { traductor } from "@/modulos/idioma/traducir";
 import type { PerfilVista, TituloPerfil, TorneoPerfil } from "./tipos";
 
 /** Los identificadores de perfil son 12 caracteres hexadecimales (ver sql/2026-11-10-perfiles.sql). */
 export const esIdPerfil = (id: string) => /^[0-9a-f]{12}$/.test(id);
 
 /** Perfil de una persona por su identificador: sus torneos de esta edición, cómo le va, sus títulos y ediciones anteriores. */
-export async function perfilDe(id: string, quienMira: string): Promise<PerfilVista | null> {
+export async function perfilDe(id: string, quienMira: string, idioma: Idioma = "es"): Promise<PerfilVista | null> {
   if (!esIdPerfil(id)) return null;
+  const t = traductor(idioma);
   const [u] = await db.select({ email: usuarios.email, nombre: usuarios.nombre }).from(usuarios).where(eq(usuarios.perfil, id));
   if (!u) return null;
 
   const [info, admin, delQueMira, futbol, mus, poker, enActividades, titulos, anteriores] = await Promise.all([
-    leerInfoTorneos(),
+    leerInfoTorneos(idioma),
     esAdmin(),
     torneosDe(quienMira),
     datosFutbol(u.email),
@@ -32,14 +36,7 @@ export async function perfilDe(id: string, quienMira: string): Promise<PerfilVis
     datosPoker(u.email),
     db
       .select({
-        id: actividades.id,
-        slug: actividades.slug,
-        nombre: actividades.nombre,
-        icono: actividades.icono,
-        tipo: actividades.tipo,
-        porEquipos: actividades.porEquipos,
-        estado: actividades.estado,
-        fecha: actividades.fecha,
+        actividad: actividades,
         participanteId: actividadParticipantes.id,
         participante: actividadParticipantes.nombre,
       })
@@ -64,7 +61,7 @@ export async function perfilDe(id: string, quienMira: string): Promise<PerfilVis
 
   const equipo = futbol.equipos.find((e) => e.esMio);
   if (equipo) {
-    const r = recorrido(futbol, equipo.id, true);
+    const r = recorrido(futbol, equipo.id, true, t);
     torneos.push({
       clave: "futbol",
       tema: "futbol",
@@ -75,12 +72,12 @@ export async function perfilDe(id: string, quienMira: string): Promise<PerfilVis
       capitania: equipo.jugadores.some((j) => j.esYo && j.esCapitan),
       ...r,
       companeros: equipo.jugadores.filter((j) => !j.esYo).map((j) => ({ nombre: j.nombre, perfil: j.perfil })),
-      tituloCompaneros: "Su equipo",
+      tituloCompaneros: t("Su equipo"),
     });
   }
   const pareja = mus.equipos.find((e) => e.esMio);
   if (pareja) {
-    const r = recorrido(mus, pareja.id, true);
+    const r = recorrido(mus, pareja.id, true, t);
     torneos.push({
       clave: "mus",
       tema: "mus",
@@ -91,10 +88,10 @@ export async function perfilDe(id: string, quienMira: string): Promise<PerfilVis
       capitania: false,
       ...r,
       companeros: pareja.jugadores.filter((j) => !j.esYo).map((j) => ({ nombre: j.nombre, perfil: j.perfil })),
-      tituloCompaneros: "Su pareja",
+      tituloCompaneros: t("Su pareja"),
     });
   }
-  const enPoker = recorridoPoker(poker);
+  const enPoker = recorridoPoker(poker, t, idioma);
   if (enPoker)
     torneos.push({
       clave: "poker",
@@ -105,11 +102,12 @@ export async function perfilDe(id: string, quienMira: string): Promise<PerfilVis
       unidad: null,
       capitania: false,
       ...enPoker,
-      tituloCompaneros: poker.final?.asientos.some((a) => a.esYo) ? "En la mesa final" : "En su mesa",
+      tituloCompaneros: poker.final?.asientos.some((a) => a.esYo) ? t("En la mesa final") : t("En su mesa"),
     });
 
   const vistas = new Set<number>();
-  for (const a of enActividades) {
+  for (const fila of enActividades) {
+    const a = { ...enSuIdioma(fila.actividad, idioma), participanteId: fila.participanteId, participante: fila.participante };
     if (vistas.has(a.id)) continue;
     vistas.add(a.id);
     const href = admin || misActividades.has(a.id) || (a.estado === "terminada" && a.tipo === "torneo") ? `/actividades/${a.slug}` : null;
@@ -120,15 +118,15 @@ export async function perfilDe(id: string, quienMira: string): Promise<PerfilVis
       torneos.push({
         ...base,
         unidad: a.porEquipos ? a.participante : null,
-        ...recorrido(cuadro, a.participanteId, a.porEquipos),
+        ...recorrido(cuadro, a.participanteId, a.porEquipos, t),
         companeros: (suyo?.jugadores ?? []).filter((j) => !j.esYo).map((j) => ({ nombre: j.nombre, perfil: j.perfil })),
-        tituloCompaneros: "Su equipo",
+        tituloCompaneros: t("Su equipo"),
       });
     } else
       torneos.push({
         ...base,
         unidad: null,
-        estado: a.fecha ? `📅 ${fechaCorta(a.fecha.toISOString())}` : a.estado === "terminada" ? "Terminada" : "En la lista",
+        estado: a.fecha ? `📅 ${fechaCorta(a.fecha.toISOString(), idioma)}` : a.estado === "terminada" ? t("Terminada") : t("En la lista"),
         podio: null,
         companeros: [],
         tituloCompaneros: "",
@@ -137,14 +135,14 @@ export async function perfilDe(id: string, quienMira: string): Promise<PerfilVis
   }
 
   const MEDALLA = { 1: "🏆", 2: "🥈", 3: "🥉" } as const;
-  const PUESTO = { 1: "1er puesto", 2: "2º puesto", 3: "3er puesto" } as const;
+  const PUESTO = { 1: t("1er puesto"), 2: t("2º puesto"), 3: t("3er puesto") } as const;
   const deEstaEdicion: TituloPerfil[] = torneos
     .filter((t): t is TorneoPerfil & { podio: 1 | 2 | 3 } => t.podio === 1 || t.podio === 2 || t.podio === 3)
-    .map((t) => ({ icono: MEDALLA[t.podio], texto: t.nombre, detalle: [PUESTO[t.podio], t.unidad && `con «${t.unidad}»`].filter(Boolean).join(" · ") }));
+    .map((tp) => ({ icono: MEDALLA[tp.podio], texto: tp.nombre, detalle: [PUESTO[tp.podio], tp.unidad && t("con «{unidad}»", { unidad: tp.unidad })].filter(Boolean).join(" · ") }));
   const deOtras: TituloPerfil[] = titulos.map((p) => ({
     icono: p.icono ?? "🏆",
     texto: p.actividad,
-    detalle: [p.edicion, "1er puesto", p.campeon !== u.nombre && `con «${p.campeon}»`].filter(Boolean).join(" · "),
+    detalle: [p.edicion, t("1er puesto"), p.campeon !== u.nombre && t("con «{unidad}»", { unidad: p.campeon })].filter(Boolean).join(" · "),
   }));
 
   return {

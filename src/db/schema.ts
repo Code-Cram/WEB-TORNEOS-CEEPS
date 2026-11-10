@@ -45,6 +45,8 @@ export const infoTorneos = pgTable("info_torneos", {
   reglas: text("reglas"),
   enlaceInscripcion: text("enlace_inscripcion"),
   cierreInscripcion: timestamp("cierre_inscripcion", { withTimezone: true }),
+  /** Versión en inglés de los textos (nombre, lema, lugar, calendario, formato, premios, reglas, aviso); lo vacío, el texto por defecto. */
+  en: jsonb("en").$type<Record<string, string>>().notNull().default({}),
   /** Finalizado por el Consejo: lo ve todo el que entra en la web, con el ganador. */
   finalizado: boolean("finalizado").notNull().default(false),
   /** Solo póker: si la lista de reserva puede entrar en la web (si no, su correo no da acceso al póker). */
@@ -332,6 +334,8 @@ export const actividades = pgTable("actividades", {
   cierreInscripcion: timestamp("cierre_inscripcion", { withTimezone: true }),
   /** borrador (solo la ve el Consejo) | activa | terminada */
   estado: text("estado").notNull().default("activa"),
+  /** Versión en inglés de los textos (nombre, lema, descripción, calendario, lugar, aviso, info para participantes). */
+  en: jsonb("en").$type<Record<string, string>>().notNull().default({}),
   creadoEn: creadoEn(),
 }).enableRLS();
 

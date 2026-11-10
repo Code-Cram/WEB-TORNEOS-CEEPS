@@ -7,6 +7,8 @@ import { TORNEOS } from "@/modulos/torneos/config";
 import { describirCuadro, nombreRonda, ordenRonda, RONDA_TERCER_PUESTO, rondasEnOrden } from "@/modulos/cuadros/logica";
 import { fechaCorta, fechaLarga } from "@/modulos/compartido/formato";
 import type { DatosCuadro, EquipoVista, PartidoVista } from "@/modulos/cuadros/tipos";
+import { useIdioma, useT } from "@/modulos/idioma/cliente";
+import type { T } from "@/modulos/idioma/traducir";
 
 export type TipoCuadro = "futbol" | "mus" | "general";
 
@@ -87,6 +89,24 @@ const TEMA: Record<TipoCuadro, Tema> = {
 
 const TemaCuadro = createContext<Tema>(TEMA.futbol);
 
+/** Los textos del tema en el idioma de quien lo ve (los colores no cambian). */
+function temaEnSuIdioma(tema: Tema, t: T): Tema {
+  return {
+    ...tema,
+    unidad: t(tema.unidad),
+    Unidades: t(tema.Unidades),
+    unidades: t(tema.unidades),
+    inscrito: t(tema.inscrito),
+    inscritos: t(tema.inscritos),
+    miembros: tema.miembros && t(tema.miembros),
+    partidos: [t(tema.partidos[0]), t(tema.partidos[1])],
+    leyenda: t(tema.leyenda),
+    colA: t(tema.colA),
+    colB: t(tema.colB),
+    colDif: t(tema.colDif),
+  };
+}
+
 // Geometría del cuadro (px). Con 5 rondas (32 parejas) las tarjetas son más estrechas para que quepa en escritorio.
 const ALTO = 74;
 const RANURA = 92;
@@ -96,15 +116,17 @@ type Vista = { tipo: "partido"; id: number } | { tipo: "equipo"; id: number };
 
 export function VistaCuadro({ tipo, datos, tema }: { tipo: TipoCuadro; datos: DatosCuadro; tema?: Partial<Tema> }) {
   // `tema` solo trae los textos que cambian (p. ej. «equipo» en un torneo por equipos); el resto, del tipo.
-  const t = useMemo(() => ({ ...TEMA[tipo], ...tema }) as Tema, [tipo, tema]);
+  const t = useT();
+  const textos = useMemo(() => temaEnSuIdioma({ ...TEMA[tipo], ...tema } as Tema, t), [tipo, tema, t]);
   return (
-    <TemaCuadro value={t}>
+    <TemaCuadro value={textos}>
       <Contenido tipo={tipo} datos={datos} />
     </TemaCuadro>
   );
 }
 
 function Contenido({ tipo, datos }: { tipo: TipoCuadro; datos: DatosCuadro }) {
+  const t = useT();
   const [modo, setModo] = useState<"cuadro" | "rondas">("cuadro");
   const [pila, setPila] = useState<Vista[]>([]);
   const vista = pila.at(-1) ?? null;
@@ -139,13 +161,13 @@ function Contenido({ tipo, datos }: { tipo: TipoCuadro; datos: DatosCuadro }) {
               onClick={() => setModo(m)}
               className={`rounded-full px-3 py-1.5 transition ${modo === m ? "bg-tinta text-crema" : "hover:bg-linea"}`}
             >
-              {m === "cuadro" ? "Cuadro" : "Por rondas"}
+              {m === "cuadro" ? t("Cuadro") : t("Por rondas")}
             </button>
           ))}
         </div>
         <p className="font-mono text-xs text-tinta-suave">
-          Toca un cruce para ver hora y lugar
-          {modo === "cuadro" && <span className="sm:hidden"> · desliza → para ver todo el cuadro</span>}
+          {t("Toca un cruce para ver hora y lugar")}
+          {modo === "cuadro" && <span className="sm:hidden"> · {t("desliza → para ver todo el cuadro")}</span>}
         </p>
       </div>
 
@@ -180,6 +202,7 @@ function Cuadro({
   onPartido: (id: number) => void;
 }) {
   const tema = useContext(TemaCuadro);
+  const t = useT();
   const { ANCHO, HUECO } = geometria(rondas);
   const tamano = 2 ** rondas;
   const columnas = 2 * rondas - 1;
@@ -234,7 +257,7 @@ function Cuadro({
           if (ronda === rondas) return null;
           return (
             <div key={col} className="absolute top-0 text-center font-mono text-[11px] font-bold tracking-widest text-tinta-suave uppercase" style={{ left: x(col), width: ANCHO }}>
-              {nombreRonda(ronda, rondas, true)}
+              {t(nombreRonda(ronda, rondas, true))}
             </div>
           );
         })}
@@ -250,8 +273,8 @@ function Cuadro({
           <span className={`text-5xl ${campeon ? "" : "opacity-40 grayscale"}`} aria-hidden>
             {tema.trofeo}
           </span>
-          <span className="mt-1 font-mono text-[11px] font-bold tracking-widest text-naranja uppercase">{campeon ? "Campeón" : "Final"}</span>
-          <span className="line-clamp-2 font-display text-base leading-tight text-verde uppercase">{campeon?.nombre ?? "¿Quién ganará?"}</span>
+          <span className="mt-1 font-mono text-[11px] font-bold tracking-widest text-naranja uppercase">{campeon ? t("Campeón") : t("Final")}</span>
+          <span className="line-clamp-2 font-display text-base leading-tight text-verde uppercase">{campeon?.nombre ?? t("¿Quién ganará?")}</span>
         </div>
 
         {principales.map((p) => {
@@ -266,7 +289,7 @@ function Cuadro({
         {tercero && (
           <div className="absolute" style={{ left: x(rondas - 1), top: yTercero - ALTO / 2 - 20, width: ANCHO }}>
             <div className="mb-1 text-center font-mono text-[11px] font-bold tracking-widest text-tinta-suave uppercase">
-              {nombreRonda(RONDA_TERCER_PUESTO, rondas, true)}
+              {t(nombreRonda(RONDA_TERCER_PUESTO, rondas, true))}
             </div>
             <div style={{ height: ALTO }}>
               <TarjetaPartido p={tercero} equipos={equipos} compacta={ANCHO < 150} onClick={() => onPartido(tercero.id)} />
@@ -295,7 +318,8 @@ function TarjetaPartido({
 }) {
   const bye = p.ronda === 1 && (p.a === null) !== (p.b === null);
   const mio = (p.a !== null && equipos.get(p.a)?.esMio) || (p.b !== null && equipos.get(p.b)?.esMio);
-  const fecha = fechaCorta(p.fecha);
+  const t = useT();
+  const fecha = fechaCorta(p.fecha, useIdioma());
   return (
     <button
       onClick={onClick}
@@ -304,7 +328,7 @@ function TarjetaPartido({
       }`}
     >
       <div className="flex h-[18px] items-center justify-between gap-1 border-b border-linea px-2 font-mono text-[10px] text-tinta-suave">
-        <span className="truncate">{etiqueta ?? (bye ? "Pase directo" : (fecha ?? "Fecha por fijar"))}</span>
+        <span className="truncate">{etiqueta ?? (bye ? t("Pase directo") : (fecha ?? t("Fecha por fijar")))}</span>
         {p.lugar && !bye && !compacta && <span className="truncate">{p.lugar}</span>}
       </div>
       <FilaEquipo p={p} lado="a" equipos={equipos} bye={bye} />
@@ -326,6 +350,7 @@ function FilaEquipo({
   bye: boolean;
 }) {
   const tema = useContext(TemaCuadro);
+  const t = useT();
   const id = lado === "a" ? p.a : p.b;
   const e = id !== null ? equipos.get(id) : undefined;
   const marcador = lado === "a" ? p.marcadorA : p.marcadorB;
@@ -334,11 +359,11 @@ function FilaEquipo({
   const pierde = p.ganador !== null && id !== null && p.ganador !== id;
   return (
     <div className={`flex min-h-0 flex-1 items-center gap-1.5 px-2 ${gana ? tema.ganador : ""}`}>
-      {e?.esMio && <span className="size-2 shrink-0 rounded-full bg-naranja" title="Tu equipo" />}
+      {e?.esMio && <span className="size-2 shrink-0 rounded-full bg-naranja" title={t("Tu {unidad}", { unidad: tema.unidad })} />}
       <span
         className={`min-w-0 flex-1 truncate text-[13px] leading-tight ${gana ? "font-bold" : ""} ${pierde ? "text-tinta-suave line-through decoration-1" : ""} ${!e ? "text-tinta-suave italic" : ""}`}
       >
-        {e?.nombre ?? (bye ? "—" : "Por decidir")}
+        {e?.nombre ?? (bye ? "—" : t("Por decidir"))}
       </span>
       {marcador !== null && (
         <span className={`shrink-0 rounded px-1.5 font-mono text-sm font-bold ${gana ? tema.marca : ""}`}>
@@ -370,6 +395,7 @@ function PorRondas({
     [...partidos].sort((x, y) => ordenRonda(x.ronda, rondas) - ordenRonda(y.ronda, rondas)).find((p) => p.a !== null && p.b !== null && p.ganador === null)
       ?.ronda ?? 1;
   const [ronda, setRonda] = useState(pendiente);
+  const t = useT();
   const lista = partidos.filter((p) => p.ronda === ronda);
   return (
     <div>
@@ -380,7 +406,7 @@ function PorRondas({
             onClick={() => setRonda(r)}
             className={`shrink-0 rounded-full border-2 border-tinta px-3 py-1.5 font-mono text-xs font-bold uppercase transition ${r === ronda ? "bg-verde text-crema" : "bg-papel hover:bg-linea"}`}
           >
-            {nombreRonda(r, rondas, true)}
+            {t(nombreRonda(r, rondas, true))}
           </button>
         ))}
       </div>
@@ -487,26 +513,30 @@ function Clasificacion({
   onEquipo: (id: number) => void;
 }) {
   const tema = useContext(TemaCuadro);
+  const t = useT();
   const filas = estadisticas(datos, rondas);
   const conTantos = filas.some((f) => f.tf + f.tc > 0);
   const estado = (f: Fila) =>
     f.puesto === 1
-      ? { txt: "Campeón", cls: "bg-naranja text-white" }
+      ? { txt: t("Campeón"), cls: "bg-naranja text-white" }
       : f.puesto === 2
-        ? { txt: "Subcampeón", cls: "bg-oros/40" }
+        ? { txt: t("Subcampeón"), cls: "bg-oros/40" }
         : f.puesto
-          ? { txt: f.puesto === 3 ? "3er puesto" : `${f.puesto}º puesto`, cls: "bg-oros/20" }
+          ? { txt: f.puesto === 3 ? t("3er puesto") : t("{n}º puesto", { n: f.puesto }), cls: "bg-oros/20" }
           : f.porTercero
-            ? { txt: "Juega por el 3er puesto", cls: "bg-verde/15 text-verde" }
+            ? { txt: t("Juega por el 3er puesto"), cls: "bg-verde/15 text-verde" }
             : f.eliminado
-              ? { txt: `Fuera en ${nombreRonda(f.alcanzada, rondas, true)}`, cls: "bg-linea text-tinta-suave" }
-              : { txt: f.alcanzada >= 1 ? `En ${nombreRonda(Math.min(f.alcanzada, rondas), rondas, true)}` : "Inscrito", cls: "bg-verde/15 text-verde" };
+              ? { txt: t("Fuera en {ronda}", { ronda: t(nombreRonda(f.alcanzada, rondas, true)) }), cls: "bg-linea text-tinta-suave" }
+              : {
+                  txt: f.alcanzada >= 1 ? t("En {ronda}", { ronda: t(nombreRonda(Math.min(f.alcanzada, rondas), rondas, true)) }) : t("Inscrito"),
+                  cls: "bg-verde/15 text-verde",
+                };
 
   return (
     <section className="mt-10">
-      <h2 className="font-display text-2xl text-verde uppercase">Clasificación</h2>
+      <h2 className="font-display text-2xl text-verde uppercase">{t("Clasificación")}</h2>
       <p className="mb-3 text-sm text-tinta-suave">
-        {tipo === "mus" ? tema.leyenda + (conTantos ? " · T± diferencia de tantos." : ".") : tema.leyenda}
+        {tipo === "mus" ? tema.leyenda + (conTantos ? t(" · T± diferencia de tantos.") : ".") : tema.leyenda}
       </p>
       <div className="scroll-suave overflow-x-auto rounded-2xl border-2 border-tinta bg-papel">
         <table className="w-full text-sm sm:min-w-[540px]">
@@ -514,13 +544,13 @@ function Clasificacion({
             <tr>
               <th className="px-2 py-2 text-left sm:px-3">#</th>
               <th className="px-2 py-2 text-left sm:px-3">{tema.unidad}</th>
-              <th className="px-2 py-2">PJ</th>
-              <th className="hidden px-2 py-2 sm:table-cell">PG</th>
-              <th className="hidden px-2 py-2 sm:table-cell">PP</th>
+              <th className="px-2 py-2">{t("PJ")}</th>
+              <th className="hidden px-2 py-2 sm:table-cell">{t("PG")}</th>
+              <th className="hidden px-2 py-2 sm:table-cell">{t("PP")}</th>
               <th className="hidden px-2 py-2 sm:table-cell">{tema.colA}</th>
               <th className="hidden px-2 py-2 sm:table-cell">{tema.colB}</th>
-              <th className="px-2 py-2">{tipo === "mus" && conTantos ? "T±" : tema.colDif}</th>
-              <th className="px-2 py-2 text-left sm:px-3">Estado</th>
+              <th className="px-2 py-2">{tipo === "mus" && conTantos ? t("T±") : tema.colDif}</th>
+              <th className="px-2 py-2 text-left sm:px-3">{t("Estado")}</th>
             </tr>
           </thead>
           <tbody>
@@ -534,7 +564,7 @@ function Clasificacion({
                     <button onClick={() => onEquipo(f.e.id)} className="text-left font-semibold wrap-anywhere hover:text-naranja hover:underline">
                       {f.e.nombre}
                     </button>
-                    {f.e.esMio && <span className="ml-1.5 rounded bg-naranja px-1 font-mono text-[10px] font-bold text-white">TÚ</span>}
+                    {f.e.esMio && <span className="ml-1.5 rounded bg-naranja px-1 font-mono text-[10px] font-bold text-white">{t("TÚ")}</span>}
                   </td>
                   <td className="px-2 py-2 text-center font-mono">{f.pj}</td>
                   <td className="hidden px-2 py-2 text-center font-mono sm:table-cell">{f.pg}</td>
@@ -568,18 +598,20 @@ function Resultados({
   rondas: number;
   onPartido: (id: number) => void;
 }) {
+  const t = useT();
+  const idioma = useIdioma();
   const jugables = partidos.filter((p) => !(p.ronda === 1 && (p.a === null) !== (p.b === null)));
-  const nombre = (id: number | null) => (id !== null ? (equipos.get(id)?.nombre ?? "?") : "Por decidir");
+  const nombre = (id: number | null) => (id !== null ? (equipos.get(id)?.nombre ?? "?") : t("Por decidir"));
   return (
     <section className="mt-10">
-      <h2 className="font-display text-2xl text-verde uppercase">Partidos y resultados</h2>
+      <h2 className="font-display text-2xl text-verde uppercase">{t("Partidos y resultados")}</h2>
       <div className="mt-3 overflow-hidden rounded-2xl border-2 border-tinta bg-papel">
         {rondasEnOrden(rondas, partidos.some((p) => p.ronda === RONDA_TERCER_PUESTO)).map((r) => {
           const deRonda = jugables.filter((p) => p.ronda === r);
           if (!deRonda.length) return null;
           return (
             <div key={r}>
-              <div className="bg-tinta px-4 py-1.5 font-mono text-[11px] font-bold tracking-widest text-crema uppercase">{nombreRonda(r, rondas)}</div>
+              <div className="bg-tinta px-4 py-1.5 font-mono text-[11px] font-bold tracking-widest text-crema uppercase">{t(nombreRonda(r, rondas))}</div>
               <ul>
                 {deRonda.map((p) => (
                   <li key={p.id} className="border-t border-linea first:border-t-0">
@@ -587,17 +619,17 @@ function Resultados({
                       <span className={`truncate text-right ${p.ganador !== null && p.ganador === p.a ? "font-bold" : ""}`}>{nombre(p.a)}</span>
                       <span className="rounded-md bg-crema px-2 py-0.5 text-center font-mono font-bold whitespace-nowrap">
                         {p.marcadorA !== null && p.marcadorB !== null
-                          ? `${p.marcadorA} – ${p.marcadorB}${p.extraA !== null ? ` (${p.extraA}–${p.extraB} pen.)` : ""}`
+                          ? `${p.marcadorA} – ${p.marcadorB}${p.extraA !== null ? ` ${t("({a}–{b} pen.)", { a: p.extraA, b: p.extraB ?? "" })}` : ""}`
                           : (
                             <>
                               <span className="sm:hidden">vs</span>
-                              <span className="hidden sm:inline">{fechaCorta(p.fecha) ?? "vs"}</span>
+                              <span className="hidden sm:inline">{fechaCorta(p.fecha, idioma) ?? "vs"}</span>
                             </>
                           )}
                       </span>
                       <span className={`truncate ${p.ganador !== null && p.ganador === p.b ? "font-bold" : ""}`}>{nombre(p.b)}</span>
                       {(p.marcadorA === null || p.marcadorB === null) && p.fecha && (
-                        <span className="col-span-3 text-center font-mono text-[11px] text-tinta-suave sm:hidden">{fechaCorta(p.fecha)}</span>
+                        <span className="col-span-3 text-center font-mono text-[11px] text-tinta-suave sm:hidden">{fechaCorta(p.fecha, idioma)}</span>
                       )}
                     </button>
                   </li>
@@ -606,10 +638,10 @@ function Resultados({
             </div>
           );
         })}
-        {!jugables.length && <p className="px-4 py-6 text-center text-sm text-tinta-suave">Todavía no hay partidos.</p>}
+        {!jugables.length && <p className="px-4 py-6 text-center text-sm text-tinta-suave">{t("Todavía no hay partidos.")}</p>}
       </div>
       {tipo === "mus" && (
-        <p className="mt-2 text-xs text-tinta-suave">Marcador en partidas ganadas. Cada partida se juega a 40 tantos; la final, al mejor de 5.</p>
+        <p className="mt-2 text-xs text-tinta-suave">{t("Marcador en partidas ganadas. Cada partida se juega a 40 tantos; la final, al mejor de 5.")}</p>
       )}
     </section>
   );
@@ -630,6 +662,8 @@ type PropsModal = {
 
 function ModalPartido({ tipo, vista, equipos, partidos, rondas, onCerrar, onAbrir, onVolver }: PropsModal) {
   const tema = useContext(TemaCuadro);
+  const t = useT();
+  const idioma = useIdioma();
   const p = vista?.tipo === "partido" ? partidos.find((x) => x.id === vista.id) : undefined;
   const bye = p && p.ronda === 1 && (p.a === null) !== (p.b === null);
   return (
@@ -638,8 +672,8 @@ function ModalPartido({ tipo, vista, equipos, partidos, rondas, onCerrar, onAbri
       onCerrar={onCerrar}
       onVolver={onVolver}
       cabecera={tema.cabeceraModal}
-      subtitulo={p ? (p.ronda === RONDA_TERCER_PUESTO ? "Entre quienes pierden las semifinales" : nombreRonda(p.ronda, rondas)) : ""}
-      titulo={p?.ronda === rondas ? "Gran final" : p?.ronda === RONDA_TERCER_PUESTO ? "3er y 4º puesto" : `Partido ${p ? p.posicion + 1 : ""}`}
+      subtitulo={p ? (p.ronda === RONDA_TERCER_PUESTO ? t("Entre quienes pierden las semifinales") : t(nombreRonda(p.ronda, rondas))) : ""}
+      titulo={p?.ronda === rondas ? t("Gran final") : p?.ronda === RONDA_TERCER_PUESTO ? t("3er y 4º puesto") : t("Partido {n}", { n: p ? p.posicion + 1 : "" })}
     >
       {p && (
         <div className="space-y-4">
@@ -657,9 +691,9 @@ function ModalPartido({ tipo, vista, equipos, partidos, rondas, onCerrar, onAbri
                     p.ganador !== null && p.ganador === id ? "border-verde bg-verde/10" : "border-tinta bg-white"
                   } ${!e ? "border-dashed opacity-60" : ""}`}
                 >
-                  <span className="line-clamp-2 font-display text-sm leading-tight uppercase">{e?.nombre ?? (bye ? "Pase directo" : "Por decidir")}</span>
-                  {e && <span className="font-mono text-[10px] text-tinta-suave uppercase">Ver {tema.unidad} →</span>}
-                  {e?.esMio && <span className="rounded bg-naranja px-1 font-mono text-[10px] font-bold text-white">TÚ</span>}
+                  <span className="line-clamp-2 font-display text-sm leading-tight uppercase">{e?.nombre ?? (bye ? t("Pase directo") : t("Por decidir"))}</span>
+                  {e && <span className="font-mono text-[10px] text-tinta-suave uppercase">{t("Ver {unidad} →", { unidad: tema.unidad })}</span>}
+                  {e?.esMio && <span className="rounded bg-naranja px-1 font-mono text-[10px] font-bold text-white">{t("TÚ")}</span>}
                   {marcador !== null && <span className="font-display text-4xl text-verde">{marcador}</span>}
                 </button>
               );
@@ -673,21 +707,21 @@ function ModalPartido({ tipo, vista, equipos, partidos, rondas, onCerrar, onAbri
 
           {p.extraA !== null && p.extraB !== null && (
             <p className="text-center font-mono text-sm">
-              Penaltis: <strong>{p.extraA} – {p.extraB}</strong>
+              {t("Penaltis:")} <strong>{p.extraA} – {p.extraB}</strong>
             </p>
           )}
 
           {tipo === "mus" && (
             <div className="rounded-2xl border-2 border-linea bg-white p-3">
               <p className="font-mono text-xs font-bold text-tinta-suave uppercase">
-                Al mejor de {p.mejorDe ?? 3} partidas · a 40 tantos
+                {t("Al mejor de {n} partidas · a 40 tantos", { n: p.mejorDe ?? 3 })}
               </p>
               {p.detalle.length ? (
                 <table className="mt-2 w-full text-sm">
                   <tbody>
                     {p.detalle.map(([a, b], i) => (
                       <tr key={i} className="border-t border-linea first:border-t-0">
-                        <td className="py-1 font-mono text-tinta-suave">Partida {i + 1}</td>
+                        <td className="py-1 font-mono text-tinta-suave">{t("Partida {n}", { n: i + 1 })}</td>
                         <td className={`py-1 text-right font-mono ${a > b ? "font-bold text-copas" : ""}`}>{a}</td>
                         <td className="w-6 py-1 text-center text-tinta-suave">–</td>
                         <td className={`py-1 font-mono ${b > a ? "font-bold text-copas" : ""}`}>{b}</td>
@@ -696,19 +730,19 @@ function ModalPartido({ tipo, vista, equipos, partidos, rondas, onCerrar, onAbri
                   </tbody>
                 </table>
               ) : (
-                <p className="mt-1 text-sm text-tinta-suave">Aún no hay tantos apuntados.</p>
+                <p className="mt-1 text-sm text-tinta-suave">{t("Aún no hay tantos apuntados.")}</p>
               )}
             </div>
           )}
 
           <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 rounded-2xl bg-crema p-4 text-sm">
-            <dt className="font-mono text-xs font-bold text-tinta-suave uppercase">Cuándo</dt>
-            <dd className="first-letter:uppercase">{fechaLarga(p.fecha) ?? "Por fijar"}</dd>
-            <dt className="font-mono text-xs font-bold text-tinta-suave uppercase">Dónde</dt>
-            <dd>{p.lugar ?? "Por fijar"}</dd>
+            <dt className="font-mono text-xs font-bold text-tinta-suave uppercase">{t("Cuándo")}</dt>
+            <dd className="first-letter:uppercase">{fechaLarga(p.fecha, idioma) ?? t("Por fijar")}</dd>
+            <dt className="font-mono text-xs font-bold text-tinta-suave uppercase">{t("Dónde")}</dt>
+            <dd>{p.lugar ?? t("Por fijar")}</dd>
             {p.notas && (
               <>
-                <dt className="font-mono text-xs font-bold text-tinta-suave uppercase">Notas</dt>
+                <dt className="font-mono text-xs font-bold text-tinta-suave uppercase">{t("Notas")}</dt>
                 <dd>{p.notas}</dd>
               </>
             )}
@@ -721,6 +755,7 @@ function ModalPartido({ tipo, vista, equipos, partidos, rondas, onCerrar, onAbri
 
 function ModalEquipo({ vista, equipos, partidos, rondas, onCerrar, onAbrir, onVolver }: PropsModal) {
   const tema = useContext(TemaCuadro);
+  const t = useT();
   const e = vista?.tipo === "equipo" ? equipos.get(vista.id) : undefined;
   const suyos = e
     ? partidos
@@ -733,7 +768,7 @@ function ModalEquipo({ vista, equipos, partidos, rondas, onCerrar, onAbrir, onVo
       onCerrar={onCerrar}
       onVolver={onVolver}
       cabecera={tema.cabeceraModal}
-      subtitulo={e ? [tema.miembros && `${e.jugadores.length} ${tema.miembros}`, e.esMio && `tu ${tema.unidad}`].filter(Boolean).join(" · ") : ""}
+      subtitulo={e ? [tema.miembros && `${e.jugadores.length} ${tema.miembros}`, e.esMio && t("tu {unidad}", { unidad: tema.unidad })].filter(Boolean).join(" · ") : ""}
       titulo={e?.nombre ?? ""}
     >
       {e && (
@@ -753,18 +788,18 @@ function ModalEquipo({ vista, equipos, partidos, rondas, onCerrar, onAbrir, onVo
                   </span>
                   <span className="min-w-0 flex-1 truncate text-sm font-medium">{j.nombre}</span>
                   {j.esCapitan && (
-                    <span className="rounded bg-naranja px-1.5 font-mono text-[10px] font-bold text-white" title="Capitán">
+                    <span className="rounded bg-naranja px-1.5 font-mono text-[10px] font-bold text-white" title={t("Capitán")}>
                       C
                     </span>
                   )}
-                  {j.esYo && <span className="font-mono text-[10px] font-bold text-naranja">TÚ</span>}
+                  {j.esYo && <span className="font-mono text-[10px] font-bold text-naranja">{t("TÚ")}</span>}
                 </>
               );
               // Tocar a alguien abre su perfil (sus torneos, resultados y títulos).
               return (
                 <li key={i}>
                   {j.perfil ? (
-                    <Link href={`/perfil/${j.perfil}`} className={`${clase} transition hover:border-tinta`} title={`Perfil de ${j.nombre}`}>
+                    <Link href={`/perfil/${j.perfil}`} className={`${clase} transition hover:border-tinta`} title={t("Perfil de {nombre}", { nombre: j.nombre })}>
                       {contenido}
                       <span aria-hidden className="text-tinta-suave">
                         ›
@@ -780,7 +815,7 @@ function ModalEquipo({ vista, equipos, partidos, rondas, onCerrar, onAbrir, onVo
 
           {suyos.length > 0 && (
             <div>
-              <h3 className="mb-2 font-mono text-xs font-bold tracking-wider text-tinta-suave uppercase">Recorrido</h3>
+              <h3 className="mb-2 font-mono text-xs font-bold tracking-wider text-tinta-suave uppercase">{t("Recorrido")}</h3>
               <ul className="space-y-1.5">
                 {suyos.map((p) => {
                   const rival = p.a === e.id ? p.b : p.a;
@@ -800,8 +835,8 @@ function ModalEquipo({ vista, equipos, partidos, rondas, onCerrar, onAbrir, onVo
                         >
                           {res ?? "·"}
                         </span>
-                        <span className="w-16 shrink-0 font-mono text-[11px] text-tinta-suave uppercase">{nombreRonda(p.ronda, rondas, true)}</span>
-                        <span className="min-w-0 flex-1 truncate">vs {rival !== null ? equipos.get(rival)?.nombre : "Por decidir"}</span>
+                        <span className="w-16 shrink-0 font-mono text-[11px] text-tinta-suave uppercase">{t(nombreRonda(p.ronda, rondas, true))}</span>
+                        <span className="min-w-0 flex-1 truncate">vs {rival !== null ? equipos.get(rival)?.nombre : t("Por decidir")}</span>
                         {mio !== null && suyo !== null && (
                           <span className="font-mono font-bold">
                             {mio}–{suyo}
@@ -824,20 +859,23 @@ function ModalEquipo({ vista, equipos, partidos, rondas, onCerrar, onAbrir, onVo
 
 function SinSorteo({ equipos, conTercerPuesto, onEquipo }: { equipos: EquipoVista[]; conTercerPuesto: boolean; onEquipo: (id: number) => void }) {
   const tema = useContext(TemaCuadro);
+  const t = useT();
   // Cómo quedará el cuadro con los inscritos de ahora (pases directos si no llenan el cuadro).
-  const cuadro = describirCuadro(equipos.length, tema.partidos);
+  const cuadro = describirCuadro(equipos.length, tema.partidos, t);
   return (
     <div>
       <div className="rounded-3xl border-2 border-dashed border-tinta/40 bg-papel p-6 text-center">
         <p className="text-4xl" aria-hidden>
           🎲
         </p>
-        <h2 className="mt-2 font-display text-xl text-verde uppercase">Cuadro pendiente de sorteo</h2>
+        <h2 className="mt-2 font-display text-xl text-verde uppercase">{t("Cuadro pendiente de sorteo")}</h2>
         <p className="mt-1 text-sm text-tinta-suave">
-          En cuanto el Consejo haga el sorteo verás aquí los cruces. De momento hay {equipos.length} {equipos.length === 1 ? tema.unidad : tema.unidades}{" "}
-          {equipos.length === 1 ? tema.inscrito : tema.inscritos}
+          {t("En cuanto el Consejo haga el sorteo verás aquí los cruces.")}{" "}
+          {equipos.length === 1
+            ? t("De momento hay 1 {unidad} {inscrito}", { unidad: tema.unidad, inscrito: tema.inscrito })
+            : t("De momento hay {n} {unidades} {inscritos}", { n: equipos.length, unidades: tema.unidades, inscritos: tema.inscritos })}
           {cuadro ? `: ${cuadro}.` : "."}
-          {conTercerPuesto && equipos.length >= 4 && " Quienes pierdan en semifinales jugarán por el 3er y 4º puesto."}
+          {conTercerPuesto && equipos.length >= 4 && ` ${t("Quienes pierdan en semifinales jugarán por el 3er y 4º puesto.")}`}
         </p>
       </div>
       <h2 className="mt-8 mb-3 font-display text-2xl text-verde uppercase">

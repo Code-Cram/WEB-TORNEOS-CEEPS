@@ -9,6 +9,7 @@ import { sortearMus } from "@/modulos/mus/operaciones";
 import { fallo, fecha, hecho, intentar, texto, torneoDe, type Resultado } from "@/modulos/panel/comun";
 import { sortearPoker } from "@/modulos/poker/operaciones";
 import { TORNEOS } from "@/modulos/torneos/config";
+import { CAMPOS_EN_INGLES } from "@/modulos/torneos/info";
 
 export async function guardarInfoTorneo(_prev: Resultado, f: FormData): Promise<Resultado> {
   const admin = await exigirAdmin();
@@ -28,6 +29,10 @@ export async function guardarInfoTorneo(_prev: Resultado, f: FormData): Promise<
       aviso: texto(f, "aviso", 2000),
       enlaceInscripcion: enlace,
       cierreInscripcion: fecha(f, "cierreInscripcion"),
+      // La versión en inglés: solo lo escrito (lo vacío usa el texto por defecto). Sin los campos (página vieja), no se toca.
+      ...(f.has("en_nombre")
+        ? { en: Object.fromEntries(CAMPOS_EN_INGLES.map((c) => [c, texto(f, `en_${c}`, c === "reglas" ? 6000 : 3000)]).filter(([, v]) => v)) }
+        : {}),
     };
     await db.insert(infoTorneos).values({ torneo, ...datos }).onConflictDoUpdate({ target: infoTorneos.torneo, set: datos });
     return hecho(admin, "Información guardada.", undefined, TORNEOS[torneo].corto);
