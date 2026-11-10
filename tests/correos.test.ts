@@ -6,6 +6,7 @@ import type { PersonaFila } from "../src/modulos/personas/datos";
 const persona = (email: string, datos: Partial<PersonaFila> = {}): PersonaFila => ({
   email,
   nombre: email.split("@")[0],
+  perfil: "0123456789ab",
   futbol: null,
   capitan: false,
   mus: null,

@@ -4,13 +4,15 @@ import { asc } from "drizzle-orm";
 import { db } from "@/db";
 import { musIntegrantes, musParejas, musPartidas, musPartidos } from "@/db/schema";
 import type { DatosCuadro } from "@/modulos/cuadros/tipos";
+import { perfilesPorCorreo } from "@/modulos/personas/perfiles";
 
 export async function datosMus(emailUsuario: string | null): Promise<DatosCuadro> {
-  const [parejas, integrantes, partidos, partidas] = await Promise.all([
+  const [parejas, integrantes, partidos, partidas, perfiles] = await Promise.all([
     db.select().from(musParejas).orderBy(asc(musParejas.nombre)),
     db.select().from(musIntegrantes).orderBy(asc(musIntegrantes.orden)),
     db.select().from(musPartidos).orderBy(asc(musPartidos.ronda), asc(musPartidos.posicion)),
     db.select().from(musPartidas).orderBy(asc(musPartidas.numero)),
+    perfilesPorCorreo(),
   ]);
   return {
     equipos: parejas.map((p) => ({
@@ -19,7 +21,7 @@ export async function datosMus(emailUsuario: string | null): Promise<DatosCuadro
       esMio: integrantes.some((i) => i.parejaId === p.id && i.email === emailUsuario),
       jugadores: integrantes
         .filter((i) => i.parejaId === p.id)
-        .map((i) => ({ nombre: i.nombre, esCapitan: false, esYo: !!emailUsuario && i.email === emailUsuario })),
+        .map((i) => ({ nombre: i.nombre, esCapitan: false, esYo: !!emailUsuario && i.email === emailUsuario, perfil: (i.email && perfiles.get(i.email)) || null })),
     })),
     partidos: partidos.map((p) => ({
       id: p.id,

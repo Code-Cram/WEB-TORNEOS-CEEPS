@@ -16,6 +16,7 @@ import { torneosActivos, torneosDe } from "@/modulos/acceso/inscripciones";
 import { fechaCorta } from "@/modulos/compartido/formato";
 import { esAdmin, exigirSesion } from "@/modulos/acceso/sesion";
 import { procesarReservas, salidaALaReserva } from "@/modulos/poker/relevos";
+import { perfilDeCorreo } from "@/modulos/personas/perfil";
 
 export const metadata: Metadata = { title: "Mis actividades" };
 
@@ -37,7 +38,13 @@ export default async function Torneos() {
   const sesion = await exigirSesion();
   // Quien estaba en reserva puede haber entrado en una mesa: se mira antes de enseñarle sus torneos.
   await procesarReservas().catch((e) => console.error(e));
-  const [inscripciones, modoAdmin, info, salida] = await Promise.all([torneosDe(sesion.email), esAdmin(), leerInfoTorneos(), salidaALaReserva(sesion.email)]);
+  const [inscripciones, modoAdmin, info, salida, miPerfil] = await Promise.all([
+    torneosDe(sesion.email),
+    esAdmin(),
+    leerInfoTorneos(),
+    salidaALaReserva(sesion.email),
+    perfilDeCorreo(sesion.email),
+  ]);
   // Con el modo admin activo (contraseña ya puesta) se ven los tres torneos; si no, solo los propios.
   // Los torneos finalizados los ve todo el que entra, aunque no jugara (y el Consejo con el modo admin, todos).
   const propios = torneosActivos(inscripciones);
@@ -95,6 +102,14 @@ export default async function Torneos() {
                 ? "Aquí tienes:"
                 : "¿Qué quieres ver?"}
         </p>
+        {miPerfil && total > 0 && (
+          <Link
+            href={`/perfil/${miPerfil}`}
+            className="mt-3 inline-flex items-center gap-2 rounded-full border-2 border-tinta bg-white px-4 py-1.5 font-mono text-xs font-bold uppercase transition hover:bg-crema"
+          >
+            👤 Tu perfil: torneos, resultados y títulos →
+          </Link>
+        )}
 
         {salida && (
           <p role="status" className="mt-5 flex gap-3 rounded-2xl border-2 border-naranja bg-naranja/10 px-4 py-3 text-sm">

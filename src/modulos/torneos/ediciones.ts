@@ -5,7 +5,10 @@ import type { TorneoId } from "@/modulos/torneos/config";
 
 /* Cerrar una edición: copia completa al archivo, campeón a la lista de ganadores y vaciar para la siguiente. */
 
-export type Campeon = { campeon: string; detalle: string };
+/** Quién ganó y cómo; `emails`: los de quienes ganaron (equipo, pareja o jugador), para el título en su perfil. */
+export type Campeon = { campeon: string; detalle: string; emails: string[] };
+
+const conCorreo = (filas: { email: string | null }[]) => [...new Set(filas.map((f) => f.email).filter((e): e is string => !!e))];
 
 /** Todos los datos de un torneo fijo (para el archivo). */
 export async function copiaTorneo(tx: Tx, torneo: TorneoId) {
@@ -34,7 +37,7 @@ export async function campeonTorneo(tx: Db | Tx, torneo: TorneoId): Promise<Camp
     const [final] = await tx.select().from(pokerMesas).where(eq(pokerMesas.fase, "final"));
     if (!final?.ganadorEmail) return null;
     const [j] = await tx.select({ nombre: pokerJugadores.nombre }).from(pokerJugadores).where(eq(pokerJugadores.email, final.ganadorEmail));
-    return j ? { campeon: j.nombre, detalle: "Ganador de la mesa final" } : null;
+    return j ? { campeon: j.nombre, detalle: "Ganador de la mesa final", emails: [final.ganadorEmail] } : null;
   }
   if (torneo === "futbol") {
     const [f] = await tx.select().from(futbolPartidos).orderBy(desc(futbolPartidos.ronda)).limit(1);
@@ -43,14 +46,25 @@ export async function campeonTorneo(tx: Db | Tx, torneo: TorneoId): Promise<Camp
     const rival = f.ganadorId === f.localId ? f.visitanteId : f.localId;
     const marcador = f.ganadorId === f.localId ? `${f.golesLocal}-${f.golesVisitante}` : `${f.golesVisitante}-${f.golesLocal}`;
     const penaltis = f.penaltisLocal !== null && f.penaltisVisitante !== null ? ` (penaltis ${f.ganadorId === f.localId ? `${f.penaltisLocal}-${f.penaltisVisitante}` : `${f.penaltisVisitante}-${f.penaltisLocal}`})` : "";
-    return { campeon: nombres.get(f.ganadorId) ?? "?", detalle: `Final: ${marcador}${penaltis} contra ${rival ? nombres.get(rival) : "?"}` };
+    const [equipo] = await tx.select({ capitan: futbolEquipos.capitanEmail }).from(futbolEquipos).where(eq(futbolEquipos.id, f.ganadorId));
+    const jugadores = await tx.select({ email: futbolJugadores.email }).from(futbolJugadores).where(eq(futbolJugadores.equipoId, f.ganadorId));
+    return {
+      campeon: nombres.get(f.ganadorId) ?? "?",
+      detalle: `Final: ${marcador}${penaltis} contra ${rival ? nombres.get(rival) : "?"}`,
+      emails: conCorreo([{ email: equipo?.capitan ?? null }, ...jugadores]),
+    };
   }
   const [f] = await tx.select().from(musPartidos).orderBy(desc(musPartidos.ronda)).limit(1);
   if (!f?.ganadorId) return null;
   const nombres = new Map((await tx.select({ id: musParejas.id, nombre: musParejas.nombre }).from(musParejas)).map((p) => [p.id, p.nombre]));
   const rival = f.ganadorId === f.parejaAId ? f.parejaBId : f.parejaAId;
   const marcador = f.ganadorId === f.parejaAId ? `${f.partidasA}-${f.partidasB}` : `${f.partidasB}-${f.partidasA}`;
-  return { campeon: nombres.get(f.ganadorId) ?? "?", detalle: `Final: ${marcador} en partidas contra ${rival ? nombres.get(rival) : "?"}` };
+  const integrantes = await tx.select({ email: musIntegrantes.email }).from(musIntegrantes).where(eq(musIntegrantes.parejaId, f.ganadorId));
+  return {
+    campeon: nombres.get(f.ganadorId) ?? "?",
+    detalle: `Final: ${marcador} en partidas contra ${rival ? nombres.get(rival) : "?"}`,
+    emails: conCorreo(integrantes),
+  };
 }
 
 /** Borra inscripciones, cruces y resultados de un torneo fijo (la información, con los premios, se queda). */
@@ -86,7 +100,8 @@ export async function campeonActividad(tx: Db | Tx, actividadId: number): Promis
   const nombre = (id: number | null) => participantes.find((p) => p.id === id)?.nombre ?? "?";
   const rival = f.ganadorId === f.aId ? f.bId : f.aId;
   const marcador = f.ganadorId === f.aId ? `${f.puntosA}-${f.puntosB}` : `${f.puntosB}-${f.puntosA}`;
-  return { campeon: nombre(f.ganadorId), detalle: `Final: ${marcador} contra ${nombre(rival)}` };
+  const miembros = await tx.select({ email: actividadMiembros.email }).from(actividadMiembros).where(eq(actividadMiembros.participanteId, f.ganadorId));
+  return { campeon: nombre(f.ganadorId), detalle: `Final: ${marcador} contra ${nombre(rival)}`, emails: conCorreo(miembros) };
 }
 
 export async function vaciarActividad(tx: Tx, actividadId: number) {

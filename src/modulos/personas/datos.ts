@@ -10,6 +10,8 @@ import type { DestinosAlta } from "./tipos";
 export type PersonaFila = {
   email: string;
   nombre: string;
+  /** Identificador de su perfil (/perfil/<id>). */
+  perfil: string;
   futbol: string | null;
   capitan: boolean;
   mus: string | null;
@@ -86,6 +88,7 @@ export async function listaPersonas(): Promise<{ conCorreo: PersonaFila[]; sinCo
     return {
       email: u.email,
       nombre: u.nombre,
+      perfil: u.perfil,
       futbol: equipo !== undefined ? (nombreEquipo.get(equipo) ?? null) : null,
       capitan: capitanes.has(u.email),
       mus: pareja !== undefined ? (nombrePareja.get(pareja) ?? null) : null,

@@ -3,6 +3,7 @@
 Web para organizar los torneos y actividades del Consejo de Estudiantes de la Escuela Politécnica Superior (UAM): los torneos de **fútbol sala**, **mus** y **póker** y **cualquier otra actividad** que se cree desde el panel (una chocolatada solidaria, una charla, un torneo de ping-pong…). Funciona en el móvil y en el ordenador.
 
 - Cada participante entra con el correo con el que se inscribió y ve lo suyo: cuadro eliminatorio, mesas de póker, horarios, lugares, premios, resultados y clasificación (se actualizan solos) y, en las actividades, la información para todos y su nota personal (p. ej. su recompensa).
+- Cada persona tiene un **perfil**, que se abre tocando su nombre en un equipo, una pareja o una mesa: sus torneos y actividades del año, cómo le va (partidos, puesto en su mesa), sus compañeros, sus títulos y las ediciones anteriores en las que jugó. Lo ve cualquiera que haya entrado en la web.
 - El Consejo lo gestiona todo desde el **panel de admin**: importar las inscripciones (CSV de Microsoft Forms), añadir o quitar participantes, sortear, apuntar resultados, cambiar fechas, lugares y avisos, crear actividades y cerrar ediciones.
 - **Dar por finalizado** un torneo: desde ese momento lo ve todo el que entra en la web, con el ganador destacado.
 - Lista de **ganadores** de cada edición y **archivo** con una copia completa de cada edición cerrada (solo para el Consejo).
@@ -116,7 +117,7 @@ Otro Nombre
 - Se entra con el correo de inscripción, **sin código de verificación**: quien sepa el correo de otra persona puede entrar como ella y, si es capitán, cambiar su plantilla (queda registrado en el panel). Es un equilibrio buscado entre comodidad y riesgo para un torneo entre estudiantes.
 - El panel exige estar en `ADMIN_EMAILS` **y** la contraseña. Tras 10 intentos fallidos en 15 minutos se bloquea; **cambiar `ADMIN_PASSWORD` cierra todas las sesiones de admin abiertas**. Usa una contraseña larga.
 - En el chat sale el nombre de la inscripción, no el que cada uno escribe al entrar. Aun así, con el acceso solo por correo, quien sepa el correo de otra persona podría escribir en su nombre: el Consejo puede borrar cualquier mensaje.
-- Ningún correo ni teléfono se envía a los navegadores de los participantes. Las tablas tienen RLS activado, así que la API pública de Supabase no puede leerlas.
+- Ningún correo ni teléfono se envía a los navegadores de los participantes: los perfiles se enlazan con un identificador al azar (`usuarios.perfil`), nunca con el correo. Las tablas tienen RLS activado, así que la API pública de Supabase no puede leerlas.
 - Cada acción del servidor comprueba los permisos y valida los datos; la web envía cabeceras contra clickjacking y similares.
 
 ## Pruebas
@@ -151,7 +152,7 @@ npm run lint
 | `asistencia` | Confirmación de asistencia por días: la tarjeta, sus respuestas y el panel. |
 | `chat` | Salas por día, privados con el Consejo, avisos y avisos automáticos de cambios. |
 | `calendario` | Todas las fechas en una página y mover un día entero. |
-| `personas` | Personas y correos (añadir, lista, correcciones, grupos para escribir en CCO, descarga en Excel) y el formato de plantillas. |
+| `personas` | Personas y correos (añadir, lista, correcciones, grupos para escribir en CCO, descarga en Excel), el formato de plantillas y el perfil de cada una. |
 | `correo` | Bandeja de correos automáticos: se guardan y se mandan por SMTP (o a mano desde el panel). |
 | `redes` | Publicaciones para WhatsApp, X e Instagram y sus imágenes (las fuentes, con licencia OFL, en `fuentes/`). |
 | `importacion` | Leer los CSV de Forms e importarlos sin duplicar ni pisar correcciones. |

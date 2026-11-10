@@ -122,6 +122,9 @@ export default async function Personas({ searchParams }: { searchParams: Promise
                 </span>
               ))}
               {!p.futbol && !p.mus && !p.poker && !p.actividades.length && <span className="rounded-full bg-linea px-2">sin torneo</span>}
+              <Link href={`/perfil/${p.perfil}`} className="ml-auto font-mono font-bold text-verde underline-offset-2 hover:underline">
+                Perfil →
+              </Link>
             </div>
             <FormAccion accion={editarUsuario} compacto>
               <input type="hidden" name="email" value={p.email} />

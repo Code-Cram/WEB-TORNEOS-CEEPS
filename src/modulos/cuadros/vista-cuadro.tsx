@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { createContext, useContext, useMemo, useState } from "react";
 import { Modal } from "@/modulos/compartido/modal";
 import { TORNEOS } from "@/modulos/torneos/config";
@@ -738,25 +739,43 @@ function ModalEquipo({ vista, equipos, partidos, rondas, onCerrar, onAbrir, onVo
       {e && (
         <div className="space-y-5">
           <ul className="grid gap-1.5 sm:grid-cols-2">
-            {e.jugadores.map((j, i) => (
-              <li key={i} className={`flex items-center gap-2 rounded-xl border-2 px-3 py-2 ${j.esYo ? "border-naranja bg-naranja/10" : "border-linea bg-white"}`}>
-                <span className="grid size-7 shrink-0 place-items-center rounded-full bg-verde font-mono text-xs font-bold text-crema">
-                  {j.nombre
-                    .split(" ")
-                    .slice(0, 2)
-                    .map((w) => w[0])
-                    .join("")
-                    .toUpperCase()}
-                </span>
-                <span className="min-w-0 flex-1 truncate text-sm font-medium">{j.nombre}</span>
-                {j.esCapitan && (
-                  <span className="rounded bg-naranja px-1.5 font-mono text-[10px] font-bold text-white" title="Capitán">
-                    C
+            {e.jugadores.map((j, i) => {
+              const clase = `flex items-center gap-2 rounded-xl border-2 px-3 py-2 ${j.esYo ? "border-naranja bg-naranja/10" : "border-linea bg-white"}`;
+              const contenido = (
+                <>
+                  <span className="grid size-7 shrink-0 place-items-center rounded-full bg-verde font-mono text-xs font-bold text-crema">
+                    {j.nombre
+                      .split(" ")
+                      .slice(0, 2)
+                      .map((w) => w[0])
+                      .join("")
+                      .toUpperCase()}
                   </span>
-                )}
-                {j.esYo && <span className="font-mono text-[10px] font-bold text-naranja">TÚ</span>}
-              </li>
-            ))}
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium">{j.nombre}</span>
+                  {j.esCapitan && (
+                    <span className="rounded bg-naranja px-1.5 font-mono text-[10px] font-bold text-white" title="Capitán">
+                      C
+                    </span>
+                  )}
+                  {j.esYo && <span className="font-mono text-[10px] font-bold text-naranja">TÚ</span>}
+                </>
+              );
+              // Tocar a alguien abre su perfil (sus torneos, resultados y títulos).
+              return (
+                <li key={i}>
+                  {j.perfil ? (
+                    <Link href={`/perfil/${j.perfil}`} className={`${clase} transition hover:border-tinta`} title={`Perfil de ${j.nombre}`}>
+                      {contenido}
+                      <span aria-hidden className="text-tinta-suave">
+                        ›
+                      </span>
+                    </Link>
+                  ) : (
+                    <div className={clase}>{contenido}</div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
 
           {suyos.length > 0 && (

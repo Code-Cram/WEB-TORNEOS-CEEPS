@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { Modal } from "@/modulos/compartido/modal";
 import { ListaPremios } from "@/modulos/torneos/tarjeta-premios";
@@ -88,18 +89,32 @@ export function VistaPoker({ datos }: { datos: DatosPoker }) {
               {[...abierta.asientos]
                 // Ganador arriba, luego quien sigue jugando y después los eliminados (2º, 3º…).
                 .sort((a, b) => (a.puesto ?? 1.5) - (b.puesto ?? 1.5) || a.asiento - b.asiento)
-                .map((a) => (
-                  <li
-                    key={a.asiento}
-                    className={`flex items-center gap-3 rounded-xl border-2 px-3 py-2 text-sm ${a.esYo ? "border-naranja bg-naranja/10" : "border-linea bg-white"} ${a.puesto && a.puesto > 1 ? "opacity-60" : ""}`}
-                  >
-                    <span className="grid size-7 shrink-0 place-items-center rounded-full bg-tapete font-mono text-xs font-bold text-white">{a.asiento}</span>
-                    <span className="min-w-0 flex-1 truncate font-medium">{a.nombre}</span>
-                    {a.esYo && <span className="font-mono text-[10px] font-bold text-naranja">TÚ</span>}
-                    {a.puesto === 1 && <span>👑</span>}
-                    {a.puesto && a.puesto > 1 && <span className="font-mono text-xs text-tinta-suave">{a.puesto}º</span>}
-                  </li>
-                ))}
+                .map((a) => {
+                  const clase = `flex items-center gap-3 rounded-xl border-2 px-3 py-2 text-sm ${a.esYo ? "border-naranja bg-naranja/10" : "border-linea bg-white"} ${a.puesto && a.puesto > 1 ? "opacity-60" : ""}`;
+                  const contenido = (
+                    <>
+                      <span className="grid size-7 shrink-0 place-items-center rounded-full bg-tapete font-mono text-xs font-bold text-white">{a.asiento}</span>
+                      <span className="min-w-0 flex-1 truncate font-medium">{a.nombre}</span>
+                      {a.esYo && <span className="font-mono text-[10px] font-bold text-naranja">TÚ</span>}
+                      {a.puesto === 1 && <span>👑</span>}
+                      {a.puesto && a.puesto > 1 && <span className="font-mono text-xs text-tinta-suave">{a.puesto}º</span>}
+                    </>
+                  );
+                  return (
+                    <li key={a.asiento}>
+                      {a.perfil ? (
+                        <Link href={`/perfil/${a.perfil}`} className={`${clase} transition hover:border-tinta`} title={`Perfil de ${a.nombre}`}>
+                          {contenido}
+                          <span aria-hidden className="text-tinta-suave">
+                            ›
+                          </span>
+                        </Link>
+                      ) : (
+                        <div className={clase}>{contenido}</div>
+                      )}
+                    </li>
+                  );
+                })}
             </ol>
           </div>
         )}

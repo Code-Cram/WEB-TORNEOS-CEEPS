@@ -4,12 +4,14 @@ import { asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { futbolEquipos, futbolJugadores, futbolPartidos } from "@/db/schema";
 import type { DatosCuadro } from "@/modulos/cuadros/tipos";
+import { perfilesPorCorreo } from "@/modulos/personas/perfiles";
 
 export async function datosFutbol(emailUsuario: string | null): Promise<DatosCuadro> {
-  const [equipos, jugadores, partidos] = await Promise.all([
+  const [equipos, jugadores, partidos, perfiles] = await Promise.all([
     db.select().from(futbolEquipos).orderBy(asc(futbolEquipos.nombre)),
     db.select().from(futbolJugadores).orderBy(asc(futbolJugadores.id)),
     db.select().from(futbolPartidos).orderBy(asc(futbolPartidos.ronda), asc(futbolPartidos.posicion)),
+    perfilesPorCorreo(),
   ]);
   return {
     // Solo lo que necesita el navegador: sin correos ni teléfonos.
@@ -21,7 +23,7 @@ export async function datosFutbol(emailUsuario: string | null): Promise<DatosCua
         jugadores.some((j) => j.equipoId === e.id && j.email === emailUsuario),
       jugadores: jugadores
         .filter((j) => j.equipoId === e.id)
-        .map((j) => ({ nombre: j.nombre, esCapitan: j.esCapitan, esYo: !!emailUsuario && j.email === emailUsuario })),
+        .map((j) => ({ nombre: j.nombre, esCapitan: j.esCapitan, esYo: !!emailUsuario && j.email === emailUsuario, perfil: (j.email && perfiles.get(j.email)) || null })),
     })),
     partidos: partidos.map((p) => ({
       id: p.id,

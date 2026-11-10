@@ -9,7 +9,8 @@ export type MesaVista = {
   lugar: string | null;
   ganador: string | null;
   ganadorEsYo: boolean;
-  asientos: { asiento: number; nombre: string; puesto: number | null; esYo: boolean }[];
+  /** `perfil`: identificador de su perfil (/perfil/<id>). */
+  asientos: { asiento: number; nombre: string; puesto: number | null; esYo: boolean; perfil: string | null }[];
 };
 
 export type DatosPoker = {

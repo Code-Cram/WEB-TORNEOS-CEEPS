@@ -5,7 +5,8 @@ export type EquipoVista = {
   id: number;
   nombre: string;
   esMio: boolean;
-  jugadores: { nombre: string; esCapitan: boolean; esYo: boolean }[];
+  /** `perfil`: identificador de su perfil (/perfil/<id>); null si no tiene correo. */
+  jugadores: { nombre: string; esCapitan: boolean; esYo: boolean; perfil: string | null }[];
 };
 
 export type PartidoVista = {

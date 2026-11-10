@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { actividades, actividadParticipantes, actividadPartidos, aliasCorreos, archivo, palmares } from "@/db/schema";
 import { AvisoError } from "@/modulos/acceso/clave";
-import { borrarHuerfanos, campeonActividad, copiaActividad, vaciarActividad } from "@/modulos/torneos/ediciones";
+import { borrarHuerfanos, campeonActividad, copiaActividad, vaciarActividad, type Campeon } from "@/modulos/torneos/ediciones";
 import { leerCsv } from "@/modulos/importacion/csv";
 import { parsearParticipantes } from "@/modulos/importacion/parsers";
 import { parsearPlantilla, type LineaJugador } from "@/modulos/personas/plantilla";
@@ -118,7 +118,7 @@ export async function nuevaEdicionActividad(_prev: Resultado, f: FormData): Prom
     const a = await actividadOError(idDe(f));
     confirmarNombre(f, a.nombre);
     const edicion = texto(f, "edicion", 60) || String(new Date().getFullYear());
-    let campeon: { campeon: string; detalle: string } | null = null;
+    let campeon: Campeon | null = null;
     await db.transaction(async (tx) => {
       await tx.insert(archivo).values({ nombre: `${a.nombre} · ${edicion}`, tipo: "actividad", datos: await copiaActividad(tx, a.id), creadoPor: admin });
       campeon = await campeonActividad(tx, a.id);

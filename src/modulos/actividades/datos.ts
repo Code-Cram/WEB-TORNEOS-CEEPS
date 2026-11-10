@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { actividades, actividadMiembros, actividadParticipantes, actividadPartidos } from "@/db/schema";
 import type { InfoTorneo } from "@/modulos/torneos/info";
 import type { DatosCuadro } from "@/modulos/cuadros/tipos";
+import { perfilesPorCorreo } from "@/modulos/personas/perfiles";
 
 export type Actividad = typeof actividades.$inferSelect;
 
@@ -108,20 +109,21 @@ export async function miParticipacion(actividadId: number, email: string) {
 
 /** Cuadro de una actividad de tipo torneo, con el formato de fútbol y mus (sin correos). */
 export async function cuadroDeActividad(actividadId: number, email: string | null): Promise<DatosCuadro> {
-  const [participantes, partidos] = await Promise.all([
+  const [participantes, partidos, perfiles] = await Promise.all([
     participantesDe(actividadId),
     db
       .select()
       .from(actividadPartidos)
       .where(eq(actividadPartidos.actividadId, actividadId))
       .orderBy(asc(actividadPartidos.ronda), asc(actividadPartidos.posicion)),
+    perfilesPorCorreo(),
   ]);
   return {
     equipos: participantes.map((p) => ({
       id: p.id,
       nombre: p.nombre,
       esMio: !!email && p.miembros.some((m) => m.email === email),
-      jugadores: p.miembros.map((m) => ({ nombre: m.nombre, esCapitan: false, esYo: !!email && m.email === email })),
+      jugadores: p.miembros.map((m) => ({ nombre: m.nombre, esCapitan: false, esYo: !!email && m.email === email, perfil: (m.email && perfiles.get(m.email)) || null })),
     })),
     partidos: partidos.map((p) => ({
       id: p.id,

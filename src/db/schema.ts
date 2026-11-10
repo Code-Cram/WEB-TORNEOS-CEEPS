@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import { boolean, date, index, integer, jsonb, pgSchema, pgTable, primaryKey, serial, text, timestamp, unique } from "drizzle-orm/pg-core";
 
 // Todas las tablas llevan RLS activado sin políticas: así la API pública de Supabase (PostgREST) no puede leerlas.
@@ -13,6 +14,11 @@ export const usuarios = pgTable("usuarios", {
   email: text("email").primaryKey(),
   nombre: text("nombre").notNull(),
   centro: text("centro"),
+  /** Identificador público de su perfil (/perfil/<id>): así se enlaza a una persona sin enseñar su correo. */
+  perfil: text("perfil")
+    .notNull()
+    .unique()
+    .default(sql`substr(md5(random()::text || clock_timestamp()::text), 1, 12)`),
   creadoEn: creadoEn(),
 }).enableRLS();
 
@@ -420,6 +426,8 @@ export const palmares = pgTable("palmares", {
   edicion: text("edicion"),
   campeon: text("campeon").notNull(),
   detalle: text("detalle"),
+  /** Correos de quienes ganaron (el equipo, la pareja o el jugador), para su perfil. Vacío en lo apuntado a mano. */
+  emails: text("emails").array().notNull().default([]),
   fecha: timestamp("fecha", { withTimezone: true }),
   creadoEn: creadoEn(),
 }).enableRLS();

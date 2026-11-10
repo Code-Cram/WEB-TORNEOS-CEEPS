@@ -4,6 +4,7 @@ import { asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { infoTorneos, pokerAsientos, pokerJugadores, pokerMesas } from "@/db/schema";
 import type { DatosPoker } from "@/modulos/poker/tipos";
+import { perfilesPorCorreo } from "@/modulos/personas/perfiles";
 import { leerInfoTorneos } from "@/modulos/torneos/info";
 import { parsearPremios } from "@/modulos/torneos/premios";
 
@@ -14,11 +15,12 @@ export async function reservaConAcceso() {
 }
 
 export async function datosPoker(emailUsuario: string | null): Promise<DatosPoker> {
-  const [mesas, asientos, jugadores, info] = await Promise.all([
+  const [mesas, asientos, jugadores, info, perfiles] = await Promise.all([
     db.select().from(pokerMesas).orderBy(asc(pokerMesas.fase), asc(pokerMesas.numero)),
     db.select().from(pokerAsientos).orderBy(asc(pokerAsientos.asiento)),
     db.select({ email: pokerJugadores.email, nombre: pokerJugadores.nombre, estado: pokerJugadores.estado }).from(pokerJugadores),
     leerInfoTorneos(),
+    perfilesPorCorreo(),
   ]);
   const nombre = new Map(jugadores.map((j) => [j.email, j.nombre]));
   const mapaMesa = (m: (typeof mesas)[number]) => ({
@@ -37,6 +39,7 @@ export async function datosPoker(emailUsuario: string | null): Promise<DatosPoke
         nombre: nombre.get(a.jugadorEmail) ?? "?",
         puesto: a.puesto,
         esYo: a.jugadorEmail === emailUsuario,
+        perfil: perfiles.get(a.jugadorEmail) ?? null,
       })),
   });
   const yo = jugadores.find((j) => j.email === emailUsuario);
