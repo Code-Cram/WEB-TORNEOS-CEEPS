@@ -5,9 +5,8 @@ import { db } from "@/db";
 import { pokerJugadores } from "@/db/schema";
 import { BotonCopiar } from "@/components/admin/boton-copiar";
 import { MarcoAdmin, Seccion } from "@/components/admin/marco-admin";
-import { resumir, type Respuesta } from "@/lib/asistencia";
+import { grupoAsistencia, resumir, type Respuesta } from "@/lib/asistencia";
 import { agendaAsistencia, type DiaAsistencia, type FilaAsistencia } from "@/lib/asistencia-datos";
-import { TORNEOS } from "@/lib/config";
 import { enlaceCorreo, LARGO_MAXIMO_ENLACE } from "@/lib/correos";
 import { leerInfoTorneos } from "@/lib/datos";
 import { fechaCorta, fechaLarga } from "@/lib/formato";
@@ -30,15 +29,23 @@ export default async function AdminAsistencia() {
   return (
     <MarcoAdmin actual="/admin/asistencia" titulo="Asistencia">
       <p className="mb-6 max-w-3xl text-sm text-tinta-suave">
-        Cada equipo (lo confirma el capitán), cada pareja (cualquiera de los dos) y cada jugador de póker confirma en la página del torneo si viene el
-        próximo día que juega. Si cambia la fecha de su partido o su mesa, o pasa a jugar otro día (una final), se le vuelve a preguntar. Si alguien te
-        avisa por otro lado, apúntalo con ✓ o ✗.
+        Cada equipo (lo confirma el capitán), cada pareja (cualquiera de los dos), cada jugador de póker y cada participante de una actividad (si es un
+        equipo, cualquiera de él) confirma en su página si viene el próximo día que juega o que es el evento. Si cambia la fecha de su partido, su mesa o
+        el evento, o pasa a jugar otro día (una final), se le vuelve a preguntar. Si alguien te avisa por otro lado, apúntalo con ✓ o ✗.
       </p>
       {agenda.length ? (
-        agenda.map((d) => <Dia key={`${d.torneo}-${d.dia}`} d={d} lugarTorneo={info[d.torneo].lugar} reserva={d.torneo === "poker" ? reserva.map((j) => j.nombre) : []} />)
+        agenda.map((d) => (
+          <Dia
+            key={`${d.torneo}-${d.actividad?.id ?? ""}-${d.dia}`}
+            d={d}
+            lugarTorneo={d.actividad ? (d.actividad.lugar ?? "") : d.torneo === "actividad" ? "" : info[d.torneo].lugar}
+            reserva={d.torneo === "poker" ? reserva.map((j) => j.nombre) : []}
+          />
+        ))
       ) : (
         <p className="text-sm text-tinta-suave">
-          No hay ningún partido ni mesa con fecha de hoy en adelante. Las fechas se ponen en cada torneo (en el fútbol y el mus, también con «Fechas por bloques»).
+          No hay ningún partido, mesa ni evento con fecha de hoy en adelante. Las fechas se ponen en cada torneo (en el fútbol y el mus, también con «Fechas por
+          bloques») y en la ficha de cada actividad.
         </p>
       )}
     </MarcoAdmin>
@@ -46,7 +53,7 @@ export default async function AdminAsistencia() {
 }
 
 function Dia({ d, lugarTorneo, reserva }: { d: DiaAsistencia; lugarTorneo: string; reserva: string[] }) {
-  const t = TORNEOS[d.torneo];
+  const g = grupoAsistencia(d.torneo, d.actividad);
   const primero = d.filas.map((f) => f.eventos[0]).sort((a, b) => a.fecha.localeCompare(b.fecha))[0];
   const lugar = primero.lugar || lugarTorneo;
   const r = resumir(d.filas.map((f) => f.respuesta));
@@ -58,7 +65,7 @@ function Dia({ d, lugarTorneo, reserva }: { d: DiaAsistencia; lugarTorneo: strin
       : [["", d.filas]];
 
   return (
-    <Seccion titulo={`${t.icono} ${t.corto} · ${fechaLarga(primero.fecha)}`} descripcion={lugar ? `📍 ${lugar}` : undefined}>
+    <Seccion titulo={`${g.icono} ${g.nombre} · ${fechaLarga(primero.fecha)}`} descripcion={lugar ? `📍 ${lugar}` : undefined}>
       <div className="flex flex-wrap items-center gap-2">
         <span className="rounded-full bg-verde/15 px-3 py-1 text-sm font-semibold text-verde">
           ✓ {r.vienen} {r.vienen === 1 ? "viene" : "vienen"}
@@ -89,7 +96,7 @@ function Dia({ d, lugarTorneo, reserva }: { d: DiaAsistencia; lugarTorneo: strin
             {[...filas]
               .sort((a, b) => orden(a.respuesta) - orden(b.respuesta) || a.unidad.nombre.localeCompare(b.unidad.nombre, "es"))
               .map((f) => (
-                <Fila key={f.unidad.id} f={f} dia={d.dia} />
+                <Fila key={f.unidad.id} f={f} dia={d.dia} grupo={g.nombre} />
               ))}
           </ul>
         </div>
@@ -107,7 +114,7 @@ function Dia({ d, lugarTorneo, reserva }: { d: DiaAsistencia; lugarTorneo: strin
   );
 }
 
-function Fila({ f, dia }: { f: FilaAsistencia; dia: string }) {
+function Fila({ f, dia, grupo }: { f: FilaAsistencia; dia: string; grupo: string }) {
   const r = f.respuesta;
   return (
     <li className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-linea py-1.5 text-sm">
@@ -115,14 +122,16 @@ function Fila({ f, dia }: { f: FilaAsistencia; dia: string }) {
         {!r ? "?" : r.viene ? "✓" : "✗"}
       </span>
       <span className="font-semibold">{f.unidad.nombre}</span>
-      {f.unidad.torneo !== "poker" && <span className="text-xs text-tinta-suave">{f.eventos.map((e) => e.detalle).join(" · ")}</span>}
+      {f.unidad.torneo !== "poker" && f.eventos.some((e) => e.detalle) && (
+        <span className="text-xs text-tinta-suave">{f.eventos.map((e) => e.detalle).filter(Boolean).join(" · ")}</span>
+      )}
       {r?.comentario && <span className="italic">«{r.comentario}»</span>}
       {r && (
         <span className="text-xs text-tinta-suave">
           {r.quien ?? `Consejo (${r.email.split("@")[0]})`} · {fechaCorta(r.actualizadoEn)}
         </span>
       )}
-      <MarcarAsistencia torneo={f.unidad.torneo} unidad={f.unidad.id} dia={dia} nombre={f.unidad.nombre} actual={r ? r.viene : null} />
+      <MarcarAsistencia torneo={f.unidad.torneo} grupo={grupo} unidad={f.unidad.id} dia={dia} nombre={f.unidad.nombre} actual={r ? r.viene : null} />
     </li>
   );
 }

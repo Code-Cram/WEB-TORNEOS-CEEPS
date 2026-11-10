@@ -5,9 +5,8 @@ import { db } from "@/db";
 import { actividadMiembros, futbolEquipos, futbolJugadores, futbolPartidos, musIntegrantes, musParejas, musPartidos, pokerAsientos, pokerJugadores, pokerMesas, registro, usuarios } from "@/db/schema";
 import { MarcoAdmin } from "@/components/admin/marco-admin";
 import { TarjetasActividades } from "@/components/admin/tarjetas-actividades";
-import { resumir } from "@/lib/asistencia";
+import { grupoAsistencia, resumir } from "@/lib/asistencia";
 import { agendaAsistencia } from "@/lib/asistencia-datos";
-import { TORNEOS } from "@/lib/config";
 import { fechaCorta } from "@/lib/formato";
 import { exigirAdmin } from "@/lib/sesion";
 
@@ -81,9 +80,10 @@ export default async function Resumen() {
             {agenda.slice(0, 4).map((d) => {
               const r = resumir(d.filas.map((f) => f.respuesta));
               const cuando = d.filas.map((f) => f.eventos[0].fecha).sort()[0];
+              const g = grupoAsistencia(d.torneo, d.actividad);
               return (
-                <li key={`${d.torneo}-${d.dia}`}>
-                  {TORNEOS[d.torneo].icono} {TORNEOS[d.torneo].corto} · {fechaCorta(cuando)}:{" "}
+                <li key={`${d.torneo}-${d.actividad?.id ?? ""}-${d.dia}`}>
+                  {g.icono} {g.nombre} · {fechaCorta(cuando)}:{" "}
                   <strong className="text-verde">
                     {r.vienen} {r.vienen === 1 ? "viene" : "vienen"}
                   </strong>{" "}

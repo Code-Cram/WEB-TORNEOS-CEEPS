@@ -2,6 +2,8 @@ import "server-only";
 import { and, asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import {
+  actividades,
+  actividadPartidos,
   asistencia,
   futbolEquipos,
   futbolJugadores,
@@ -13,19 +15,22 @@ import {
   pokerJugadores,
   pokerMesas,
 } from "@/db/schema";
-import { proximoDia, type Cita, type Evento, type Respuesta } from "./asistencia";
+import { participantesDe, type Actividad } from "./actividades";
+import { proximoDia, type ActividadAsistencia, type Cita, type Evento, type Respuesta, type TipoAsistencia } from "./asistencia";
 import type { TorneoId } from "./config";
 import { nombreRonda } from "./cuadro";
 
-/** Lo que confirma su asistencia: un equipo, una pareja o un jugador de póker. */
+/** Lo que confirma su asistencia: un equipo, una pareja, un jugador de póker o un participante de una actividad. */
 export type Unidad = {
-  torneo: TorneoId;
-  /** Clave en la tabla asistencia: id del equipo o de la pareja; correo del jugador de póker. */
+  torneo: TipoAsistencia;
+  /** Solo en las actividades. */
+  actividad: ActividadAsistencia | null;
+  /** Clave en la tabla asistencia: id del equipo, de la pareja o del participante; correo del jugador de póker. */
   id: string;
   nombre: string;
   /** Quienes ven la confirmación en la web (con correo): el equipo, la pareja o el jugador. */
   miembros: { email: string; nombre: string }[];
-  /** Quién puede responder: el capitán, cualquiera de la pareja o el propio jugador. */
+  /** Quién puede responder: el capitán, cualquiera de la pareja o del equipo, o el propio jugador. */
   responden: string[];
   eventos: Evento[];
 };
@@ -47,6 +52,7 @@ export async function unidadesDe(torneo: TorneoId): Promise<Unidad[]> {
       if (e.capitanEmail && !miembros.some((m) => m.email === e.capitanEmail)) miembros.unshift({ email: e.capitanEmail, nombre: "Capitán" });
       return {
         torneo,
+        actividad: null,
         id: String(e.id),
         nombre: e.nombre,
         miembros,
@@ -74,6 +80,7 @@ export async function unidadesDe(torneo: TorneoId): Promise<Unidad[]> {
       const miembros = integrantes.filter((i) => i.parejaId === pa.id && i.email).map((i) => ({ email: i.email!, nombre: i.nombre }));
       return {
         torneo,
+        actividad: null,
         id: String(pa.id),
         nombre: pa.nombre,
         miembros,
@@ -97,6 +104,7 @@ export async function unidadesDe(torneo: TorneoId): Promise<Unidad[]> {
   const mesa = new Map(mesas.map((m) => [m.id, m]));
   return jugadores.map((j) => ({
     torneo,
+    actividad: null,
     id: j.email,
     nombre: j.nombre,
     miembros: [j],
@@ -111,30 +119,55 @@ export async function unidadesDe(torneo: TorneoId): Promise<Unidad[]> {
   }));
 }
 
-/** Respuestas guardadas del torneo, por «unidad|día». */
-async function respuestasDe(torneo: TorneoId, unidades: Unidad[]): Promise<Map<string, Respuesta>> {
-  const filas = await db.select().from(asistencia).where(eq(asistencia.torneo, torneo));
-  const nombre = new Map(unidades.flatMap((u) => u.miembros.map((m) => [`${u.id}|${m.email}`, m.nombre] as const)));
-  return new Map(
-    filas.map((f) => [
-      `${f.unidad}|${f.dia}`,
-      { viene: f.viene, comentario: f.comentario, email: f.email, quien: nombre.get(`${f.unidad}|${f.email}`) ?? null, actualizadoEn: f.actualizadoEn.toISOString() },
-    ]),
-  );
+/**
+ * Participantes de una actividad activa: en un evento, todos con la fecha de la actividad; en un torneo, cada uno con sus
+ * partidos. Responde cualquiera del participante (la persona o, si es un equipo, cualquiera de él).
+ */
+export async function unidadesDeActividad(a: Actividad): Promise<Unidad[]> {
+  if (a.estado !== "activa") return [];
+  const [participantes, partidos] = await Promise.all([
+    participantesDe(a.id),
+    a.tipo === "torneo" ? db.select().from(actividadPartidos).where(eq(actividadPartidos.actividadId, a.id)) : [],
+  ]);
+  const actividad = { id: a.id, nombre: a.nombre, icono: a.icono, lugar: a.lugar, porEquipos: a.porEquipos };
+  const total = Math.max(0, ...partidos.map((p) => p.ronda));
+  const nombre = new Map(participantes.map((p) => [p.id, p.nombre]));
+  return participantes.map((p): Unidad => {
+    const miembros = p.miembros.filter((m) => m.email).map((m) => ({ email: m.email!, nombre: m.nombre }));
+    return {
+      torneo: "actividad",
+      actividad,
+      id: String(p.id),
+      nombre: p.nombre,
+      miembros,
+      responden: miembros.map((m) => m.email),
+      eventos:
+        a.tipo === "torneo"
+          ? partidos
+              .filter((x) => x.aId === p.id || x.bId === p.id)
+              .map((x) => ({
+                fecha: x.fecha?.toISOString() ?? null,
+                lugar: x.lugar,
+                detalle: conRival(x.ronda, total, nombre.get((x.aId === p.id ? x.bId : x.aId) ?? -1)),
+                pendiente: x.ganadorId === null,
+              }))
+          : [{ fecha: a.fecha?.toISOString() ?? null, lugar: a.lugar, detalle: "", pendiente: true }],
+    };
+  });
 }
 
-/** El próximo día que juega el equipo, la pareja o el jugador de esta persona, con lo que haya respondido. Null si no tiene nada con fecha. */
-export async function citaDe(torneo: TorneoId, email: string, ahora = new Date()): Promise<Cita | null> {
-  const unidades = await unidadesDe(torneo);
+/** El próximo día de la unidad de esta persona, con lo que haya respondido. Null si no tiene nada con fecha. */
+async function citaEn(unidades: Unidad[], email: string, ahora: Date): Promise<Cita | null> {
   const u = unidades.find((x) => x.miembros.some((m) => m.email === email));
   const proximo = u && proximoDia(u.eventos, ahora);
   if (!u || !proximo) return null;
   const [f] = await db
     .select()
     .from(asistencia)
-    .where(and(eq(asistencia.torneo, torneo), eq(asistencia.unidad, u.id), eq(asistencia.dia, proximo.dia)));
+    .where(and(eq(asistencia.torneo, u.torneo), eq(asistencia.unidad, u.id), eq(asistencia.dia, proximo.dia)));
   return {
-    torneo,
+    torneo: u.torneo,
+    actividad: u.actividad,
     unidad: u.id,
     nombre: u.nombre,
     dia: proximo.dia,
@@ -153,24 +186,44 @@ export async function citaDe(torneo: TorneoId, email: string, ahora = new Date()
   };
 }
 
-export type FilaAsistencia = { unidad: Unidad; eventos: (Evento & { fecha: string })[]; respuesta: Respuesta | null };
-export type DiaAsistencia = { torneo: TorneoId; dia: string; filas: FilaAsistencia[] };
+/** En un torneo fijo: el próximo día que juega el equipo, la pareja o el jugador de esta persona. */
+export async function citaDe(torneo: TorneoId, email: string, ahora = new Date()): Promise<Cita | null> {
+  return citaEn(await unidadesDe(torneo), email, ahora);
+}
 
-/** Para el panel: cada día próximo de cada torneo, con quién juega ese día y qué ha respondido. Por orden de fecha. */
+/** En una actividad: el evento o el próximo partido de esta persona (o de su equipo). */
+export async function citaDeActividad(a: Actividad, email: string, ahora = new Date()): Promise<Cita | null> {
+  return citaEn(await unidadesDeActividad(a), email, ahora);
+}
+
+export type FilaAsistencia = { unidad: Unidad; eventos: (Evento & { fecha: string })[]; respuesta: Respuesta | null };
+export type DiaAsistencia = { torneo: TipoAsistencia; actividad: ActividadAsistencia | null; dia: string; filas: FilaAsistencia[] };
+
+/** Para el panel: cada día próximo de cada torneo y actividad activa, con quién va ese día y qué ha respondido. Por fecha. */
 export async function agendaAsistencia(ahora = new Date()): Promise<DiaAsistencia[]> {
-  const porTorneo = await Promise.all(
-    (["futbol", "mus", "poker"] as const).map(async (torneo) => {
-      const unidades = await unidadesDe(torneo);
-      const respuestas = await respuestasDe(torneo, unidades);
-      const dias = new Map<string, FilaAsistencia[]>();
-      for (const unidad of unidades) {
-        const proximo = proximoDia(unidad.eventos, ahora);
-        if (!proximo) continue;
-        dias.set(proximo.dia, [...(dias.get(proximo.dia) ?? []), { unidad, eventos: proximo.eventos, respuesta: respuestas.get(`${unidad.id}|${proximo.dia}`) ?? null }]);
-      }
-      return [...dias].map(([dia, filas]) => ({ torneo, dia, filas }));
-    }),
+  const activas = await db.select().from(actividades).where(eq(actividades.estado, "activa"));
+  const [guardadas, grupos] = await Promise.all([
+    db.select().from(asistencia),
+    Promise.all([...(["futbol", "mus", "poker"] as const).map((t) => unidadesDe(t)), ...activas.map((a) => unidadesDeActividad(a))]),
+  ]);
+  const porClave = new Map(guardadas.map((f) => [`${f.torneo}|${f.unidad}|${f.dia}`, f]));
+  const respuesta = (u: Unidad, dia: string): Respuesta | null => {
+    const f = porClave.get(`${u.torneo}|${u.id}|${dia}`);
+    return f
+      ? { viene: f.viene, comentario: f.comentario, email: f.email, quien: u.miembros.find((m) => m.email === f.email)?.nombre ?? null, actualizadoEn: f.actualizadoEn.toISOString() }
+      : null;
+  };
+  const dias: DiaAsistencia[] = [];
+  for (const unidades of grupos) {
+    const porDia = new Map<string, FilaAsistencia[]>();
+    for (const unidad of unidades) {
+      const proximo = proximoDia(unidad.eventos, ahora);
+      if (proximo) porDia.set(proximo.dia, [...(porDia.get(proximo.dia) ?? []), { unidad, eventos: proximo.eventos, respuesta: respuesta(unidad, proximo.dia) }]);
+    }
+    for (const [dia, filas] of porDia) dias.push({ torneo: filas[0].unidad.torneo, actividad: filas[0].unidad.actividad, dia, filas });
+  }
+  const orden: TipoAsistencia[] = ["poker", "mus", "futbol", "actividad"];
+  return dias.sort(
+    (a, b) => a.dia.localeCompare(b.dia) || orden.indexOf(a.torneo) - orden.indexOf(b.torneo) || (a.actividad?.nombre ?? "").localeCompare(b.actividad?.nombre ?? "", "es"),
   );
-  const orden: TorneoId[] = ["poker", "mus", "futbol"];
-  return porTorneo.flat().sort((a, b) => a.dia.localeCompare(b.dia) || orden.indexOf(a.torneo) - orden.indexOf(b.torneo));
 }

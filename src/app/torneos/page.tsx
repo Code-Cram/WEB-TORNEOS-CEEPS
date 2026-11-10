@@ -7,7 +7,7 @@ import { Cabecera } from "@/components/cabecera";
 import { Logos } from "@/components/logos";
 import { listarActividades } from "@/lib/actividades";
 import type { Cita } from "@/lib/asistencia";
-import { citaDe } from "@/lib/asistencia-datos";
+import { citaDe, citaDeActividad } from "@/lib/asistencia-datos";
 import { campeonActividad, campeonTorneo } from "@/lib/ediciones";
 import { esCorreoAdmin, TORNEOS, type TorneoId } from "@/lib/config";
 import { leerInfoTorneos, torneosActivos, torneosDe } from "@/lib/datos";
@@ -25,7 +25,7 @@ const FONDOS: Record<TorneoId, string> = {
 /** «📅 mar 10 nov · 16:00 · ¿Vienes? Confírmalo» en la tarjeta del torneo, hasta que se responda. */
 function avisoCita(c: Cita): string {
   const cuando = fechaCorta(c.eventos[0].fecha);
-  const vosotros = c.torneo !== "poker";
+  const vosotros = c.actividad ? c.actividad.porEquipos : c.torneo !== "poker";
   if (c.respuesta) return c.respuesta.viene ? `✓ ${cuando} · confirmado` : `✗ ${cuando} · ${vosotros ? "no venís" : "no vienes"}`;
   return c.puedeResponder ? `📅 ${cuando} · ¿${vosotros ? "Venís" : "Vienes"}? Confírmalo` : `📅 ${cuando} · falta que confirme el capitán`;
 }
@@ -40,6 +40,9 @@ export default async function Torneos() {
   const citas = new Map(await Promise.all(propios.map(async (t) => [t, await citaDe(t, sesion.email)] as const)));
   const mias = new Set(inscripciones.actividades.map((a) => a.id));
   const actividades = (await listarActividades(modoAdmin)).filter((a) => modoAdmin || mias.has(a.id) || (a.estado === "terminada" && a.tipo === "torneo"));
+  const citasActividades = new Map(
+    await Promise.all(actividades.filter((a) => mias.has(a.id)).map(async (a) => [a.id, await citaDeActividad(a, sesion.email)] as const)),
+  );
   const total = activos.length + actividades.length;
   const ganadores = new Map(
     await Promise.all([
@@ -132,6 +135,9 @@ export default async function Torneos() {
                       ? `🏆 Ganador: ${ganadores.get(a.slug) ?? "sin decidir"}`
                       : "Terminada"}
                 </span>
+              )}
+              {citasActividades.get(a.id) && (
+                <span className="mt-3 inline-block rounded-full bg-black/25 px-3 py-1 text-sm font-semibold backdrop-blur-sm">{avisoCita(citasActividades.get(a.id)!)}</span>
               )}
               <span className="absolute top-5 right-5 font-display text-2xl transition group-hover:translate-x-1">→</span>
             </Link>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { TarjetaAsistencia } from "@/components/asistencia";
 import { Cabecera } from "@/components/cabecera";
 import { VistaCuadro } from "@/components/cuadro/vista-cuadro";
 import { db } from "@/db";
@@ -8,6 +9,7 @@ import { AvisoTorneo, BannerGanador, FichaTorneo } from "@/components/ficha-torn
 import { Chip } from "@/components/pagina-torneo";
 import { Refresco } from "@/components/refresco";
 import { actividadPorSlug, contarParticipantes, cuadroDeActividad, infoDeActividad, miParticipacion } from "@/lib/actividades";
+import { citaDeActividad } from "@/lib/asistencia-datos";
 import { campeonActividad } from "@/lib/ediciones";
 import { esAdmin, exigirSesion } from "@/lib/sesion";
 
@@ -26,10 +28,11 @@ export default async function PaginaActividad(props: PageProps<"/actividades/[sl
   if (!admin && (!a || a.estado === "borrador" || (!yo && !torneoTerminado))) redirect("/torneos");
   if (!a) notFound();
 
-  const [total, cuadro, campeon] = await Promise.all([
+  const [total, cuadro, campeon, cita] = await Promise.all([
     contarParticipantes(a.id),
     a.tipo === "torneo" ? cuadroDeActividad(a.id, sesion.email) : null,
     torneoTerminado ? campeonActividad(db, a.id) : null,
+    yo ? citaDeActividad(a, sesion.email) : null,
   ]);
   const paraTi = a.infoParticipantes || yo?.nota || (a.porEquipos && yo);
 
@@ -67,6 +70,7 @@ export default async function PaginaActividad(props: PageProps<"/actividades/[sl
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
         {torneoTerminado && <BannerGanador campeon={campeon?.campeon ?? null} detalle={campeon?.detalle} />}
         <AvisoTorneo texto={a.aviso ?? ""} />
+        {cita && <TarjetaAsistencia cita={cita} yo={sesion.email} lugarTorneo={a.lugar ?? ""} />}
 
         {paraTi && (
           <div className="mb-6 rounded-3xl border-2 border-naranja bg-naranja/10 p-5">

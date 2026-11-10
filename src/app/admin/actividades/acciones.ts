@@ -43,6 +43,7 @@ function datosFicha(f: FormData) {
     descripcion: textoONull(f, "descripcion", 3000),
     calendario: textoONull(f, "calendario", 3000),
     lugar: textoONull(f, "lugar", 200),
+    fecha: fecha(f, "fecha"),
     aviso: textoONull(f, "aviso", 2000),
     infoParticipantes: textoONull(f, "infoParticipantes", 2000),
     enlaceInscripcion: enlace || null,

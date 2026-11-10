@@ -7,7 +7,22 @@ import { marcarAsistencia } from "./acciones";
 const BOTON = "grid size-7 place-items-center rounded-full border-2 text-xs font-bold transition disabled:opacity-30";
 
 /** ✓ / ✗ / ↺ para apuntar a mano lo que alguien ha avisado por otro lado (o borrar su respuesta). */
-export function MarcarAsistencia({ torneo, unidad, dia, nombre, actual }: { torneo: string; unidad: string; dia: string; nombre: string; actual: boolean | null }) {
+export function MarcarAsistencia({
+  torneo,
+  grupo,
+  unidad,
+  dia,
+  nombre,
+  actual,
+}: {
+  torneo: string;
+  /** Torneo o actividad, para el registro. */
+  grupo: string;
+  unidad: string;
+  dia: string;
+  nombre: string;
+  actual: boolean | null;
+}) {
   const [estado, enviar, pendiente] = useActionState<Resultado, FormData>(marcarAsistencia, {});
   return (
     <form
@@ -21,6 +36,7 @@ export function MarcarAsistencia({ torneo, unidad, dia, nombre, actual }: { torn
       className="ml-auto flex items-center gap-1"
     >
       <input type="hidden" name="torneo" value={torneo} />
+      <input type="hidden" name="grupo" value={grupo} />
       <input type="hidden" name="unidad" value={unidad} />
       <input type="hidden" name="dia" value={dia} />
       <input type="hidden" name="nombre" value={nombre} />

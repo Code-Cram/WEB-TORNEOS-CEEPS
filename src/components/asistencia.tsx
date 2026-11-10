@@ -5,17 +5,19 @@ import { responderAsistencia, type EstadoAsistencia } from "@/app/asistencia/acc
 import type { Cita } from "@/lib/asistencia";
 import { fechaLarga } from "@/lib/formato";
 
-/** Textos según quién confirma: el propio jugador (póker), la pareja (mus) o el capitán por el equipo (fútbol). */
+/** Textos según quién confirma: uno mismo (póker, actividades), la pareja o el equipo (mus, actividades por equipos) o el capitán (fútbol). */
 const TEXTOS = {
   poker: { pregunta: "¿Vienes a jugar?", si: "Sí, voy", no: "No puedo ir", vienen: "vienes", noVienen: "no puedes venir" },
   mus: { pregunta: "¿Venís a jugar?", si: "Sí, vamos", no: "No podemos ir", vienen: "venís", noVienen: "no podéis venir" },
   futbol: { pregunta: "¿Viene tu equipo?", si: "Sí, venimos", no: "No podemos ir", vienen: "venís", noVienen: "no podéis venir" },
+  actividad: { pregunta: "¿Vienes?", si: "Sí, voy", no: "No puedo ir", vienen: "vienes", noVienen: "no puedes venir" },
+  equipo: { pregunta: "¿Venís?", si: "Sí, vamos", no: "No podemos ir", vienen: "venís", noVienen: "no podéis venir" },
 } as const;
 
-/** «¿Vienes el martes 10 a las 16:00?»: arriba de la página del torneo, mientras quede algo por jugar con fecha. */
+/** «¿Vienes el martes 10 a las 16:00?»: arriba de la página del torneo o la actividad, mientras quede algo con fecha. */
 export function TarjetaAsistencia({ cita, yo, lugarTorneo }: { cita: Cita; yo: string; lugarTorneo: string }) {
   const [estado, enviar, pendiente] = useActionState<EstadoAsistencia, FormData>(responderAsistencia, {});
-  const t = TEXTOS[cita.torneo];
+  const t = TEXTOS[cita.actividad?.porEquipos ? "equipo" : cita.torneo];
   const r = cita.respuesta;
   const lugar = cita.eventos[0].lugar || lugarTorneo;
   const quien = !r ? "" : r.email === yo ? "Has" : r.quien ? `${r.quien} ha` : "El Consejo ha";
@@ -23,9 +25,11 @@ export function TarjetaAsistencia({ cita, yo, lugarTorneo }: { cita: Cita; yo: s
     ? cita.puedeResponder
       ? cita.torneo === "mus"
         ? "Todavía no habéis respondido: basta con que conteste uno de los dos."
-        : cita.torneo === "futbol"
-          ? "Todavía no has respondido por el equipo."
-          : "Todavía no has respondido."
+        : cita.actividad?.porEquipos
+          ? "Todavía no habéis respondido: basta con que conteste uno del equipo."
+          : cita.torneo === "futbol"
+            ? "Todavía no has respondido por el equipo."
+            : "Todavía no has respondido."
       : `Lo confirma vuestro capitán${cita.responden.length ? ` (${cita.responden.join(", ")})` : ""} y todavía no ha respondido.`
     : r.viene
       ? `${quien} ${r.email === yo || r.quien ? "confirmado" : "apuntado"} que ${t.vienen}.`
@@ -37,10 +41,7 @@ export function TarjetaAsistencia({ cita, yo, lugarTorneo }: { cita: Cita; yo: s
       <h2 id="asistencia" className="mt-1 font-display text-2xl text-verde uppercase sm:text-3xl">
         {fechaLarga(cita.eventos[0].fecha)}
       </h2>
-      <p className="mt-1 text-sm">
-        {lugar && <>📍 {lugar} · </>}
-        {cita.eventos.map((e) => e.detalle).join(" · ")}
-      </p>
+      <p className="mt-1 text-sm">{[lugar && `📍 ${lugar}`, ...cita.eventos.map((e) => e.detalle)].filter(Boolean).join(" · ")}</p>
 
       <p
         role="status"
@@ -65,6 +66,7 @@ export function TarjetaAsistencia({ cita, yo, lugarTorneo }: { cita: Cita; yo: s
           className="mt-4 space-y-3"
         >
           <input type="hidden" name="torneo" value={cita.torneo} />
+          {cita.actividad && <input type="hidden" name="actividad" value={cita.actividad.id} />}
           <input type="hidden" name="dia" value={cita.dia} />
           <label className="block">
             <span className="font-mono text-xs font-bold text-tinta-suave uppercase">Comentario (opcional)</span>
@@ -72,7 +74,7 @@ export function TarjetaAsistencia({ cita, yo, lugarTorneo }: { cita: Cita; yo: s
               name="comentario"
               maxLength={200}
               defaultValue={r?.comentario ?? ""}
-              placeholder={cita.torneo === "poker" ? "p. ej. llegaré 10 minutos tarde" : "p. ej. llegaremos 10 minutos tarde"}
+              placeholder={t.vienen === "vienes" ? "p. ej. llegaré 10 minutos tarde" : "p. ej. llegaremos 10 minutos tarde"}
               className="mt-1 block w-full rounded-xl border-2 border-linea bg-white px-3 py-2 text-sm outline-none focus:border-verde"
             />
           </label>

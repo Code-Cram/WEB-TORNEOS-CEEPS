@@ -70,6 +70,9 @@ export function FormularioActividad({ a }: { a?: Actividad }) {
           <input name="lugar" maxLength={200} defaultValue={a?.lugar ?? ""} placeholder="Hall de la EPS" className={`${estiloInput} w-full`} />
         </Campo>
       </div>
+      <Campo etiqueta="Fecha y hora · si es un evento, con ella sus participantes confirman si vienen (en los torneos, la de cada partido)">
+        <input type="datetime-local" name="fecha" defaultValue={paraInputFecha(a?.fecha ?? null)} className={`${estiloInput} w-full sm:w-64`} />
+      </Campo>
       <Campo etiqueta="Aviso destacado (déjalo vacío si no hay)">
         <textarea name="aviso" rows={2} maxLength={2000} defaultValue={a?.aviso ?? ""} className={`${estiloInput} w-full`} />
       </Campo>

@@ -250,15 +250,16 @@ export const pokerAsientos = poker.table(
 /* ───────────────────────────── ASISTENCIA ───────────────────────────── */
 
 /**
- * Confirmación de que se viene a jugar un día: una por equipo (la da el capitán), por pareja (cualquiera de los dos)
- * o por jugador de póker. Va ligada al día: si cambia la fecha del partido o de la mesa, hay que volver a confirmar.
+ * Confirmación de que se viene un día: una por equipo (la da el capitán), por pareja (cualquiera de los dos), por jugador
+ * de póker o por participante de una actividad (si es un equipo, cualquiera de él). Va ligada al día: si cambia la fecha
+ * del partido, la mesa o el evento, hay que volver a confirmar.
  */
 export const asistencia = pgTable(
   "asistencia",
   {
-    /** futbol | mus | poker */
+    /** futbol | mus | poker | actividad */
     torneo: text("torneo").notNull(),
-    /** Fútbol: id del equipo; mus: id de la pareja; póker: correo del jugador. */
+    /** Fútbol: id del equipo; mus: id de la pareja; póker: correo del jugador; actividad: id del participante (persona o equipo). */
     unidad: text("unidad").notNull(),
     /** Día al que se refiere, en hora de Madrid. */
     dia: date("dia", { mode: "string" }).notNull(),
@@ -292,6 +293,8 @@ export const actividades = pgTable("actividades", {
   descripcion: text("descripcion"),
   calendario: text("calendario"),
   lugar: text("lugar"),
+  /** Eventos: día y hora; con ella sus participantes confirman si vienen. Los torneos usan la de cada partido. */
+  fecha: timestamp("fecha", { withTimezone: true }),
   aviso: text("aviso"),
   /** Lo que ven todos los participantes (p. ej. la recompensa solidaria). */
   infoParticipantes: text("info_participantes"),
