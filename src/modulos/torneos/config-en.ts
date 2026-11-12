@@ -31,9 +31,9 @@ export const TORNEOS_EN: Record<TorneoId, { nombre: string; lema: string; lugar:
   mus: {
     nombre: "1st Mus Tournament",
     lema: "In pairs · best of 3 games to 40 points",
-    lugar: "EPS cafeteria (microwave area)",
+    lugar: "EPS dining hall (microwave area)",
     calendario:
-      "Tuesday 17 Nov, 16:00 · left half of the bracket, up to its semi-final\nWednesday 18 Nov, 16:00 · right half of the bracket, up to its semi-final\nFriday 20 Nov, 16:00 · final and 3rd/4th place match",
+      "All games at 16:00 (4 pm) in the EPS dining hall (microwave area).\nTuesday 17 Nov, 16:00 · left half of the bracket, up to its semi-final\nWednesday 18 Nov, 16:00 · right half of the bracket, up to its semi-final\nFriday 20 Nov, 16:00 · final and 3rd/4th place match",
     formato:
       "In pairs, single elimination until the champion pair.\nEach match is best of 3 games to 40 points. The final is best of 5.\nEach half of the bracket is played on a different day, so not all pairs have to come at once.\nThe two pairs that lose in the semi-finals play for 3rd and 4th place.",
     premios:
@@ -53,8 +53,9 @@ export const TORNEOS_EN: Record<TorneoId, { nombre: string; lema: string; lugar:
   poker: {
     nombre: "1st Poker Tournament",
     lema: "8 qualifying tables · final table of 8",
-    lugar: "EPS cafeteria (microwave area)",
-    calendario: "Tuesday 10 Nov, 16:00 · qualifying round, 1st session\nThursday 12 Nov, 16:00 · qualifying round, 2nd session\nFriday 13 Nov, 16:00 · final table",
+    lugar: "EPS dining hall (microwave area)",
+    calendario:
+      "All games at 16:00 (4 pm) in the EPS dining hall (microwave area).\nTuesday 10 Nov, 16:00 · qualifying round, 1st session\nThursday 12 Nov, 16:00 · qualifying round, 2nd session\nFriday 13 Nov, 16:00 · final table",
     formato:
       "8 qualifying tables of 8 players, spread between Tuesday 10 and Thursday 12 according to each player's availability.\nThe winner of each table goes through to the final table on Friday 13.\nNo dealer at the qualifying tables (players take turns dealing); the final table has a dealer from the Council.\n64 places in order of sign-up; the rest go on a waiting list to cover drop-outs.",
     premios: "1st €100 gift card\n2nd €50 gift card\n3rd €20 gift card\nThe 8 players at the final table get a deck of cards as a gift.",

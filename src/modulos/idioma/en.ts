@@ -365,5 +365,5 @@ export const EN: Record<string, string> = {
   "Ir a los torneos": "Go to the tournaments",
 
   // Lugares de siempre (datos que se escriben en español)
-  "Cafetería de la EPS (zona de microondas)": "EPS cafeteria (microwave area)",
+  "Comedor de la EPS (zona de microondas)": "EPS dining hall (microwave area)",
 };
