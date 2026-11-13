@@ -19,8 +19,12 @@ const PALOS = ["♠", "♥", "♣", "♦"];
 export function VistaPoker({ datos }: { datos: DatosPoker }) {
   const sorteado = datos.clasificatorias.length > 0;
   const miMesa = datos.clasificatorias.find((m) => m.asientos.some((a) => a.esYo));
+  const enFinal = datos.final?.asientos.some((a) => a.esYo) ? datos.final : null;
+  const dosPorMesa = datos.clasificanPorMesa >= 2;
+  // La final ya está completa (o todas las mesas tienen ganador): se abre por la pestaña de la mesa final.
+  const finalCompleta = (datos.final?.asientos.length ?? 0) >= POKER.asientos;
   const [pestana, setPestana] = useState<"clasificatorias" | "final">(
-    datos.final && datos.clasificatorias.every((m) => m.ganador) ? "final" : "clasificatorias",
+    datos.final && (finalCompleta || datos.clasificatorias.every((m) => m.ganador)) ? "final" : "clasificatorias",
   );
   const [abierta, setAbierta] = useState<MesaVista | null>(null);
   const t = useT();
@@ -33,7 +37,14 @@ export function VistaPoker({ datos }: { datos: DatosPoker }) {
           <Negritas texto={t("Estás en la **lista de reserva**. Si alguien se da de baja, el Consejo te avisará y aparecerás en una mesa.")} />
         </Aviso>
       )}
-      {miMesa && (
+      {enFinal && !enFinal.ganador && (
+        <Aviso>
+          <Negritas texto={t("🏆 ¡Estás en la **mesa final**!")} />
+          {enFinal.fecha && <> · {fechaCorta(enFinal.fecha, idioma)}</>}
+          {t(". ¡Suerte!")}
+        </Aviso>
+      )}
+      {miMesa && !miMesa.ganador && !enFinal && (
         <Aviso>
           <Negritas texto={t("Juegas en la **mesa {n}**", { n: miMesa.numero })} />
           {/* Con fecha, el día ya va en ella: el nombre del turno sería repetirlo. */}
@@ -63,15 +74,17 @@ export function VistaPoker({ datos }: { datos: DatosPoker }) {
         <>
           {!sorteado && (
             <p className="mb-4 rounded-2xl border-2 border-dashed border-tinta/40 bg-papel p-4 text-center text-sm text-tinta-suave">
-              {t("🎲 Las mesas aún no se han sorteado. Así quedarán: {mesas} mesas de {asientos}; el ganador de cada una pasa a la mesa final (los premios, en la pestaña «Mesa final»).", {
-                mesas: POKER.mesas,
-                asientos: POKER.asientos,
-              })}
+              {t(
+                dosPorMesa
+                  ? "🎲 Las mesas aún no se han sorteado. Así quedarán: {mesas} mesas de {asientos}; los dos primeros de cada una pasan a la mesa final (los premios, en la pestaña «Mesa final»)."
+                  : "🎲 Las mesas aún no se han sorteado. Así quedarán: {mesas} mesas de {asientos}; el ganador de cada una pasa a la mesa final (los premios, en la pestaña «Mesa final»).",
+                { mesas: POKER.mesas, asientos: POKER.asientos },
+              )}
             </p>
           )}
           <div className="grid gap-x-6 gap-y-8 sm:grid-cols-2 xl:grid-cols-3">
             {(sorteado ? datos.clasificatorias : mesasVacias()).map((m) => (
-              <Mesa key={m.numero} mesa={m} onAbrir={sorteado ? () => setAbierta(m) : undefined} />
+              <Mesa key={m.numero} mesa={m} dosPorMesa={dosPorMesa} onAbrir={sorteado ? () => setAbierta(m) : undefined} />
             ))}
           </div>
         </>
@@ -91,7 +104,16 @@ export function VistaPoker({ datos }: { datos: DatosPoker }) {
             {abierta.lugar && <p className="text-sm">📍 {t(abierta.lugar)}</p>}
             {abierta.ganador && (
               <p className="rounded-xl bg-oros/20 px-3 py-2 text-sm">
-                👑 <strong>{abierta.ganador}</strong> {abierta.fase === "final" ? t("gana el torneo") : t("pasa a la mesa final")}
+                👑 <strong>{abierta.ganador}</strong>{" "}
+                {abierta.fase === "final" ? (
+                  t("gana el torneo")
+                ) : segundoQuePasa(abierta, dosPorMesa) ? (
+                  <>
+                    {t("y")} <strong>{segundoQuePasa(abierta, dosPorMesa)!.nombre}</strong> {t("pasan a la mesa final")}
+                  </>
+                ) : (
+                  t("pasa a la mesa final")
+                )}
               </p>
             )}
             <ol className="space-y-1.5">
@@ -99,14 +121,16 @@ export function VistaPoker({ datos }: { datos: DatosPoker }) {
                 // Ganador arriba, luego quien sigue jugando y después los eliminados (2º, 3º…).
                 .sort((a, b) => (a.puesto ?? 1.5) - (b.puesto ?? 1.5) || a.asiento - b.asiento)
                 .map((a) => {
-                  const clase = `flex items-center gap-3 rounded-xl border-2 px-3 py-2 text-sm ${a.esYo ? "border-naranja bg-naranja/10" : "border-linea bg-white"} ${a.puesto && a.puesto > 1 ? "opacity-60" : ""}`;
+                  const pasa = segundoQuePasa(abierta, dosPorMesa)?.asiento === a.asiento;
+                  const clase = `flex items-center gap-3 rounded-xl border-2 px-3 py-2 text-sm ${a.esYo ? "border-naranja bg-naranja/10" : "border-linea bg-white"} ${a.puesto && a.puesto > 1 && !pasa ? "opacity-60" : ""}`;
                   const contenido = (
                     <>
                       <span className="grid size-7 shrink-0 place-items-center rounded-full bg-tapete font-mono text-xs font-bold text-white">{a.asiento}</span>
                       <span className="min-w-0 flex-1 truncate font-medium">{a.nombre}</span>
                       {a.esYo && <span className="font-mono text-[10px] font-bold text-naranja">{t("TÚ")}</span>}
                       {a.puesto === 1 && <span>👑</span>}
-                      {a.puesto && a.puesto > 1 && <span className="font-mono text-xs text-tinta-suave">{ordinal(a.puesto, idioma)}</span>}
+                      {pasa && <span title={t("Pasa a la mesa final")}>🥈</span>}
+                      {a.puesto && a.puesto > 1 && !pasa && <span className="font-mono text-xs text-tinta-suave">{ordinal(a.puesto, idioma)}</span>}
                     </>
                   );
                   return (
@@ -150,11 +174,17 @@ function mesasVacias(): MesaVista[] {
   }));
 }
 
+/** Quien queda segundo en una mesa clasificatoria, si pasa a la mesa final (cuando pasan dos por mesa). */
+function segundoQuePasa(mesa: MesaVista, dosPorMesa: boolean) {
+  return dosPorMesa && mesa.fase === "clasificatoria" && mesa.ganador ? mesa.asientos.find((a) => a.puesto === 2) : undefined;
+}
+
 /** Mesa ovalada de tapete con los asientos alrededor y el ganador en el centro. */
-function Mesa({ mesa, grande = false, onAbrir }: { mesa: MesaVista; grande?: boolean; onAbrir?: () => void }) {
+function Mesa({ mesa, grande = false, dosPorMesa = false, onAbrir }: { mesa: MesaVista; grande?: boolean; dosPorMesa?: boolean; onAbrir?: () => void }) {
   const asientos = Array.from({ length: POKER.asientos }, (_, i) => mesa.asientos.find((a) => a.asiento === i + 1) ?? null);
   const mia = mesa.asientos.some((a) => a.esYo);
   const terminada = !!mesa.ganador;
+  const segundo = segundoQuePasa(mesa, dosPorMesa);
   const t = useT();
   const idioma = useIdioma();
   return (
@@ -175,6 +205,7 @@ function Mesa({ mesa, grande = false, onAbrir }: { mesa: MesaVista; grande?: boo
               <div className="animar-entrada">
                 <div className={grande ? "text-4xl" : "text-2xl"}>👑</div>
                 <div className={`font-display leading-tight uppercase ${grande ? "text-2xl" : "text-sm"}`}>{mesa.ganador}</div>
+                {segundo && <div className="text-[11px] leading-tight font-semibold">🥈 {nombreCorto(segundo.nombre)}</div>}
                 <div className="font-mono text-[10px] tracking-wider text-[#f3d98b] uppercase">
                   {mesa.fase === "final" ? t("Campeón del torneo") : t("A la mesa final")}
                 </div>
@@ -195,7 +226,8 @@ function Mesa({ mesa, grande = false, onAbrir }: { mesa: MesaVista; grande?: boo
         {/* Asientos */}
         {asientos.map((a, i) => {
           const { x, y } = posicionAsiento(i, POKER.asientos);
-          const eliminado = a?.puesto != null && a.puesto > 1;
+          const plata = !!a && segundo?.asiento === a.asiento;
+          const eliminado = a?.puesto != null && a.puesto > 1 && !plata;
           const gana = a?.puesto === 1;
           return (
             <div
@@ -211,12 +243,14 @@ function Mesa({ mesa, grande = false, onAbrir }: { mesa: MesaVista; grande?: boo
                       ? "border-naranja bg-naranja text-white"
                       : gana
                         ? "border-oros bg-oros text-tinta"
-                        : eliminado
+                        : plata
+                          ? "border-[#c9ccd1] bg-[#c9ccd1] text-tinta"
+                          : eliminado
                           ? "border-linea bg-linea text-tinta-suave"
                           : "border-tinta bg-papel text-tinta"
                 }`}
               >
-                {a ? (gana ? "👑" : eliminado ? `${a.puesto}º` : iniciales(a.nombre)) : i + 1}
+                {a ? (gana ? "👑" : plata ? "🥈" : eliminado ? ordinal(a.puesto ?? 0, idioma) : iniciales(a.nombre)) : i + 1}
               </span>
               <span
                 className={`mt-0.5 max-w-full truncate rounded px-1 text-center leading-tight ${grande ? "text-xs" : "text-[10px]"} ${
@@ -255,13 +289,17 @@ function MesaFinal({ datos, onAbrir }: { datos: DatosPoker; onAbrir: (m: MesaVis
     ganadorEsYo: false,
     asientos: [],
   };
-  const clasificados = datos.clasificatorias.filter((m) => m.ganador).length;
+  const dosPorMesa = datos.clasificanPorMesa >= 2;
+  const clasificados = dosPorMesa ? final.asientos.length : datos.clasificatorias.filter((m) => m.ganador).length;
+  const completa = final.asientos.length >= POKER.asientos;
   const t = useT();
   return (
     <div className="space-y-8">
       <div>
         <p className="mb-2 text-center font-mono text-xs font-bold tracking-widest text-tinta-suave uppercase">
-          {t("{clasificados}/{mesas} clasificados · el ganador de la mesa N se sienta en el asiento N", { clasificados, mesas: POKER.mesas })}
+          {dosPorMesa
+            ? t("{clasificados}/{plazas} clasificados · pasan los dos primeros de cada mesa", { clasificados, plazas: POKER.asientos })
+            : t("{clasificados}/{mesas} clasificados · el ganador de la mesa N se sienta en el asiento N", { clasificados, mesas: POKER.mesas })}
         </p>
         <Mesa mesa={final} grande onAbrir={datos.final ? () => onAbrir(final) : undefined} />
       </div>
@@ -276,11 +314,13 @@ function MesaFinal({ datos, onAbrir }: { datos: DatosPoker; onAbrir: (m: MesaVis
           <ul className="mt-3 grid grid-cols-2 gap-1.5 text-sm">
             {Array.from({ length: POKER.mesas }, (_, i) => {
               const m = datos.clasificatorias.find((x) => x.numero === i + 1);
+              const segundo = m && segundoQuePasa(m, dosPorMesa);
+              // Con la final ya completa, una mesa sin ganador es que no llegó a jugarse.
               return (
                 <li key={i} className="flex items-center gap-2 rounded-lg bg-white px-2 py-1.5">
                   <span className="font-mono text-xs text-tinta-suave">{t("M{n}", { n: i + 1 })}</span>
-                  <span className={`truncate ${m?.ganador ? "font-semibold" : "text-tinta-suave italic"}`}>
-                    {m?.ganador ? nombreCorto(m.ganador) : t("pendiente")}
+                  <span className={`min-w-0 truncate ${m?.ganador ? "font-semibold" : "text-tinta-suave italic"}`}>
+                    {m?.ganador ? `${nombreCorto(m.ganador)}${segundo ? ` · ${nombreCorto(segundo.nombre)}` : ""}` : completa ? t("no se jugó") : t("pendiente")}
                   </span>
                 </li>
               );

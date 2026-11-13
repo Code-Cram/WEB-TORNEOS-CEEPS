@@ -19,4 +19,6 @@ export type DatosPoker = {
   premios: Premio[];
   miEstado: string | null;
   reservas: number;
+  /** Cuántos de cada mesa clasificatoria pasan a la mesa final: 1 (el ganador) o 2 (también el segundo). */
+  clasificanPorMesa: number;
 };

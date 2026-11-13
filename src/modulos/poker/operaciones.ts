@@ -1,8 +1,8 @@
-import { and, asc, eq, inArray, notInArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull, ne, notInArray, sql } from "drizzle-orm";
 import type { Db, Tx } from "@/db/client";
-import { pokerAsientos, pokerJugadores, pokerMesas } from "@/db/schema";
+import { infoTorneos, pokerAsientos, pokerJugadores, pokerMesas } from "@/db/schema";
 import { POKER } from "@/modulos/poker/config";
-import { ordenarTurnos, sortearMesas } from "@/modulos/poker/mesas";
+import { finalistas, ordenarTurnos, sortearMesas } from "@/modulos/poker/mesas";
 
 /** Turnos que aparecen en la disponibilidad de los inscritos, por orden de fecha. */
 export async function turnosPoker(db: Db | Tx): Promise<string[]> {
@@ -47,14 +47,31 @@ export async function sortearPoker(db: Db) {
   });
 }
 
-/** La mesa final se rellena sola: el ganador de la mesa N ocupa el asiento N. */
+/**
+ * La mesa final se rellena sola: el ganador de la mesa N ocupa el asiento N y, si el Consejo ha puesto que pasan dos por
+ * mesa, los segundos (quien tiene el puesto 2 en su mesa) ocupan los asientos libres (ver `finalistas`).
+ */
 export async function recalcularFinalPoker(tx: Tx) {
   await asegurarMesas(tx);
   const mesas = await tx.select().from(pokerMesas);
   const final = mesas.find((m) => m.fase === "final")!;
-  const deseados = mesas
-    .filter((m) => m.fase === "clasificatoria" && m.ganadorEmail)
-    .map((m) => ({ asiento: m.numero, email: m.ganadorEmail! }));
+  const [ajuste] = await tx.select({ porMesa: infoTorneos.clasificanPorMesa }).from(infoTorneos).where(eq(infoTorneos.torneo, "poker"));
+  const sentadosClasif = await tx
+    .select({ mesaId: pokerAsientos.mesaId, email: pokerAsientos.jugadorEmail, puesto: pokerAsientos.puesto })
+    .from(pokerAsientos)
+    .where(ne(pokerAsientos.mesaId, final.id));
+  // Las mesas que se juegan son las que tienen gente sentada (con menos jugadores, quedan mesas vacías).
+  const deseados = finalistas(
+    mesas
+      .filter((m) => m.fase === "clasificatoria" && (!!m.ganadorEmail || sentadosClasif.some((a) => a.mesaId === m.id)))
+      .map((m) => ({
+        numero: m.numero,
+        ganador: m.ganadorEmail,
+        segundo: sentadosClasif.find((a) => a.mesaId === m.id && a.puesto === 2)?.email ?? null,
+      })),
+    ajuste?.porMesa ?? 1,
+    POKER.asientos,
+  );
   const actuales = await tx.select().from(pokerAsientos).where(eq(pokerAsientos.mesaId, final.id));
   const sobran = actuales.filter((a) => !deseados.some((d) => d.asiento === a.asiento && d.email === a.jugadorEmail));
   if (sobran.length)
@@ -64,6 +81,20 @@ export async function recalcularFinalPoker(tx: Tx) {
   // Si el ganador de la final ya no está sentado, se anula.
   if (final.ganadorEmail && !deseados.some((d) => d.email === final.ganadorEmail))
     await tx.update(pokerMesas).set({ ganadorEmail: null }).where(eq(pokerMesas.id, final.id));
+}
+
+let ultimaPuestaAlDia = 0;
+
+/**
+ * Deja la mesa final como toca con lo que ya está apuntado (p. ej. tras cambiar cuántos pasan por mesa). Se llama al
+ * abrir las páginas del póker: como mucho una vez por minuto en cada servidor, salvo `forzar`, y solo si ya hay alguna
+ * mesa con ganador (antes del sorteo no crea nada).
+ */
+export async function ponerFinalAlDia(db: Db, forzar = false) {
+  if (!forzar && Date.now() - ultimaPuestaAlDia < 60_000) return;
+  ultimaPuestaAlDia = Date.now();
+  const [conGanador] = await db.select({ id: pokerMesas.id }).from(pokerMesas).where(and(eq(pokerMesas.fase, "clasificatoria"), isNotNull(pokerMesas.ganadorEmail))).limit(1);
+  if (conGanador) await db.transaction((tx) => recalcularFinalPoker(tx));
 }
 
 /** Sienta a un jugador en un asiento; si ya estaba en otra mesa/asiento, intercambia posiciones. */

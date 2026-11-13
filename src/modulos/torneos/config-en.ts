@@ -52,12 +52,12 @@ export const TORNEOS_EN: Record<TorneoId, { nombre: string; lema: string; lugar:
   },
   poker: {
     nombre: "1st Poker Tournament",
-    lema: "8 qualifying tables · final table of 8",
+    lema: "4 qualifying tables · final table of 8",
     lugar: "EPS dining hall (microwave area)",
     calendario:
       "All games at 16:00 (4 pm) in the EPS dining hall (microwave area).\nTuesday 10 Nov, 16:00 · qualifying round, 1st session\nThursday 12 Nov, 16:00 · qualifying round, 2nd session\nFriday 13 Nov, 16:00 · final table",
     formato:
-      "8 qualifying tables of 8 players, spread between Tuesday 10 and Thursday 12 according to each player's availability.\nThe winner of each table goes through to the final table on Friday 13.\nNo dealer at the qualifying tables (players take turns dealing); the final table has a dealer from the Council.\n64 places in order of sign-up; the rest go on a waiting list to cover drop-outs.",
+      "Qualifying round (Tuesday 10 and Thursday 12): 4 tables were played, with 32 players.\nThe top two of each table go through to the final table on Friday 13 (8 players).\nNo dealer at the qualifying tables (players take turns dealing); the final table has a dealer from the Council.",
     premios: "1st €100 gift card\n2nd €50 gift card\n3rd €20 gift card\nThe 8 players at the final table get a deck of cards as a gift.",
     reglas: [
       "No-limit Texas Hold'em: each player gets 2 private cards and 5 community cards are dealt face up on the table (3 on the flop, 1 on the turn and 1 on the river). The best 5-card hand out of the 7 wins.",
@@ -74,7 +74,7 @@ export const TORNEOS_EN: Record<TorneoId, { nombre: string; lema: string; lugar:
       "10. High card: if nobody has anything, the highest card wins.",
       "Betting: there's one round before the flop and another after each community card. On your turn you can check, bet, call, raise or fold; going **all-in** means betting all your chips.",
       "Blinds: the two players to the left of the button post the small and big blind before the deal. The button moves to the next player each hand.",
-      "Your table: there's no dealer, whoever has the button deals. The table is won by whoever ends up with all the chips, and they go through to the final table on Friday 13.",
+      "Your table: there's no dealer, whoever has the button deals. The last two players with chips go through to the final table on Friday 13.",
       "Note: the starting chips and how often the blinds go up will be explained by the organisers at the start. If you can, bring chips.",
     ].join("\n"),
   },

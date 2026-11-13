@@ -21,6 +21,7 @@ import { nombreRonda, RONDA_TERCER_PUESTO } from "@/modulos/cuadros/logica";
 import { TORNEOS, type TorneoId } from "@/modulos/torneos/config";
 import { campeonActividad, campeonTorneo } from "@/modulos/torneos/ediciones";
 import { leerInfoTorneos } from "@/modulos/torneos/info";
+import { clasificanPorMesa } from "@/modulos/poker/datos";
 import { enumerar, publicacionDeAviso, type Publicacion, type Tema } from "./publicaciones";
 
 const hora = (d: Date | string) => fechaCorta(typeof d === "string" ? d : d.toISOString())!.split(" · ")[1];
@@ -68,7 +69,7 @@ function publicacionJugado(j: Jugado): Publicacion {
  * del póker y los campeones. Con los nombres completos (lo decidió el Consejo).
  */
 export async function publicaciones(ahora = new Date()): Promise<Publicacion[]> {
-  const [info, calendario, equipos, partidosF, parejas, partidosM, partidas, mesas, asientos, jugadores, acts, participantes, partidosA] = await Promise.all([
+  const [info, calendario, equipos, partidosF, parejas, partidosM, partidas, mesas, asientos, jugadores, acts, participantes, partidosA, porMesa] = await Promise.all([
     leerInfoTorneos(),
     elementosCalendario(),
     db.select({ id: futbolEquipos.id, nombre: futbolEquipos.nombre }).from(futbolEquipos),
@@ -82,6 +83,7 @@ export async function publicaciones(ahora = new Date()): Promise<Publicacion[]> 
     db.select().from(actividades).where(inArray(actividades.estado, ["activa", "terminada"])),
     db.select({ id: actividadParticipantes.id, nombre: actividadParticipantes.nombre }).from(actividadParticipantes),
     db.select().from(actividadPartidos).orderBy(asc(actividadPartidos.ronda), asc(actividadPartidos.posicion)),
+    clasificanPorMesa(),
   ]);
   const lista: Publicacion[] = [];
   const nombreTorneo = (t: TorneoId) => info[t].nombre;
@@ -204,14 +206,17 @@ export async function publicaciones(ahora = new Date()): Promise<Publicacion[]> 
     if (m.ganadorEmail) {
       const ganador = nJugador.get(m.ganadorEmail) ?? "?";
       const esFinal = m.fase === "final";
+      // Si pasan dos por mesa, también quien queda segundo.
+      const asientoSegundo = !esFinal && porMesa >= 2 ? asientos.find((a) => a.mesaId === m.id && a.puesto === 2) : undefined;
+      const segundo = asientoSegundo && nJugador.get(asientoSegundo.jugadorEmail);
       lista.push({
         clave: `resultado-poker-${m.id}`,
         tipo: "resultado",
         tema: "poker",
         icono: TORNEOS.poker.icono,
         antetitulo: `${nombreTorneo("poker")} · ${esFinal ? "Mesa final" : `Mesa ${m.numero}`}`.toUpperCase(),
-        bloques: [{ titulo: `Gana ${ganador}`, lineas: [cuando(m.fecha, m.lugar)].filter(Boolean) }],
-        destacado: esFinal ? `¡${ganador} gana el torneo!` : `¡${ganador} pasa a la mesa final!`,
+        bloques: [{ titulo: `Gana ${ganador}`, lineas: [segundo && `2º: ${segundo}`, cuando(m.fecha, m.lugar)].filter((x): x is string => !!x) }],
+        destacado: esFinal ? `¡${ganador} gana el torneo!` : segundo ? `¡${ganador} y ${segundo} pasan a la mesa final!` : `¡${ganador} pasa a la mesa final!`,
         orden: m.fecha?.toISOString() ?? "",
       });
     }

@@ -55,6 +55,8 @@ export const infoTorneos = pgTable("info_torneos", {
   reservaAutomatica: boolean("reserva_automatica").notNull().default(true),
   /** Desde cuándo está activado: lo que tocaba antes no se hace de golpe al activarlo. */
   reservaAutomaticaDesde: timestamp("reserva_automatica_desde", { withTimezone: true }),
+  /** Solo póker: cuántos de cada mesa clasificatoria pasan a la mesa final (1, el ganador; 2, también el segundo). */
+  clasificanPorMesa: integer("clasifican_por_mesa").notNull().default(1),
 }).enableRLS();
 
 /** Ficheros de sql/ ya aplicados en esta base de datos (los apunta scripts/migrar.mts al desplegar). */

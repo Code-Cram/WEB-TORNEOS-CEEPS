@@ -5,6 +5,8 @@ import { VistaPoker } from "@/modulos/poker/vista-poker";
 import type { Cita } from "@/modulos/asistencia/logica";
 import { datosPoker } from "@/modulos/poker/datos";
 import { entradaDesdeReserva, estadoReservaAutomatica, procesarReservas } from "@/modulos/poker/relevos";
+import { ponerFinalAlDia } from "@/modulos/poker/operaciones";
+import { db } from "@/db";
 import { avisoDePlazo } from "@/modulos/poker/reserva";
 import { leerInfoTorneos } from "@/modulos/torneos/info";
 import { torneosDe } from "@/modulos/acceso/inscripciones";
@@ -23,6 +25,7 @@ export default async function Poker() {
   if (!(await torneosDe(sesion.email)).poker && !(await esAdmin()) && !(await leerInfoTorneos()).poker.finalizado) redirect("/torneos");
   // Antes de enseñar las mesas, se pasan a la reserva las plazas que toque (ver poker/reserva.ts).
   await procesarReservas().catch((e) => console.error(e));
+  await ponerFinalAlDia(db).catch((e) => console.error(e));
   const { t, idioma } = await traduccion();
   const [datos, reserva, entroEn] = await Promise.all([datosPoker(sesion.email, idioma), estadoReservaAutomatica(), entradaDesdeReserva(sesion.email)]);
   /** En la tarjeta de asistencia, hasta cuándo tiene para confirmar antes de que su plaza pase a la reserva. */

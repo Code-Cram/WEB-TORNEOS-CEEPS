@@ -103,6 +103,7 @@ describe("perfil: cómo le va en el póker", () => {
     premios: [],
     miEstado,
     reservas: 0,
+    clasificanPorMesa: 1,
   });
 
   test("con su mesa y quién se sienta en ella", () => {

@@ -80,7 +80,8 @@ export function recorridoPoker(
         ronda: m.fase === "final" ? t("Mesa final") : t("Mesa {n}", { n: m.numero }),
         rival: null,
         marcador: puesto ? ordinal(puesto, idioma) : null,
-        resultado: puesto === 1 ? "V" : puesto ? "D" : null,
+        // Quien está en la mesa final ha pasado su mesa, aunque fuera como segundo.
+        resultado: puesto === 1 || (m.fase === "clasificatoria" && final && puesto) ? "V" : puesto ? "D" : null,
         fecha: m.fecha,
       };
     });

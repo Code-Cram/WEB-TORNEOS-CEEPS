@@ -191,6 +191,28 @@ export async function guardarAccesoReserva(_prev: Resultado, f: FormData): Promi
   });
 }
 
+/** Cuántos de cada mesa clasificatoria pasan a la mesa final: el ganador o, si se juegan menos mesas, los dos primeros. */
+export async function guardarClasificados(_prev: Resultado, f: FormData): Promise<Resultado> {
+  const admin = await exigirAdmin();
+  return intentar(async () => {
+    const porMesa = texto(f, "porMesa", 2) === "2" ? 2 : 1;
+    await db.transaction(async (tx) => {
+      await tx
+        .insert(infoTorneos)
+        // Si la fila es nueva, el cierre de inscripción sigue siendo el de por defecto.
+        .values({ torneo: "poker", clasificanPorMesa: porMesa, cierreInscripcion: new Date(CIERRE_INSCRIPCIONES) })
+        .onConflictDoUpdate({ target: infoTorneos.torneo, set: { clasificanPorMesa: porMesa } });
+      await recalcularFinalPoker(tx);
+    });
+    return hecho(
+      admin,
+      porMesa === 2 ? "A la mesa final pasan los dos primeros de cada mesa." : "A la mesa final pasa el ganador de cada mesa.",
+      porMesa === 2 ? ["En cada mesa jugada, marca el ganador con 👑 y pon un 2 en «Puesto» a quien quede segundo."] : undefined,
+      TORNEOS.poker.corto,
+    );
+  });
+}
+
 /**
  * Póker: cambia de asiento a dos jugadores de las mesas clasificatorias (también de mesas distintas). Si uno no tenía
  * mesa, se sienta en el sitio del otro, que se queda sin mesa. No se toca una mesa que ya tiene ganador.

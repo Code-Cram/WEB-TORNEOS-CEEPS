@@ -6,13 +6,14 @@ import { estiloInput } from "@/modulos/panel/estilos";
 import { FormAccion } from "@/modulos/panel/form-accion";
 import { MarcoAdmin, Seccion } from "@/modulos/panel/marco";
 import { CUPO_POKER, POKER } from "@/modulos/poker/config";
-import { reservaConAcceso } from "@/modulos/poker/datos";
+import { clasificanPorMesa, reservaConAcceso } from "@/modulos/poker/datos";
 import { paraInputFecha } from "@/modulos/compartido/formato";
 import { ordenarTurnos } from "@/modulos/poker/mesas";
 import { exigirAdmin } from "@/modulos/acceso/sesion";
 import { procesarReservas } from "@/modulos/poker/relevos";
+import { ponerFinalAlDia } from "@/modulos/poker/operaciones";
 import { ReservaAutomaticaAdmin } from "@/modulos/poker/reserva-admin";
-import { guardarAccesoReserva, guardarJugadorPoker, guardarMesa, renombrarTurno } from "@/modulos/poker/acciones";
+import { guardarAccesoReserva, guardarClasificados, guardarJugadorPoker, guardarMesa, renombrarTurno } from "@/modulos/poker/acciones";
 import { sortearTorneo } from "@/modulos/torneos/acciones";
 import { intercambiarEnMesas } from "@/modulos/poker/acciones";
 import { Finalizar, NuevaEdicion } from "@/modulos/torneos/edicion-admin";
@@ -28,11 +29,13 @@ const COLOR_ESTADO: Record<string, string> = { inscrito: "bg-verde/15 text-verde
 export default async function AdminPoker() {
   await exigirAdmin();
   await procesarReservas(true).catch((e) => console.error(e));
-  const [mesas, asientos, jugadores, accesoReserva] = await Promise.all([
+  await ponerFinalAlDia(db, true).catch((e) => console.error(e));
+  const [mesas, asientos, jugadores, accesoReserva, porMesa] = await Promise.all([
     db.select().from(pokerMesas).orderBy(asc(pokerMesas.fase), asc(pokerMesas.numero)),
     db.select().from(pokerAsientos),
     db.select().from(pokerJugadores).orderBy(asc(pokerJugadores.inscritoEn)),
     reservaConAcceso(),
+    clasificanPorMesa(),
   ]);
   const clasif = mesas.filter((m) => m.fase === "clasificatoria");
   const final = mesas.find((m) => m.fase === "final");
@@ -74,7 +77,26 @@ export default async function AdminPoker() {
       </Seccion>
 
       {clasif.length > 0 && (
-        <Seccion titulo="Mesas" descripcion="Cambia jugadores de asiento con los desplegables (si eliges a alguien de otra mesa, se le mueve). Marca el ganador con el botón 👑: pasa solo a la mesa final, al asiento con el número de su mesa. El puesto (2º–8º) es opcional.">
+        <Seccion
+          titulo="Mesas"
+          descripcion={
+            porMesa >= 2
+              ? "Cambia jugadores de asiento con los desplegables (si eliges a alguien de otra mesa, se le mueve). En cada mesa jugada, marca el ganador con el botón 👑 y pon un 2 en «Puesto» a quien quede segundo: los dos pasan solos a la mesa final (el ganador, al asiento con el número de su mesa; los segundos, a los asientos libres). El resto de puestos es opcional."
+              : "Cambia jugadores de asiento con los desplegables (si eliges a alguien de otra mesa, se le mueve). Marca el ganador con el botón 👑: pasa solo a la mesa final, al asiento con el número de su mesa. El puesto (2º–8º) es opcional."
+          }
+        >
+          <div className="mb-4 rounded-2xl border-2 border-linea bg-white p-3">
+            <FormAccion accion={guardarClasificados} boton="Guardar" compacto>
+              <label className="flex min-w-0 flex-wrap items-center gap-2 text-sm">
+                A la mesa final pasan
+                <select name="porMesa" defaultValue={String(porMesa)} className={`${estiloInput} w-full min-w-0 sm:w-auto`}>
+                  <option value="1">el ganador de cada mesa</option>
+                  <option value="2">los dos primeros de cada mesa</option>
+                </select>
+              </label>
+              <p className="w-full text-xs text-tinta-suave">Los dos primeros, cuando se juegan menos mesas (p. ej. 4 de 8): los segundos se sientan en los asientos de las mesas que no se juegan.</p>
+            </FormAccion>
+          </div>
           <div className="grid items-start gap-3 lg:grid-cols-2">
             {[...clasif, ...(final ? [final] : [])].map((m) => {
               const deMesa = asientos.filter((a) => a.mesaId === m.id);
@@ -114,7 +136,7 @@ export default async function AdminPoker() {
                                 <td className="py-1 font-mono text-tinta-suave">{i + 1}</td>
                                 <td className="py-1 pr-2">
                                   {esFinal ? (
-                                    <span className={a ? "" : "text-tinta-suave italic"}>{a ? nombre.get(a.jugadorEmail) : `Ganador mesa ${i + 1}`}</span>
+                                    <span className={a ? "" : "text-tinta-suave italic"}>{a ? nombre.get(a.jugadorEmail) : porMesa >= 2 ? "Por decidir" : `Ganador mesa ${i + 1}`}</span>
                                   ) : (
                                     <select name={`jugador_${i + 1}`} defaultValue={a?.jugadorEmail ?? ""} className={`${estiloInput} w-full`}>
                                       <option value="">— libre —</option>

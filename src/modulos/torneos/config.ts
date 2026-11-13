@@ -82,12 +82,12 @@ export const TORNEOS: Record<
     ruta: "/poker",
     icono: "♠",
     tercerPuesto: false,
-    lema: "8 mesas clasificatorias · mesa final de 8",
+    lema: "4 mesas clasificatorias · mesa final de 8",
     lugar: "Comedor de la EPS (zona de microondas)",
     calendario:
       "Todas las partidas, a las 16:00 (4 de la tarde) en el comedor de la EPS (zona de microondas).\nMartes 10 nov, 16:00 · fase clasificatoria, 1.er turno\nJueves 12 nov, 16:00 · fase clasificatoria, 2.º turno\nViernes 13 nov, 16:00 · mesa final",
     formato:
-      "8 mesas clasificatorias de 8 jugadores, repartidas entre el martes 10 y el jueves 12 según la disponibilidad de cada uno.\nEl ganador de cada mesa pasa a la mesa final del viernes 13.\nSin crupier en las clasificatorias (el reparto rota entre jugadores); la mesa final tiene crupier del Consejo.\n64 plazas por orden de inscripción; el resto queda en lista de reserva para cubrir bajas.",
+      "Fase clasificatoria (martes 10 y jueves 12): se han jugado 4 mesas, con 32 jugadores.\nLos dos primeros de cada mesa pasan a la mesa final del viernes 13 (8 jugadores).\nSin crupier en las clasificatorias (el reparto rota entre jugadores); la mesa final tiene crupier del Consejo.",
     premios:
       "1º Tarjeta regalo de 100 €\n2º Tarjeta regalo de 50 €\n3º Tarjeta regalo de 20 €\nLos 8 jugadores de la mesa final se llevan una baraja de regalo.",
     reglas: [
@@ -105,7 +105,7 @@ export const TORNEOS: Record<
       "10. Carta alta: si nadie tiene nada, gana la carta más alta.",
       "Apuestas: hay una ronda antes del flop y otra después de cada carta común. En tu turno puedes pasar, apostar, igualar, subir o retirarte; ir **all-in** es apostar todas tus fichas.",
       "Ciegas: los dos jugadores a la izquierda del botón ponen la ciega pequeña y la grande antes de repartir. El botón pasa al siguiente jugador en cada mano.",
-      "Tu mesa: no hay crupier, reparte quien tiene el botón. Gana la mesa quien se queda con todas las fichas y pasa a la mesa final del viernes 13.",
+      "Tu mesa: no hay crupier, reparte quien tiene el botón. Los dos últimos que quedan con fichas pasan a la mesa final del viernes 13.",
       "Nota: las fichas iniciales y cada cuánto suben las ciegas los explica la organización al empezar. Si puedes, trae fichas.",
     ].join("\n"),
   },

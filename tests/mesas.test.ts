@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-import { ordenarTurnos, posicionAsiento, sortearMesas } from "../src/modulos/poker/mesas";
+import { finalistas, ordenarTurnos, posicionAsiento, sortearMesas, type MesaJugada } from "../src/modulos/poker/mesas";
 
 const mesas = Array.from({ length: 8 }, (_, i) => ({ numero: i + 1, turno: i < 4 ? "Martes" : "Miércoles" }));
 const jugadores = (n: number, disponibilidad: (i: number) => string[]) =>
@@ -51,5 +51,58 @@ describe("orden de los turnos", () => {
   });
   test("los turnos sin número van al final", () => {
     assert.deepEqual(ordenarTurnos(["Tarde", "Martes 10 nov", "Mañana"]), ["Martes 10 nov", "Mañana", "Tarde"]);
+  });
+});
+
+describe("mesa final del póker", () => {
+  const mesa = (numero: number, ganador: string | null, segundo: string | null = null): MesaJugada => ({ numero, ganador, segundo });
+  const cuatro = [mesa(1, "g1", "s1"), mesa(2, "g2", "s2"), mesa(3, "g3", "s3"), mesa(4, "g4", "s4")];
+
+  test("pasa el ganador: el de la mesa N, al asiento N; los segundos no cuentan", () => {
+    assert.deepEqual(finalistas(cuatro, 1, 8), [
+      { asiento: 1, email: "g1" },
+      { asiento: 2, email: "g2" },
+      { asiento: 3, email: "g3" },
+      { asiento: 4, email: "g4" },
+    ]);
+  });
+
+  test("pasan dos con 4 mesas: los segundos, del asiento 5 al 8 por orden de mesa", () => {
+    assert.deepEqual(
+      finalistas(cuatro, 2, 8).map((f) => `${f.asiento}:${f.email}`),
+      ["1:g1", "2:g2", "3:g3", "4:g4", "5:s1", "6:s2", "7:s3", "8:s4"],
+    );
+  });
+
+  test("cada segundo tiene su asiento fijo, aunque los resultados se apunten en otro orden", () => {
+    const sinSegundo = [mesa(1, "g1", "s1"), mesa(2, "g2", null), mesa(3, "g3", "s3")];
+    assert.deepEqual(
+      finalistas(sinSegundo, 2, 8).map((f) => `${f.asiento}:${f.email}`),
+      ["1:g1", "2:g2", "3:g3", "4:s1", "6:s3"],
+    );
+    // Cuando llega el segundo de la mesa 2, ocupa el 5 y nadie más se mueve.
+    assert.deepEqual(
+      finalistas([mesa(1, "g1", "s1"), mesa(2, "g2", "s2"), mesa(3, "g3", "s3")], 2, 8).map((f) => `${f.asiento}:${f.email}`),
+      ["1:g1", "2:g2", "3:g3", "4:s1", "5:s2", "6:s3"],
+    );
+  });
+
+  test("sin ganador no pasa nadie de esa mesa, aunque tenga segundo (su asiento queda guardado)", () => {
+    assert.deepEqual(finalistas([mesa(1, null, "s1"), mesa(2, "g2", "s2")], 2, 8), [
+      { asiento: 2, email: "g2" },
+      { asiento: 4, email: "s2" },
+    ]);
+  });
+
+  test("como lo montó el Consejo a mano (segundos como ganadores de las mesas 5 a 8): queda igual", () => {
+    const amano = [mesa(1, "g1"), mesa(2, "g2"), mesa(3, "g3"), mesa(4, "g4"), mesa(5, "s1"), mesa(6, "s2"), mesa(7, "s3"), mesa(8, "s4")];
+    assert.deepEqual(finalistas(amano, 2, 8), finalistas(amano, 1, 8));
+    assert.equal(finalistas(amano, 2, 8).length, 8);
+  });
+
+  test("si no caben todos, los últimos se quedan fuera; nadie se sienta dos veces", () => {
+    const ocho = Array.from({ length: 8 }, (_, i) => mesa(i + 1, `g${i + 1}`, `s${i + 1}`));
+    assert.deepEqual(finalistas(ocho, 2, 8).map((f) => f.email), ["g1", "g2", "g3", "g4", "g5", "g6", "g7", "g8"]);
+    assert.deepEqual(finalistas([mesa(1, "g1", "g1"), mesa(2, "g2", "s2")], 2, 8).map((f) => f.email), ["g1", "g2", "s2"]);
   });
 });

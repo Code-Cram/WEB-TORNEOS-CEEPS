@@ -98,6 +98,30 @@ export function asientoLibre(
   return { mesaId: m.id, numero: m.numero, asiento };
 }
 
+/** Una mesa clasificatoria con su resultado: quién la gana y quién queda segundo (correos; null si no se sabe). */
+export type MesaJugada = { numero: number; ganador: string | null; segundo: string | null };
+
+/**
+ * Quién se sienta en la mesa final y en qué asiento. `mesas`: las clasificatorias que se juegan (las que tienen gente).
+ * El ganador de la mesa N, en el asiento N. Si además pasan los segundos (`porMesa` = 2, cuando se juegan menos mesas),
+ * cada uno tiene su asiento fijo entre los de las mesas que no se juegan, por orden de mesa: con las mesas 1 a 4, el
+ * segundo de la 1 va al 5, el de la 2 al 6… Así nadie cambia de sitio aunque los resultados se apunten en otro orden.
+ * Un segundo solo se sienta cuando su mesa ya tiene ganador; si no hay asientos para todos, los últimos se quedan fuera.
+ */
+export function finalistas(mesas: MesaJugada[], porMesa: number, asientos: number): { asiento: number; email: string }[] {
+  const jugadas = mesas.filter((m) => m.numero >= 1 && m.numero <= asientos).sort((a, b) => a.numero - b.numero);
+  const sentados = jugadas.filter((m) => m.ganador).map((m) => ({ asiento: m.numero, email: m.ganador! }));
+  if (porMesa >= 2) {
+    const libres = Array.from({ length: asientos }, (_, i) => i + 1).filter((n) => !jugadas.some((m) => m.numero === n));
+    jugadas.forEach((m, i) => {
+      const asiento = libres[i];
+      if (asiento === undefined || !m.ganador || !m.segundo || sentados.some((s) => s.email === m.segundo)) return;
+      sentados.push({ asiento, email: m.segundo });
+    });
+  }
+  return sentados.sort((a, b) => a.asiento - b.asiento);
+}
+
 /** Posición (en %) del asiento `i` de `n` alrededor de una mesa ovalada, empezando arriba a la izquierda. */
 export function posicionAsiento(i: number, n: number): { x: number; y: number } {
   const angulo = -Math.PI / 2 - Math.PI / n + (2 * Math.PI * i) / n;

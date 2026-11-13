@@ -366,4 +366,13 @@ export const EN: Record<string, string> = {
 
   // Lugares de siempre (datos que se escriben en español)
   "Comedor de la EPS (zona de microondas)": "EPS dining hall (microwave area)",
+
+  // Póker: pasan dos por mesa a la final
+  "🏆 ¡Estás en la **mesa final**!": "🏆 You're at the **final table**!",
+  "🎲 Las mesas aún no se han sorteado. Así quedarán: {mesas} mesas de {asientos}; los dos primeros de cada una pasan a la mesa final (los premios, en la pestaña «Mesa final»).": "🎲 The tables haven't been drawn yet. It will be {mesas} tables of {asientos}; the top two of each go through to the final table (prizes are in the «Final table» tab).",
+  "y": "and",
+  "pasan a la mesa final": "go through to the final table",
+  "Pasa a la mesa final": "Goes through to the final table",
+  "{clasificados}/{plazas} clasificados · pasan los dos primeros de cada mesa": "{clasificados}/{plazas} qualified · the top two of each table go through",
+  "no se jugó": "not played",
 };
