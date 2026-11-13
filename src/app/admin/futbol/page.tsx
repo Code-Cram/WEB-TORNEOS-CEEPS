@@ -18,6 +18,7 @@ import { FechasEnBloque } from "@/modulos/cuadros/fechas-bloque";
 import { InfoTorneoAdmin } from "@/modulos/torneos/info-admin";
 import { Intercambiar, opcionesCuadro } from "@/modulos/panel/intercambiar";
 import { Sorteo } from "@/modulos/torneos/sorteo-admin";
+import { ReservasAdmin } from "@/modulos/futbol/reservas-admin";
 
 export const metadata: Metadata = { title: "Panel · Fútbol" };
 
@@ -53,6 +54,8 @@ export default async function AdminFutbol() {
       >
         <Sorteo torneo="futbol" accion={sortearTorneo} hay={partidos.length > 0} />
       </Seccion>
+
+      {partidos.length > 0 && <ReservasAdmin />}
 
       {partidos.length > 0 && <FechasEnBloque torneo="futbol" rondas={rondas} conTercerPuesto={conTercero} lugares="lugares" />}
 

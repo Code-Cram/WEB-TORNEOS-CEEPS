@@ -38,6 +38,7 @@ export async function datosFutbol(emailUsuario: string | null): Promise<DatosCua
       mejorDe: null,
       ganador: p.ganadorId,
       fecha: p.fecha?.toISOString() ?? null,
+      orientativa: p.fechaOrientativa?.toISOString() ?? null,
       lugar: p.lugar,
       notas: p.notas,
       detalle: [],

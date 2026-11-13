@@ -10,7 +10,7 @@ export const TORNEOS_EN: Record<TorneoId, { nombre: string; lema: string; lugar:
     nombre: "2nd Futsal Tournament",
     lema: "Single-match knockout · 2 × 30 min",
     lugar: "UAM sports facilities",
-    calendario: "",
+    calendario: "Each match on the day and time the captains book in the booking calendar (below the standings): Monday to Friday, 9:00–21:00, until 18 December.",
     formato:
       "Single-elimination knockout, one match of 2 × 30 min.\nIf it's a draw, it goes to penalties.\nIf there aren't enough teams to fill the bracket, the draw gives byes to the second round.",
     premios:

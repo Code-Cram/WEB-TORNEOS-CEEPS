@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
 import { Modal } from "@/modulos/compartido/modal";
 import { TORNEOS } from "@/modulos/torneos/config";
 import { describirCuadro, nombreRonda, ordenRonda, RONDA_TERCER_PUESTO, rondasEnOrden } from "@/modulos/cuadros/logica";
@@ -114,18 +114,18 @@ const geometria = (rondas: number) => (rondas >= 5 ? { ANCHO: 138, HUECO: 18 } :
 
 type Vista = { tipo: "partido"; id: number } | { tipo: "equipo"; id: number };
 
-export function VistaCuadro({ tipo, datos, tema }: { tipo: TipoCuadro; datos: DatosCuadro; tema?: Partial<Tema> }) {
+export function VistaCuadro({ tipo, datos, tema, extra }: { tipo: TipoCuadro; datos: DatosCuadro; tema?: Partial<Tema>; extra?: ReactNode }) {
   // `tema` solo trae los textos que cambian (p. ej. «equipo» en un torneo por equipos); el resto, del tipo.
   const t = useT();
   const textos = useMemo(() => temaEnSuIdioma({ ...TEMA[tipo], ...tema } as Tema, t), [tipo, tema, t]);
   return (
     <TemaCuadro value={textos}>
-      <Contenido tipo={tipo} datos={datos} />
+      <Contenido tipo={tipo} datos={datos} extra={extra} />
     </TemaCuadro>
   );
 }
 
-function Contenido({ tipo, datos }: { tipo: TipoCuadro; datos: DatosCuadro }) {
+function Contenido({ tipo, datos, extra }: { tipo: TipoCuadro; datos: DatosCuadro; extra?: ReactNode }) {
   const t = useT();
   const [modo, setModo] = useState<"cuadro" | "rondas">("cuadro");
   const [pila, setPila] = useState<Vista[]>([]);
@@ -178,6 +178,7 @@ function Contenido({ tipo, datos }: { tipo: TipoCuadro; datos: DatosCuadro }) {
       )}
 
       <Clasificacion tipo={tipo} datos={datos} rondas={rondas} equipos={equipos} onEquipo={(id) => abrir({ tipo: "equipo", id })} />
+      {extra}
       <Resultados tipo={tipo} partidos={datos.partidos} equipos={equipos} rondas={rondas} onPartido={(id) => abrir({ tipo: "partido", id })} />
 
       <ModalPartido tipo={tipo} vista={vista} equipos={equipos} partidos={datos.partidos} rondas={rondas} onCerrar={cerrar} onAbrir={abrir} onVolver={pila.length > 1 ? () => setPila((p) => p.slice(0, -1)) : undefined} />
@@ -319,7 +320,8 @@ function TarjetaPartido({
   const bye = p.ronda === 1 && (p.a === null) !== (p.b === null);
   const mio = (p.a !== null && equipos.get(p.a)?.esMio) || (p.b !== null && equipos.get(p.b)?.esMio);
   const t = useT();
-  const fecha = fechaCorta(p.fecha, useIdioma());
+  const idioma = useIdioma();
+  const fecha = fechaCorta(p.fecha, idioma) ?? (p.orientativa ? `≈ ${fechaCorta(p.orientativa, idioma)}` : null);
   return (
     <button
       onClick={onClick}
@@ -737,7 +739,9 @@ function ModalPartido({ tipo, vista, equipos, partidos, rondas, onCerrar, onAbri
 
           <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 rounded-2xl bg-crema p-4 text-sm">
             <dt className="font-mono text-xs font-bold text-tinta-suave uppercase">{t("Cuándo")}</dt>
-            <dd className="first-letter:uppercase">{fechaLarga(p.fecha, idioma) ?? t("Por fijar")}</dd>
+            <dd className="first-letter:uppercase">
+              {fechaLarga(p.fecha, idioma) ?? (p.orientativa ? `${fechaLarga(p.orientativa, idioma)} · ${t("orientativo, falta reservarlo")}` : t("Por fijar"))}
+            </dd>
             <dt className="font-mono text-xs font-bold text-tinta-suave uppercase">{t("Dónde")}</dt>
             <dd>{p.lugar ? t(p.lugar) : t("Por fijar")}</dd>
             {p.notas && (

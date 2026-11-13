@@ -17,6 +17,7 @@ import { fechaCorta } from "@/modulos/compartido/formato";
 import { esAdmin, exigirSesion } from "@/modulos/acceso/sesion";
 import { procesarReservas, salidaALaReserva } from "@/modulos/poker/relevos";
 import { perfilDeCorreo } from "@/modulos/personas/perfil";
+import { propuestasParaContestar } from "@/modulos/futbol/reservas-datos";
 import { enSuIdioma } from "@/modulos/actividades/datos";
 import type { Idioma } from "@/modulos/idioma/config";
 import { fechasEn } from "@/modulos/idioma/fechas";
@@ -84,6 +85,9 @@ export default async function Torneos() {
     const [e] = await db.select({ nombre: futbolEquipos.nombre }).from(futbolEquipos).where(eq(futbolEquipos.id, inscripciones.futbol.equipoId));
     detalle.futbol = `${inscripciones.futbol.capitan ? t("Capitanía:") : t("Tu equipo:")} ${e?.nombre}`;
   }
+  // Capitanes: el otro equipo les ha propuesto un horario y falta contestarlo.
+  const [propuesta] = inscripciones.futbol?.capitan ? await propuestasParaContestar(sesion.email) : [];
+  const avisoPropuesta = propuesta && t("📩 {equipo} os propone {cuando}: contestadlo", { equipo: propuesta.equipo, cuando: fechaCorta(propuesta.fecha, idioma) ?? "" });
   if (inscripciones.mus) {
     const [p] = await db.select({ nombre: musParejas.nombre }).from(musParejas).where(eq(musParejas.id, inscripciones.mus.parejaId));
     detalle.mus = `${t("Pareja:")} ${p?.nombre}`;
@@ -158,6 +162,9 @@ export default async function Torneos() {
                 )}
                 {!info[id].finalizado && citas.get(id) && (
                   <span className="mt-3 inline-block rounded-full bg-black/25 px-3 py-1 text-sm font-semibold backdrop-blur-sm">{avisoCita(citas.get(id)!, t, idioma)}</span>
+                )}
+                {id === "futbol" && avisoPropuesta && (
+                  <span className="mt-3 inline-block rounded-full bg-naranja px-3 py-1 text-sm font-semibold text-white">{avisoPropuesta}</span>
                 )}
               </span>
               <span className="absolute top-5 right-5 font-display text-2xl transition group-hover:translate-x-1">→</span>

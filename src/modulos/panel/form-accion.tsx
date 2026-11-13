@@ -12,6 +12,7 @@ export function FormAccion({
   compacto = false,
   confirmar,
   limpiar = false,
+  alGuardar,
   className = "",
 }: {
   accion: (prev: Resultado, f: FormData) => Promise<Resultado>;
@@ -26,10 +27,17 @@ export function FormAccion({
    * campo, solo esos (el resto, como a dónde se apunta, se queda). La lista tiene que ser fija (una constante).
    */
   limpiar?: boolean | readonly string[];
+  /** Se llama cada vez que se guarda bien (p. ej. para cerrar lo que se estaba eligiendo). */
+  alGuardar?: () => void;
   className?: string;
 }) {
   const [estado, enviar, pendiente] = useActionState(accion, {});
   const form = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    if (estado.ok) alGuardar?.();
+    // Solo al llegar un resultado nuevo, no cada vez que cambie la función.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [estado]);
   useEffect(() => {
     const f = form.current;
     if (!f || !limpiar || !estado.ok) return;

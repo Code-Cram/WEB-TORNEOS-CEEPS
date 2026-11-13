@@ -1,8 +1,10 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { futbolEquipos, futbolPartidos, usuarios } from "@/db/schema";
+import { futbolEquipos, futbolPartidos, futbolPropuestas, infoTorneos, usuarios } from "@/db/schema";
+import { CIERRE_INSCRIPCIONES } from "@/modulos/torneos/config";
+import { esDiaValido, leerCierres } from "@/modulos/futbol/reservas";
 import { AvisoError } from "@/modulos/acceso/clave";
 import { exigirAdmin } from "@/modulos/acceso/sesion";
 import { limpiarNombre, normalizarCorreo } from "@/modulos/compartido/texto";
@@ -109,5 +111,42 @@ export async function eliminarEquipo(_prev: Resultado, f: FormData): Promise<Res
       await recalcularFutbol(tx);
     });
     return hecho(admin, "Equipo eliminado.", undefined, `Fútbol · ${e.nombre}`);
+  });
+}
+
+/** Reservas de pista: hasta qué día se puede reservar y qué días u horas están cerrados. */
+export async function guardarAjustesReservas(_prev: Resultado, f: FormData): Promise<Resultado> {
+  const admin = await exigirAdmin();
+  return intentar(async () => {
+    const hasta = texto(f, "hasta", 10);
+    if (!esDiaValido(hasta)) throw new AvisoError("Elige el último día para reservar.");
+    const cerradas = texto(f, "cerradas", 3000);
+    const lineas = cerradas.split(/\r?\n/).filter((l) => l.trim());
+    const entendidas = leerCierres(cerradas).length;
+    await db
+      .insert(infoTorneos)
+      // Si la fila es nueva, el cierre de inscripción sigue siendo el de por defecto.
+      .values({ torneo: "futbol", reservasHasta: hasta, reservasCerradas: cerradas || null, cierreInscripcion: new Date(CIERRE_INSCRIPCIONES) })
+      .onConflictDoUpdate({ target: infoTorneos.torneo, set: { reservasHasta: hasta, reservasCerradas: cerradas || null } });
+    return hecho(
+      admin,
+      "Reservas guardadas.",
+      entendidas < lineas.length ? [`${lineas.length - entendidas} líneas de días cerrados no se entienden: escribe «2026-12-08» o «2026-12-07 9-14».`] : undefined,
+      `Fútbol · reservas hasta el ${hasta}`,
+    );
+  });
+}
+
+/** El Consejo anula una propuesta pendiente (p. ej. si un capitán se ha equivocado de hueco). */
+export async function anularPropuestaConsejo(_prev: Resultado, f: FormData): Promise<Resultado> {
+  const admin = await exigirAdmin();
+  return intentar(async () => {
+    const [x] = await db
+      .update(futbolPropuestas)
+      .set({ estado: "anulada", respondidoPor: admin, respondidoEn: new Date() })
+      .where(and(eq(futbolPropuestas.id, idDe(f)), eq(futbolPropuestas.estado, "pendiente")))
+      .returning({ id: futbolPropuestas.id });
+    if (!x) throw new AvisoError("Esa propuesta ya no está pendiente: recarga la página.");
+    return hecho(admin, "Propuesta anulada.", undefined, `Fútbol · propuesta ${x.id}`);
   });
 }

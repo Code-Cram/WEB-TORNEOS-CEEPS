@@ -32,7 +32,7 @@ export const TORNEOS: Record<
     tercerPuesto: false,
     lema: "Eliminatorias a partido único · 2 × 30 min",
     lugar: "Instalaciones deportivas UAM",
-    calendario: "",
+    calendario: "Cada partido, el día y la hora que reserven los capitanes en el calendario de reservas (debajo de la clasificación): de lunes a viernes, de 9:00 a 21:00, hasta el 18 de diciembre.",
     formato:
       "Eliminatoria directa a partido único de 2 × 30 min.\nSi hay empate, se decide por penaltis.\nSi no hay equipos para llenar el cuadro, el sorteo da pases directos a la segunda ronda.",
     premios:

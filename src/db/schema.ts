@@ -57,6 +57,10 @@ export const infoTorneos = pgTable("info_torneos", {
   reservaAutomaticaDesde: timestamp("reserva_automatica_desde", { withTimezone: true }),
   /** Solo póker: cuántos de cada mesa clasificatoria pasan a la mesa final (1, el ganador; 2, también el segundo). */
   clasificanPorMesa: integer("clasifican_por_mesa").notNull().default(1),
+  /** Solo fútbol: último día que se puede reservar pista (null: el de futbol/reservas.ts). */
+  reservasHasta: date("reservas_hasta", { mode: "string" }),
+  /** Solo fútbol: días u horas cerrados para reservar, uno por línea (ver leerCierres en futbol/reservas.ts). */
+  reservasCerradas: text("reservas_cerradas"),
 }).enableRLS();
 
 /** Ficheros de sql/ ya aplicados en esta base de datos (los apunta scripts/migrar.mts al desplegar). */
@@ -142,8 +146,34 @@ export const futbolPartidos = futbol.table(
     fecha: timestamp("fecha", { withTimezone: true }),
     lugar: text("lugar"),
     notas: text("notas"),
+    /** Horario orientativo que propone el Consejo mientras no hay fecha (los capitanes reservan el definitivo). */
+    fechaOrientativa: timestamp("fecha_orientativa", { withTimezone: true }),
   },
   (t) => [unique().on(t.ronda, t.posicion)],
+).enableRLS();
+
+/** Reservas de la pista: un capitán propone un hueco para su partido y el capitán rival lo acepta o lo rechaza. */
+export const futbolPropuestas = futbol.table(
+  "propuestas",
+  {
+    id: serial("id").primaryKey(),
+    partidoId: integer("partido_id")
+      .notNull()
+      .references(() => futbolPartidos.id, { onDelete: "cascade" }),
+    /** El equipo que propone (el otro es quien responde). */
+    equipoId: integer("equipo_id")
+      .notNull()
+      .references(() => futbolEquipos.id, { onDelete: "cascade" }),
+    /** Inicio del hueco de una hora. */
+    fecha: timestamp("fecha", { withTimezone: true }).notNull(),
+    /** pendiente | aceptada | rechazada | anulada */
+    estado: text("estado").notNull().default("pendiente"),
+    propuestoPor: text("propuesto_por").notNull(),
+    respondidoPor: text("respondido_por"),
+    respondidoEn: timestamp("respondido_en", { withTimezone: true }),
+    creadoEn: creadoEn(),
+  },
+  (t) => [index("propuestas_partido_idx").on(t.partidoId, t.estado)],
 ).enableRLS();
 
 /* ───────────────────────────────── MUS ───────────────────────────────── */
