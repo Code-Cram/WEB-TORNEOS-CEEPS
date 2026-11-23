@@ -6,6 +6,7 @@ import { musParejas, musPartidas, musPartidos } from "@/db/schema";
 import { AvisoError } from "@/modulos/acceso/clave";
 import { exigirAdmin } from "@/modulos/acceso/sesion";
 import { parsearTantos } from "@/modulos/cuadros/logica";
+import { ladoElegido } from "@/modulos/cuadros/lados";
 import { guardarPareja, recalcularMus } from "@/modulos/mus/operaciones";
 import { entero, fecha, hecho, idDe, intentar, texto, textoONull, type Resultado } from "@/modulos/panel/comun";
 import { parsearPlantilla } from "@/modulos/personas/plantilla";
@@ -40,11 +41,13 @@ export async function guardarPartidoMus(_prev: Resultado, f: FormData): Promise<
           lugar: textoONull(f, "lugar", 200),
           notas: textoONull(f, "notas", 500),
         };
-        if (p.ronda === 1 && f.has("parejaAId")) {
-          const a = entero(f, "parejaAId");
-          const b = entero(f, "parejaBId");
-          if (a !== null && a === b) throw new AvisoError("Una pareja no puede jugar contra sí misma.");
-          if (a !== p.parejaAId || b !== p.parejaBId) Object.assign(cambios, { parejaAId: a, parejaBId: b });
+        // Parejas del cruce: en cualquier ronda se puede poner a mano a cualquiera (o volver a «automático»).
+        if (f.has("parejaAId")) {
+          const validas = new Set((await tx.select({ id: musParejas.id }).from(musParejas)).map((e) => e.id));
+          const a = ladoElegido(f, "parejaAId", p.ronda, p.parejaAId, validas);
+          const b = ladoElegido(f, "parejaBId", p.ronda, p.parejaBId, validas);
+          if (a.id !== null && a.id === b.id) throw new AvisoError("Una pareja no puede jugar contra sí misma.");
+          Object.assign(cambios, { parejaAId: a.id, parejaBId: b.id, parejaAFija: a.fijo, parejaBFija: b.fijo });
         }
         await tx.update(musPartidos).set(cambios).where(eq(musPartidos.id, id));
         await tx.delete(musPartidas).where(eq(musPartidas.partidoId, id));

@@ -11,6 +11,7 @@ import { diaLargo, fechaCorta } from "@/modulos/compartido/formato";
 import { exigirAdmin } from "@/modulos/acceso/sesion";
 import { fecha, hecho, idDe, intentar, texto, textoONull, type Resultado } from "@/modulos/panel/comun";
 import { conAvisos } from "@/modulos/chat/avisos";
+import { recalcularPrevistas } from "@/modulos/futbol/prevision-datos";
 
 /** Fecha, hora y lugar de un partido, una mesa o un evento, desde el calendario. */
 export async function guardarCita(_prev: Resultado, f: FormData): Promise<Resultado> {
@@ -35,6 +36,8 @@ export async function guardarCita(_prev: Resultado, f: FormData): Promise<Result
                   : null;
       if (!filas) throw new AvisoError("No se sabe qué guardar: recarga la página.");
       if (!filas.length) throw new AvisoError("Ya no existe: recarga la página.");
+      // Un partido de fútbol con fecha (o sin ella) recoloca las fechas previstas de los demás.
+      if (tipo === "futbol") await db.transaction((tx) => recalcularPrevistas(tx));
       const cuando = cambios.fecha ? fechaCorta(cambios.fecha.toISOString()) : "sin fecha";
       await hecho(admin, "Fecha guardada.", undefined, `Calendario · ${texto(f, "nombre", 200)} → ${cuando}${cambios.lugar ? ` · ${cambios.lugar}` : ""}`);
       // Con otra fecha la fila cambia de día en la página: se lleva allí al admin y se marca como guardada.
@@ -66,8 +69,10 @@ export async function moverDia(_prev: Resultado, f: FormData): Promise<Resultado
       let movidas = 0;
       let mesasPoker = 0;
       await db.transaction(async (tx) => {
-        if (quiere("futbol"))
+        if (quiere("futbol")) {
           movidas += (await tx.update(futbolPartidos).set({ fecha: aDestino(futbolPartidos.fecha) }).where(delOrigen(futbolPartidos.fecha)).returning({ id: futbolPartidos.id })).length;
+          await recalcularPrevistas(tx);
+        }
         if (quiere("mus"))
           movidas += (await tx.update(musPartidos).set({ fecha: aDestino(musPartidos.fecha) }).where(delOrigen(musPartidos.fecha)).returning({ id: musPartidos.id })).length;
         if (quiere("poker")) {

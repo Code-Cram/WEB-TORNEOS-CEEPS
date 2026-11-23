@@ -5,6 +5,8 @@ import { db } from "@/db";
 import { futbolEquipos, futbolPartidos, futbolPropuestas, infoTorneos, usuarios } from "@/db/schema";
 import { CIERRE_INSCRIPCIONES } from "@/modulos/torneos/config";
 import { esDiaValido, leerCierres } from "@/modulos/futbol/reservas";
+import { recalcularPrevistas } from "@/modulos/futbol/prevision-datos";
+import { ladoElegido } from "@/modulos/cuadros/lados";
 import { AvisoError } from "@/modulos/acceso/clave";
 import { exigirAdmin } from "@/modulos/acceso/sesion";
 import { limpiarNombre, normalizarCorreo } from "@/modulos/compartido/texto";
@@ -33,16 +35,16 @@ export async function guardarPartidoFutbol(_prev: Resultado, f: FormData): Promi
           lugar: textoONull(f, "lugar", 200),
           notas: textoONull(f, "notas", 500),
         };
-        if (p.ronda === 1 && f.has("localId")) {
-          const local = entero(f, "localId");
-          const visitante = entero(f, "visitanteId");
-          if (local !== null && local === visitante) throw new AvisoError("Un equipo no puede jugar contra sí mismo.");
-          if (local !== p.localId || visitante !== p.visitanteId) {
-            Object.assign(cambios, { localId: local, visitanteId: visitante });
-            // Cruce cambiado a mano: el marcador anterior ya no vale.
-            if (texto(f, "golesLocal") === String(p.golesLocal ?? ""))
-              Object.assign(cambios, { golesLocal: null, golesVisitante: null, penaltisLocal: null, penaltisVisitante: null });
-          }
+        // Equipos del cruce: en cualquier ronda se puede poner a mano a cualquiera (o volver a «automático»).
+        if (f.has("localId")) {
+          const validos = new Set((await tx.select({ id: futbolEquipos.id }).from(futbolEquipos)).map((e) => e.id));
+          const local = ladoElegido(f, "localId", p.ronda, p.localId, validos);
+          const visitante = ladoElegido(f, "visitanteId", p.ronda, p.visitanteId, validos);
+          if (local.id !== null && local.id === visitante.id) throw new AvisoError("Un equipo no puede jugar contra sí mismo.");
+          Object.assign(cambios, { localId: local.id, visitanteId: visitante.id, localFijo: local.fijo, visitanteFijo: visitante.fijo });
+          // Cruce cambiado a mano: el marcador anterior ya no vale (salvo que se escriba otro a la vez).
+          if ((local.id !== p.localId || visitante.id !== p.visitanteId) && texto(f, "golesLocal") === String(p.golesLocal ?? ""))
+            Object.assign(cambios, { golesLocal: null, golesVisitante: null, penaltisLocal: null, penaltisVisitante: null });
         }
         await tx.update(futbolPartidos).set(cambios).where(eq(futbolPartidos.id, id));
         await recalcularFutbol(tx);
@@ -114,26 +116,41 @@ export async function eliminarEquipo(_prev: Resultado, f: FormData): Promise<Res
   });
 }
 
-/** Reservas de pista: hasta qué día se puede reservar y qué días u horas están cerrados. */
+/** Calendario: primer y último día, huecos que da Deportes y días u horas cerrados. Las fechas previstas se recolocan. */
 export async function guardarAjustesReservas(_prev: Resultado, f: FormData): Promise<Resultado> {
   const admin = await exigirAdmin();
   return intentar(async () => {
+    const desde = texto(f, "desde", 10);
     const hasta = texto(f, "hasta", 10);
-    if (!esDiaValido(hasta)) throw new AvisoError("Elige el último día para reservar.");
+    if (!esDiaValido(desde)) throw new AvisoError("Elige el primer día en que se juega.");
+    if (!esDiaValido(hasta)) throw new AvisoError("Elige el último día en que se juega.");
+    if (hasta < desde) throw new AvisoError("El último día va después del primero.");
     const cerradas = texto(f, "cerradas", 3000);
-    const lineas = cerradas.split(/\r?\n/).filter((l) => l.trim());
-    const entendidas = leerCierres(cerradas).length;
-    await db
-      .insert(infoTorneos)
-      // Si la fila es nueva, el cierre de inscripción sigue siendo el de por defecto.
-      .values({ torneo: "futbol", reservasHasta: hasta, reservasCerradas: cerradas || null, cierreInscripcion: new Date(CIERRE_INSCRIPCIONES) })
-      .onConflictDoUpdate({ target: infoTorneos.torneo, set: { reservasHasta: hasta, reservasCerradas: cerradas || null } });
-    return hecho(
-      admin,
-      "Reservas guardadas.",
-      entendidas < lineas.length ? [`${lineas.length - entendidas} líneas de días cerrados no se entienden: escribe «2026-12-08» o «2026-12-07 9-14».`] : undefined,
-      `Fútbol · reservas hasta el ${hasta}`,
-    );
+    const abiertas = texto(f, "abiertas", 3000);
+    const sinEntender = (s: string, que: string) => {
+      const n = s.split(/\r?\n/).filter((l) => l.trim()).length - leerCierres(s).length;
+      return n > 0 ? [`${n} ${n === 1 ? "línea" : "líneas"} de ${que} no se entienden: escribe «2026-12-08» (todo el día) o «2026-12-07 9-14» (de 9:00 a 14:00).`] : [];
+    };
+    const ajustes = { reservasDesde: desde, reservasHasta: hasta, reservasCerradas: cerradas || null, reservasAbiertas: abiertas || null };
+    await db.transaction(async (tx) => {
+      await tx
+        .insert(infoTorneos)
+        // Si la fila es nueva, el cierre de inscripción sigue siendo el de por defecto.
+        .values({ torneo: "futbol", ...ajustes, cierreInscripcion: new Date(CIERRE_INSCRIPCIONES) })
+        .onConflictDoUpdate({ target: infoTorneos.torneo, set: ajustes });
+      await recalcularPrevistas(tx);
+    });
+    const avisos = [...sinEntender(abiertas, "huecos de Deportes"), ...sinEntender(cerradas, "días cerrados")];
+    return hecho(admin, "Calendario guardado.", avisos.length ? avisos : undefined, `Fútbol · del ${desde} al ${hasta}${abiertas ? " · con huecos de Deportes" : ""}`);
+  });
+}
+
+/** Vuelve a calcular las fechas previstas ahora mismo (se recalculan solas; esto es por si acaso). */
+export async function recalcularPrevistasAdmin(): Promise<Resultado> {
+  const admin = await exigirAdmin();
+  return intentar(async () => {
+    const n = await db.transaction((tx) => recalcularPrevistas(tx));
+    return hecho(admin, n ? `${n} ${n === 1 ? "fecha prevista cambiada" : "fechas previstas cambiadas"}.` : "Las fechas previstas ya estaban al día.", undefined, "Fútbol · fechas previstas");
   });
 }
 

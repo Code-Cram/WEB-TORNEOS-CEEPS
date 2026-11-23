@@ -17,7 +17,7 @@ import { fechaCorta } from "@/modulos/compartido/formato";
 import { esAdmin, exigirSesion } from "@/modulos/acceso/sesion";
 import { procesarReservas, salidaALaReserva } from "@/modulos/poker/relevos";
 import { perfilDeCorreo } from "@/modulos/personas/perfil";
-import { propuestasParaContestar } from "@/modulos/futbol/reservas-datos";
+import { capitanSinMarcar, propuestasParaContestar } from "@/modulos/futbol/reservas-datos";
 import { enSuIdioma } from "@/modulos/actividades/datos";
 import type { Idioma } from "@/modulos/idioma/config";
 import { fechasEn } from "@/modulos/idioma/fechas";
@@ -87,7 +87,10 @@ export default async function Torneos() {
   }
   // Capitanes: el otro equipo les ha propuesto un horario y falta contestarlo.
   const [propuesta] = inscripciones.futbol?.capitan ? await propuestasParaContestar(sesion.email) : [];
-  const avisoPropuesta = propuesta && t("📩 {equipo} os propone {cuando}: contestadlo", { equipo: propuesta.equipo, cuando: fechaCorta(propuesta.fecha, idioma) ?? "" });
+  const avisoPropuesta = propuesta
+    ? t("📩 {equipo} os propone {cuando}: contestadlo", { equipo: propuesta.equipo, cuando: fechaCorta(propuesta.fecha, idioma) ?? "" })
+    : // Si no, y aún no ha marcado cuándo puede jugar su equipo, que lo marque en el calendario.
+      inscripciones.futbol?.capitan && (await capitanSinMarcar(sesion.email)) && t("📅 Marca en el calendario cuándo podéis jugar");
   if (inscripciones.mus) {
     const [p] = await db.select({ nombre: musParejas.nombre }).from(musParejas).where(eq(musParejas.id, inscripciones.mus.parejaId));
     detalle.mus = `${t("Pareja:")} ${p?.nombre}`;

@@ -321,7 +321,7 @@ function TarjetaPartido({
   const mio = (p.a !== null && equipos.get(p.a)?.esMio) || (p.b !== null && equipos.get(p.b)?.esMio);
   const t = useT();
   const idioma = useIdioma();
-  const fecha = fechaCorta(p.fecha, idioma) ?? (p.orientativa ? `≈ ${fechaCorta(p.orientativa, idioma)}` : null);
+  const fecha = fechaCorta(p.fecha, idioma) ?? (p.prevista ? `≈ ${fechaCorta(p.prevista, idioma)}` : null);
   return (
     <button
       onClick={onClick}
@@ -740,7 +740,7 @@ function ModalPartido({ tipo, vista, equipos, partidos, rondas, onCerrar, onAbri
           <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 rounded-2xl bg-crema p-4 text-sm">
             <dt className="font-mono text-xs font-bold text-tinta-suave uppercase">{t("Cuándo")}</dt>
             <dd className="first-letter:uppercase">
-              {fechaLarga(p.fecha, idioma) ?? (p.orientativa ? `${fechaLarga(p.orientativa, idioma)} · ${t("orientativo, falta reservarlo")}` : t("Por fijar"))}
+              {fechaLarga(p.fecha, idioma) ?? (p.prevista ? `${fechaLarga(p.prevista, idioma)} · ${t("fecha prevista, falta confirmarla")}` : t("Por fijar"))}
             </dd>
             <dt className="font-mono text-xs font-bold text-tinta-suave uppercase">{t("Dónde")}</dt>
             <dd>{p.lugar ? t(p.lugar) : t("Por fijar")}</dd>

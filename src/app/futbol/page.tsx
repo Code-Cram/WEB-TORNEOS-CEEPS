@@ -9,7 +9,7 @@ import { torneosDe } from "@/modulos/acceso/inscripciones";
 import { esAdmin, exigirSesion } from "@/modulos/acceso/sesion";
 import { traduccion } from "@/modulos/idioma/servidor";
 import { CalendarioReservas, PropuestasRecibidas } from "@/modulos/futbol/calendario-reservas";
-import { datosReservas } from "@/modulos/futbol/reservas-datos";
+import { asegurarPrevistas, datosReservas } from "@/modulos/futbol/reservas-datos";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await traduccion();
@@ -21,6 +21,8 @@ export default async function Futbol() {
   const inscripcion = (await torneosDe(sesion.email)).futbol;
   // Un torneo finalizado lo ve todo el que entra en la web.
   if (!inscripcion && !(await esAdmin()) && !(await leerInfoTorneos()).futbol.finalizado) redirect("/torneos");
+  // Si alguna fecha prevista se ha quedado atrás, se recoloca antes de enseñar el cuadro y el calendario.
+  await asegurarPrevistas();
   const [datos, reservas] = await Promise.all([datosFutbol(sesion.email), datosReservas(sesion.email)]);
   const mio = datos.equipos.find((e) => e.esMio);
   const { t } = await traduccion();
@@ -36,14 +38,23 @@ export default async function Futbol() {
         </>
       }
       acciones={
-        inscripcion?.capitan && (
-          <Link
-            href="/futbol/mi-equipo"
+        <>
+          {/* El calendario está debajo de la clasificación: desde arriba se llega con un toque. */}
+          <a
+            href="#calendario"
             className="rounded-full border-2 border-white bg-white px-4 py-2 font-mono text-xs font-bold text-verde uppercase transition hover:bg-transparent hover:text-white"
           >
-            {t("✎ Gestionar mi equipo")}
-          </Link>
-        )
+            {reservas.puedeMarcar ? t("📅 Calendario: marca cuándo podéis") : t("📅 Calendario")}
+          </a>
+          {inscripcion?.capitan && (
+            <Link
+              href="/futbol/mi-equipo"
+              className="rounded-full border-2 border-white px-4 py-2 font-mono text-xs font-bold text-white uppercase transition hover:bg-white hover:text-verde"
+            >
+              {t("✎ Gestionar mi equipo")}
+            </Link>
+          )}
+        </>
       }
     >
       {/* Si el otro capitán os ha propuesto un horario, arriba de todo; el calendario, debajo de la clasificación. */}

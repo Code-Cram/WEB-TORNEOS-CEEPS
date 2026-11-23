@@ -1,19 +1,15 @@
 import "server-only";
-import { and, asc, eq, isNull, or } from "drizzle-orm";
+import { and, asc, eq, gte, isNull, or } from "drizzle-orm";
 import { db, type Tx } from "@/db";
-import { futbolEquipos, futbolJugadores, futbolPartidos, futbolPropuestas, infoTorneos } from "@/db/schema";
+import { futbolDisponibilidad, futbolEquipos, futbolJugadores, futbolPartidos, futbolPropuestas } from "@/db/schema";
 import { nombreRonda } from "@/modulos/cuadros/logica";
-import { claveHueco, huecoDe, leerCierres, RESERVAS_HASTA, type Cierre } from "./reservas";
+import { esPaseDirecto } from "./prevision";
+import { leerAjustes, leerMarcados, previstasCaducadas, recalcularPrevistas, type AjustesFutbol } from "./prevision-datos";
+import { claveHueco, diaDe, franjaDe, huecoDe } from "./reservas";
 import type { DatosReservas } from "./tipos";
 
-/** Hasta cuándo se reserva y qué está cerrado (lo pone el Consejo en el panel). */
-export async function ajustesReservas(tx: Tx | typeof db = db): Promise<{ hasta: string; cierres: Cierre[]; textoCierres: string }> {
-  const [f] = await tx
-    .select({ hasta: infoTorneos.reservasHasta, cerradas: infoTorneos.reservasCerradas })
-    .from(infoTorneos)
-    .where(eq(infoTorneos.torneo, "futbol"));
-  return { hasta: f?.hasta ?? RESERVAS_HASTA, cierres: leerCierres(f?.cerradas), textoCierres: f?.cerradas ?? "" };
-}
+/** Primer y último día, cerrados y huecos de Deportes (lo pone el Consejo en el panel). */
+export const ajustesReservas = (tx: Tx | typeof db = db): Promise<AjustesFutbol> => leerAjustes(tx);
 
 /** Los huecos que ya tienen un partido reservado: «día|hora» → id del partido. */
 export async function huecosOcupados(tx: Tx | typeof db = db): Promise<Map<string, number>> {
@@ -38,37 +34,78 @@ export async function equipoDe(email: string) {
   return jugador ? { ...jugador, esCapitan: false } : null;
 }
 
-/** Todo lo del calendario de reservas, visto por `email` (sus partidos y sus propuestas, marcados). */
+/** Equipos que siguen en el torneo: están en algún partido por jugar (los pases directos no cuentan). */
+export const equiposVivos = (partidos: (typeof futbolPartidos.$inferSelect)[]) =>
+  new Set(
+    partidos
+      .filter((p) => p.ganadorId === null && !esPaseDirecto({ ronda: p.ronda, local: p.localId, visitante: p.visitanteId }))
+      .flatMap((p) => [p.localId, p.visitanteId])
+      .filter((id): id is number => id !== null),
+  );
+
+/** Si alguna fecha prevista se ha quedado atrás (o aún no hay ninguna), se recalculan antes de enseñarlas. */
+export async function asegurarPrevistas() {
+  const ahora = new Date();
+  if (previstasCaducadas(await db.select().from(futbolPartidos), ahora)) await db.transaction((tx) => recalcularPrevistas(tx, ahora));
+}
+
+/** Todo lo del calendario, visto por `email` (sus partidos, sus propuestas y lo que ha marcado su equipo). */
 export async function datosReservas(email: string | null): Promise<DatosReservas> {
-  const [ajustes, equipos, partidos, pendientes, miEquipo] = await Promise.all([
+  const [ajustes, equipos, partidos, pendientes, miEquipo, marcados] = await Promise.all([
     ajustesReservas(),
     db.select({ id: futbolEquipos.id, nombre: futbolEquipos.nombre }).from(futbolEquipos),
     db.select().from(futbolPartidos).orderBy(asc(futbolPartidos.ronda), asc(futbolPartidos.posicion)),
     db.select().from(futbolPropuestas).where(eq(futbolPropuestas.estado, "pendiente")).orderBy(asc(futbolPropuestas.creadoEn)),
     email ? equipoDe(email) : null,
+    leerMarcados(db),
   ]);
+  const ahora = new Date();
+  const hoy = diaDe(ahora);
   const nombre = new Map(equipos.map((e) => [e.id, e.nombre]));
   const total = Math.max(0, ...partidos.map((p) => p.ronda));
   // Los pases directos no se juegan.
-  const jugables = partidos.filter((p) => !(p.ronda === 1 && (p.localId === null) !== (p.visitanteId === null)));
+  const jugables = partidos.filter((p) => !esPaseDirecto({ ronda: p.ronda, local: p.localId, visitante: p.visitanteId }));
   const esMio = (p: (typeof partidos)[number]) => !!miEquipo && (p.localId === miEquipo.id || p.visitanteId === miEquipo.id);
 
   const proximo = jugables.filter((p) => esMio(p) && p.ganadorId === null).sort((a, b) => a.ronda - b.ronda)[0];
-  const rivalId = proximo && (proximo.localId === miEquipo!.id ? proximo.visitanteId : proximo.localId);
+  const rivalId = proximo ? (proximo.localId === miEquipo!.id ? proximo.visitanteId : proximo.localId) : null;
+
+  // Lo marcado de hoy en adelante, solo de los equipos que siguen.
+  const vivos = equiposVivos(partidos);
+  const futuras = (id: number | null | undefined) => (id == null ? [] : [...(marcados.get(id) ?? [])].filter((k) => k.slice(0, 10) >= hoy));
+  const porHora: Record<string, number> = {};
+  const porFranja: Record<string, number> = {};
+  let conMarcas = 0;
+  for (const id of vivos) {
+    const suyas = futuras(id);
+    if (suyas.length) conMarcas++;
+    const franjas = new Set<string>();
+    for (const k of suyas) {
+      porHora[k] = (porHora[k] ?? 0) + 1;
+      franjas.add(`${k.slice(0, 10)}|${franjaDe(Number(k.slice(11)))}`);
+    }
+    for (const f of franjas) porFranja[f] = (porFranja[f] ?? 0) + 1;
+  }
+  const mias = futuras(miEquipo?.id);
+  const delRival = futuras(rivalId);
+  const huecoPrevisto = proximo?.fechaPrevista && huecoDe(proximo.fechaPrevista);
+  const clavePrevista = huecoPrevisto ? claveHueco(huecoPrevisto.dia, huecoPrevisto.hora) : null;
 
   return {
-    ahora: new Date().toISOString(),
+    ahora: ahora.toISOString(),
+    desde: ajustes.desde,
     hasta: ajustes.hasta,
     cierres: ajustes.cierres,
+    abiertos: ajustes.abiertos,
     partidos: jugables
-      .filter((p) => p.fecha || p.fechaOrientativa)
+      .filter((p) => p.fecha || p.fechaPrevista)
       .map((p) => ({
         id: p.id,
         ronda: nombreRonda(p.ronda, total),
         local: p.localId !== null ? (nombre.get(p.localId) ?? null) : null,
         visitante: p.visitanteId !== null ? (nombre.get(p.visitanteId) ?? null) : null,
         fecha: p.fecha?.toISOString() ?? null,
-        orientativa: p.fechaOrientativa?.toISOString() ?? null,
+        prevista: p.fechaPrevista?.toISOString() ?? null,
         mio: esMio(p),
       })),
     propuestas: pendientes
@@ -90,10 +127,16 @@ export async function datosReservas(email: string | null): Promise<DatosReservas
           ronda: nombreRonda(proximo.ronda, total),
           rival: rivalId != null ? (nombre.get(rivalId) ?? null) : null,
           fecha: proximo.fecha?.toISOString() ?? null,
-          orientativa: proximo.fechaOrientativa?.toISOString() ?? null,
+          prevista: proximo.fechaPrevista?.toISOString() ?? null,
           esCapitan: miEquipo!.esCapitan,
+          coinciden: clavePrevista && mias.length && delRival.length ? mias.includes(clavePrevista) && delRival.includes(clavePrevista) : null,
+          rivalHaMarcado: delRival.length > 0,
         }
       : null,
+    marcas: { mias, rival: delRival, porHora, porFranja },
+    puedeMarcar: !!miEquipo?.esCapitan && vivos.has(miEquipo.id),
+    equiposVivos: vivos.size,
+    equiposConMarcas: conMarcas,
   };
 }
 
@@ -117,4 +160,16 @@ export async function propuestasParaContestar(email: string): Promise<{ equipo: 
   if (!otras.length) return [];
   const nombres = new Map((await db.select({ id: futbolEquipos.id, nombre: futbolEquipos.nombre }).from(futbolEquipos)).map((e) => [e.id, e.nombre]));
   return otras.map((f) => ({ equipo: nombres.get(f.equipoId) ?? "?", fecha: f.fecha.toISOString() }));
+}
+
+/** ¿Es el capitán de un equipo que sigue en el torneo y aún no ha marcado nada de hoy en adelante? (Para avisarle en el inicio.) */
+export async function capitanSinMarcar(email: string): Promise<boolean> {
+  const equipo = await equipoDe(email);
+  if (!equipo?.esCapitan || !equiposVivos(await db.select().from(futbolPartidos)).has(equipo.id)) return false;
+  const [marca] = await db
+    .select({ dia: futbolDisponibilidad.dia })
+    .from(futbolDisponibilidad)
+    .where(and(eq(futbolDisponibilidad.equipoId, equipo.id), gte(futbolDisponibilidad.dia, diaDe(new Date()))))
+    .limit(1);
+  return !marca;
 }

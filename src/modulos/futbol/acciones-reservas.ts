@@ -1,10 +1,10 @@
 "use server";
 
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq, inArray, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { db } from "@/db";
-import { futbolEquipos, futbolPartidos, futbolPropuestas, registro, usuarios } from "@/db/schema";
+import { futbolDisponibilidad, futbolEquipos, futbolPartidos, futbolPropuestas, registro, usuarios } from "@/db/schema";
 import { leerSesion } from "@/modulos/acceso/sesion";
 import { conAvisos } from "@/modulos/chat/avisos";
 import { fechaCorta } from "@/modulos/compartido/formato";
@@ -13,11 +13,13 @@ import { encolarCorreo, enviarPendientes, REMITENTE } from "@/modulos/correo/env
 import { nombreRonda } from "@/modulos/cuadros/logica";
 import { traduccion } from "@/modulos/idioma/servidor";
 import { correoPropuesta, correoRespuesta } from "./correos-reservas";
-import { huecoDe, inicioHueco, motivoNoReservable } from "./reservas";
-import { ajustesReservas, equipoDe, huecosOcupados } from "./reservas-datos";
+import { recalcularPrevistas } from "./prevision-datos";
+import { esDiaValido, HORAS, huecoDe, inicioHueco, motivoNoDisponible, motivoNoReservable } from "./reservas";
+import { ajustesReservas, equipoDe, equiposVivos, huecosOcupados } from "./reservas-datos";
 
 /*
- * Reservas de pista del fútbol: el capitán de un equipo propone un hueco de una hora para su próximo partido y el capitán
+ * Calendario del fútbol. El capitán de cada equipo marca los huecos que le vienen bien (las fechas previstas se
+ * recalculan solas), propone un hueco para su próximo partido (la fecha prevista, con un toque, u otro) y el capitán
  * rival lo acepta (queda reservado: fecha del partido, aviso en el chat del día y correo) o lo rechaza. Todo se comprueba
  * aquí con la sesión: del navegador solo se acepta el partido, el hueco o la propuesta y la respuesta.
  */
@@ -63,7 +65,7 @@ export async function proponerHueco(_prev: EstadoReserva, f: FormData): Promise<
     const c = Number.isSafeInteger(partidoId) ? await partidoDelCapitan(sesion.email, partidoId) : null;
     if (!c) return fallo(t("Solo el capitán puede proponer el horario de su partido."));
     const [ajustes, ocupados] = await Promise.all([ajustesReservas(), huecosOcupados()]);
-    const motivo = motivoNoReservable({ dia, hora }, { ahora: new Date(), hasta: ajustes.hasta, cierres: ajustes.cierres, ocupados, partidoId }, t, idioma);
+    const motivo = motivoNoReservable({ dia, hora }, { ahora: new Date(), ...ajustes, ocupados, partidoId }, t, idioma);
     if (motivo) return fallo(motivo);
     const fecha = inicioHueco(dia, hora);
     if (c.partido.fecha && c.partido.fecha.getTime() === fecha.getTime()) return fallo(t("Vuestro partido ya está reservado a esa hora."));
@@ -119,7 +121,7 @@ export async function responderPropuesta(_prev: EstadoReserva, f: FormData): Pro
     // Aceptar: el hueco tiene que seguir libre (y no haber pasado).
     const h = huecoDe(x.fecha);
     const [ajustes, ocupados] = await Promise.all([ajustesReservas(), huecosOcupados()]);
-    const motivo = h ? motivoNoReservable(h, { ahora: new Date(), hasta: ajustes.hasta, cierres: ajustes.cierres, ocupados, partidoId: x.partidoId }, t, idioma) : t("Ese hueco no existe: recarga la página.");
+    const motivo = h ? motivoNoReservable(h, { ahora: new Date(), ...ajustes, ocupados, partidoId: x.partidoId }, t, idioma) : t("Ese hueco no existe: recarga la página.");
     if (motivo) return fallo(motivo);
     // Lo que cambia en el cuadro sale solo en el chat del día, como cuando lo cambia el Consejo.
     await conAvisos(REMITENTE, () =>
@@ -136,6 +138,8 @@ export async function responderPropuesta(_prev: EstadoReserva, f: FormData): Pro
         });
         const correo = correoAlQuePropone(true);
         if (correo) await encolarCorreo(tx, { ...correo, motivo: "Fútbol · propuesta aceptada" });
+        // Con este hueco ocupado (y esta ronda con fecha), las demás fechas previstas se recolocan.
+        await recalcularPrevistas(tx);
       }),
     );
     return hecho(t("¡Reservado! {cuando}.", { cuando: fechaCorta(x.fecha.toISOString(), idioma) ?? "" }));
@@ -160,5 +164,44 @@ export async function anularPropuesta(_prev: EstadoReserva, f: FormData): Promis
   } catch (e) {
     console.error(e);
     return fallo(t("No se ha podido guardar. Vuelve a intentarlo en un momento."));
+  }
+}
+
+/**
+ * El capitán marca (o desmarca) huecos de un día que le vienen bien a su equipo: una franja entera (mañana o tarde) o
+ * una hora concreta. Las fechas previstas se recalculan en el momento.
+ */
+export async function marcarHuecos(dia: string, horas: number[], marcar: boolean): Promise<{ error?: string }> {
+  const { t, idioma } = await traduccion();
+  const sesion = await leerSesion();
+  if (!sesion) return { error: t("Tu sesión ha caducado. Vuelve a entrar.") };
+  if (typeof dia !== "string" || !esDiaValido(dia) || !Array.isArray(horas) || !horas.length || !horas.every((h) => HORAS.includes(h)))
+    return { error: t("Ese hueco no existe: recarga la página.") };
+  try {
+    const equipo = await equipoDe(sesion.email);
+    if (!equipo?.esCapitan) return { error: t("Solo el capitán puede marcar cuándo le viene bien a su equipo.") };
+    if (!equiposVivos(await db.select().from(futbolPartidos)).has(equipo.id)) return { error: t("Vuestro equipo ya no tiene partidos por jugar.") };
+    const ahora = new Date();
+    const ajustes = { ahora, ...(await ajustesReservas()) };
+    // Se marca solo lo que se puede jugar; desmarcar, siempre (aunque el hueco se haya cerrado después).
+    const validas = marcar ? horas.filter((hora) => !motivoNoDisponible({ dia, hora }, ajustes)) : horas;
+    if (!validas.length) return { error: motivoNoDisponible({ dia, hora: horas[0] }, ajustes, t, idioma) ?? t("Ese hueco no existe: recarga la página.") };
+    await db.transaction(async (tx) => {
+      if (marcar)
+        await tx
+          .insert(futbolDisponibilidad)
+          .values(validas.map((hora) => ({ equipoId: equipo.id, dia, hora, marcadoPor: sesion.email })))
+          .onConflictDoNothing();
+      else
+        await tx
+          .delete(futbolDisponibilidad)
+          .where(and(eq(futbolDisponibilidad.equipoId, equipo.id), eq(futbolDisponibilidad.dia, dia), inArray(futbolDisponibilidad.hora, validas)));
+      await recalcularPrevistas(tx, ahora);
+    });
+    revalidatePath("/", "layout");
+    return {};
+  } catch (e) {
+    console.error(e);
+    return { error: t("No se ha podido guardar. Vuelve a intentarlo en un momento.") };
   }
 }

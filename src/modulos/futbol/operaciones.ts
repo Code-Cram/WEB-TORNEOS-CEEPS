@@ -5,6 +5,7 @@ import { ganadorFutbol, recalcular, RONDA_TERCER_PUESTO, sortear, totalRondas, t
 import type { LineaJugador } from "@/modulos/personas/plantilla";
 import { asegurarUsuarios } from "@/modulos/personas/plantilla";
 import { TORNEOS } from "@/modulos/torneos/config";
+import { recalcularPrevistas } from "./prevision-datos";
 
 /** Crea todos los partidos del cuadro a partir de un sorteo nuevo. Borra el cuadro anterior. */
 export async function sortearFutbol(db: Db) {
@@ -34,6 +35,8 @@ export async function recalcularFutbol(tx: Tx) {
       b: p.visitanteId,
       ganador: p.ganadorId,
       conResultado: p.golesLocal !== null && p.golesVisitante !== null,
+      fijoA: p.localFijo,
+      fijoB: p.visitanteFijo,
     })),
     (c: PartidoCuadro) => ganadorFutbol(c.a, c.b, porId.get(`${c.ronda}:${c.posicion}`)!),
   );
@@ -49,6 +52,8 @@ export async function recalcularFutbol(tx: Tx) {
       })
       .where(eq(futbolPartidos.id, p.id));
   }
+  // Con el cuadro al día, las fechas previstas (cambian los rivales, lo jugado y lo que queda por jugar).
+  await recalcularPrevistas(tx);
 }
 
 /** Sustituye la plantilla de un equipo de fútbol. El capitán se marca por su correo. */

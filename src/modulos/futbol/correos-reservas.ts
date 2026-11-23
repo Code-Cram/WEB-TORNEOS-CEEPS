@@ -12,7 +12,7 @@ export function correoPropuesta(d: { capitan: string; propone: string; ronda: st
       "",
       `${d.propone} propone jugar vuestro partido de ${d.ronda.toLowerCase()} el ${fechaLarga(d.fecha)}.`,
       "",
-      `Entra en ${d.web}/futbol con este correo para aceptarlo, rechazarlo o proponer otro hueco (lo tienes arriba de la página y en el calendario, debajo de la clasificación).`,
+      `Entra en ${d.web}/futbol#calendario con este correo para aceptarlo, rechazarlo o proponer otra hora (lo tienes arriba de la página y en el calendario, debajo de la clasificación).`,
       "",
       FIRMA,
     ].join("\n"),
@@ -27,7 +27,7 @@ export function correoRespuesta(d: { capitan: string; rival: string; fecha: stri
         texto: [
           d.capitan ? `Hola, ${primerNombre(d.capitan)}:` : "Hola:",
           "",
-          `${d.rival} ha aceptado: vuestro partido queda reservado el ${fechaLarga(d.fecha)}. Ya sale en el cuadro y en el calendario de ${d.web}/futbol, donde también podéis confirmar la asistencia.`,
+          `${d.rival} ha aceptado: vuestro partido queda reservado el ${fechaLarga(d.fecha)}. Ya sale en el cuadro y en el calendario de ${d.web}/futbol#calendario, donde también podéis confirmar la asistencia.`,
           "",
           FIRMA,
         ].join("\n"),
@@ -37,7 +37,7 @@ export function correoRespuesta(d: { capitan: string; rival: string; fecha: stri
         texto: [
           d.capitan ? `Hola, ${primerNombre(d.capitan)}:` : "Hola:",
           "",
-          `${d.rival} ha rechazado jugar el ${fechaLarga(d.fecha)}. Propón otro hueco en el calendario de ${d.web}/futbol (o espera a que ellos propongan uno).`,
+          `${d.rival} ha rechazado jugar el ${fechaLarga(d.fecha)}. Propón otra hora en el calendario de ${d.web}/futbol#calendario (o espera a que ellos propongan una).`,
           "",
           FIRMA,
         ].join("\n"),

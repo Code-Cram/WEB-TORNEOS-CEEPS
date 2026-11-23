@@ -57,10 +57,13 @@ export const infoTorneos = pgTable("info_torneos", {
   reservaAutomaticaDesde: timestamp("reserva_automatica_desde", { withTimezone: true }),
   /** Solo póker: cuántos de cada mesa clasificatoria pasan a la mesa final (1, el ganador; 2, también el segundo). */
   clasificanPorMesa: integer("clasifican_por_mesa").notNull().default(1),
-  /** Solo fútbol: último día que se puede reservar pista (null: el de futbol/reservas.ts). */
+  /** Solo fútbol: primer y último día en que se juega (null: los de futbol/reservas.ts). */
+  reservasDesde: date("reservas_desde", { mode: "string" }),
   reservasHasta: date("reservas_hasta", { mode: "string" }),
-  /** Solo fútbol: días u horas cerrados para reservar, uno por línea (ver leerCierres en futbol/reservas.ts). */
+  /** Solo fútbol: días u horas cerrados, uno por línea (ver leerCierres en futbol/reservas.ts). */
   reservasCerradas: text("reservas_cerradas"),
+  /** Solo fútbol: los huecos que da Deportes, con el mismo formato; vacío, vale de lunes a viernes de 8:00 a 18:00. */
+  reservasAbiertas: text("reservas_abiertas"),
 }).enableRLS();
 
 /** Ficheros de sql/ ya aplicados en esta base de datos (los apunta scripts/migrar.mts al desplegar). */
@@ -138,6 +141,9 @@ export const futbolPartidos = futbol.table(
     posicion: integer("posicion").notNull(),
     localId: integer("local_id").references(() => futbolEquipos.id, { onDelete: "set null" }),
     visitanteId: integer("visitante_id").references(() => futbolEquipos.id, { onDelete: "set null" }),
+    /** Equipo puesto a mano por el Consejo en ese lado: no lo cambian los resultados de la ronda anterior. */
+    localFijo: boolean("local_fijo").notNull().default(false),
+    visitanteFijo: boolean("visitante_fijo").notNull().default(false),
     golesLocal: integer("goles_local"),
     golesVisitante: integer("goles_visitante"),
     penaltisLocal: integer("penaltis_local"),
@@ -146,10 +152,29 @@ export const futbolPartidos = futbol.table(
     fecha: timestamp("fecha", { withTimezone: true }),
     lugar: text("lugar"),
     notas: text("notas"),
-    /** Horario orientativo que propone el Consejo mientras no hay fecha (los capitanes reservan el definitivo). */
-    fechaOrientativa: timestamp("fecha_orientativa", { withTimezone: true }),
+    /**
+     * Fecha prevista mientras no hay fecha: sale sola de lo que marcan los capitanes (futbol/prevision.ts). Se guarda
+     * para que lo previsto para las próximas 24 horas no se mueva.
+     */
+    fechaPrevista: timestamp("fecha_prevista", { withTimezone: true }),
   },
   (t) => [unique().on(t.ronda, t.posicion)],
+).enableRLS();
+
+/** Huecos de una hora que le vienen bien a un equipo (los marca su capitán en el calendario). */
+export const futbolDisponibilidad = futbol.table(
+  "disponibilidad",
+  {
+    equipoId: integer("equipo_id")
+      .notNull()
+      .references(() => futbolEquipos.id, { onDelete: "cascade" }),
+    dia: date("dia", { mode: "string" }).notNull(),
+    /** Hora de inicio del hueco (8 = de 8:00 a 9:00). */
+    hora: integer("hora").notNull(),
+    marcadoPor: text("marcado_por").notNull(),
+    creadoEn: creadoEn(),
+  },
+  (t) => [primaryKey({ columns: [t.equipoId, t.dia, t.hora] })],
 ).enableRLS();
 
 /** Reservas de la pista: un capitán propone un hueco para su partido y el capitán rival lo acepta o lo rechaza. */
@@ -216,6 +241,9 @@ export const musPartidos = mus.table(
     posicion: integer("posicion").notNull(),
     parejaAId: integer("pareja_a_id").references(() => musParejas.id, { onDelete: "set null" }),
     parejaBId: integer("pareja_b_id").references(() => musParejas.id, { onDelete: "set null" }),
+    /** Pareja puesta a mano por el Consejo en ese lado: no la cambian los resultados de la ronda anterior. */
+    parejaAFija: boolean("pareja_a_fija").notNull().default(false),
+    parejaBFija: boolean("pareja_b_fija").notNull().default(false),
     /** Partidas ganadas por cada pareja (al mejor de 3, final al mejor de 5). */
     partidasA: integer("partidas_a"),
     partidasB: integer("partidas_b"),

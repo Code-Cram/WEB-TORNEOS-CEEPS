@@ -179,6 +179,65 @@ describe("recalcular el cuadro", () => {
   });
 });
 
+describe("cruces puestos a mano por el Consejo", () => {
+  const menor = (p: PartidoCuadro) => Math.min(p.a!, p.b!);
+
+  test("una pareja puesta a mano en la final se queda, aunque las semifinales digan otra cosa", () => {
+    const partidos = crearCuadro(8);
+    const final = partidos.find((p) => p.ronda === 3)!;
+    // Antes de jugar nada, el Consejo pone al 7 como finalista «porque sí».
+    Object.assign(final, { a: 7, fijoA: true });
+    aplicar(partidos, menor);
+    assert.equal(final.a, 7);
+    for (let r = 1; r <= 2; r++) {
+      for (const p of partidos.filter((x) => x.ronda === r)) p.conResultado = true;
+      aplicar(partidos, menor);
+    }
+    const semi = partidos.find((p) => p.ronda === 2 && p.posicion === 0)!;
+    assert.notEqual(semi.ganador, 7, "su semifinal la gana otro…");
+    assert.equal(final.a, 7, "…y el 7 sigue en la final");
+    assert.equal(final.b, partidos.find((p) => p.ronda === 2 && p.posicion === 1)!.ganador, "el otro lado sigue en automático");
+  });
+
+  test("y se puede cambiar otra vez a mano o volver a automático (el resultado de ese cruce se borra si cambia quien juega)", () => {
+    const partidos = crearCuadro(8);
+    for (let r = 1; r <= 3; r++) {
+      for (const p of partidos.filter((x) => x.ronda === r)) p.conResultado = true;
+      aplicar(partidos, menor);
+    }
+    const final = partidos.find((p) => p.ronda === 3)!;
+    const automatico = final.a;
+    Object.assign(final, { a: 8, fijoA: true });
+    aplicar(partidos, menor);
+    assert.equal(final.a, 8);
+    assert.equal(final.ganador, menor(final), "con el resultado que hay, gana quien diga el marcador");
+    Object.assign(final, { a: 6 });
+    aplicar(partidos, menor);
+    assert.equal(final.a, 6);
+    // Vuelve a automático: entra el ganador de la semifinal y, como cambia quien juega, el resultado ya no vale.
+    final.fijoA = false;
+    const cambios = recalcular(partidos, menor);
+    const c = cambios.find((x) => x.ronda === 3)!;
+    assert.equal(c.a, automatico);
+    assert.equal(c.limpiarResultado, true);
+  });
+
+  test("también en cuartos y en el 3er puesto, y un lado a mano vacío se queda vacío", () => {
+    const partidos = crearCuadro(16, 3, true);
+    const cuarto = partidos.find((p) => p.ronda === 2 && p.posicion === 1)!;
+    Object.assign(cuarto, { a: 16, fijoA: true, b: null, fijoB: true });
+    for (let r = 1; r <= 3; r++) {
+      for (const p of partidos.filter((x) => x.ronda === r)) p.conResultado = r !== 2 || p !== cuarto;
+      aplicar(partidos, menor);
+    }
+    assert.deepEqual([cuarto.a, cuarto.b], [16, null]);
+    const tercero = partidos.find((p) => p.ronda === RONDA_TERCER_PUESTO)!;
+    Object.assign(tercero, { b: 2, fijoB: true });
+    aplicar(partidos, menor);
+    assert.equal(tercero.b, 2);
+  });
+});
+
 describe("ganadores", () => {
   const m = (gl: number | null, gv: number | null, pl: number | null = null, pv: number | null = null) => ({
     golesLocal: gl,

@@ -6,7 +6,8 @@ import { estiloInput } from "@/modulos/panel/estilos";
 import { FormAccion } from "@/modulos/panel/form-accion";
 import { MarcoAdmin, Seccion } from "@/modulos/panel/marco";
 import { TORNEOS } from "@/modulos/torneos/config";
-import { describirCuadro, nombreRonda, RONDA_TERCER_PUESTO, rondasEnOrden } from "@/modulos/cuadros/logica";
+import { describirCuadro, nombreRonda, origenDelLado, RONDA_TERCER_PUESTO, rondasEnOrden } from "@/modulos/cuadros/logica";
+import { SelectLado } from "@/modulos/cuadros/select-lado";
 import { paraInputFecha } from "@/modulos/compartido/formato";
 import { plantillaATexto } from "@/modulos/personas/plantilla";
 import { exigirAdmin } from "@/modulos/acceso/sesion";
@@ -69,7 +70,7 @@ export default async function AdminMus() {
       {partidos.length > 0 && (
         <Seccion
           titulo="Cruces y resultados"
-          descripcion="Apunta las partidas ganadas por cada pareja, o los tantos de cada partida (40-32, 25-40, 40-38) y las partidas se cuentan solas."
+          descripcion="Apunta las partidas ganadas por cada pareja, o los tantos de cada partida (40-32, 25-40, 40-38) y las partidas se cuentan solas. En cualquier cruce (también en la final y en el del 3er puesto) puedes poner a mano a cualquier pareja, o a nadie: se queda aunque cambien los resultados (sale en naranja) hasta que vuelvas a elegir «Automático»."
         >
           {rondasEnOrden(rondas, conTercero).map((r) => (
             <div key={r} className="mb-5">
@@ -89,19 +90,26 @@ export default async function AdminMus() {
                           <input type="hidden" name="id" value={p.id} />
                           {/* En el móvil, cada lado en su fila con su marcador; en pantalla ancha, todo en una línea. */}
                           <div className="grid grid-cols-[1fr_auto] items-center gap-1.5 sm:grid-cols-[1fr_auto_auto_auto_1fr]">
-                            {r === 1 ? (
-                              <SelectPareja name="parejaAId" valor={p.parejaAId} parejas={parejas} />
-                            ) : (
-                              <span className="truncate text-sm font-semibold sm:text-right">{p.parejaAId ? nombre.get(p.parejaAId) : "Por decidir"}</span>
-                            )}
+                            <SelectLado
+                              name="parejaAId"
+                              etiqueta="Pareja A"
+                              valor={p.parejaAId}
+                              fijo={p.parejaAFija}
+                              participantes={parejas}
+                              origen={origenDelLado(r, p.posicion, 0, rondas, "cruce")}
+                            />
                             <input name="partidasA" inputMode="numeric" defaultValue={p.partidasA ?? ""} className={`${estiloInput} w-12 text-center`} aria-label="Partidas pareja A" />
                             <span className="hidden sm:block">–</span>
                             <input name="partidasB" inputMode="numeric" defaultValue={p.partidasB ?? ""} className={`${estiloInput} order-2 w-12 text-center sm:order-none`} aria-label="Partidas pareja B" />
-                            {r === 1 ? (
-                              <SelectPareja className="order-1 sm:order-none" name="parejaBId" valor={p.parejaBId} parejas={parejas} />
-                            ) : (
-                              <span className="order-1 truncate text-sm font-semibold sm:order-none">{p.parejaBId ? nombre.get(p.parejaBId) : "Por decidir"}</span>
-                            )}
+                            <SelectLado
+                              className="order-1 sm:order-none"
+                              name="parejaBId"
+                              etiqueta="Pareja B"
+                              valor={p.parejaBId}
+                              fijo={p.parejaBFija}
+                              participantes={parejas}
+                              origen={origenDelLado(r, p.posicion, 1, rondas, "cruce")}
+                            />
                           </div>
                           <div className="flex flex-wrap items-center gap-2">
                             <input name="tantos" placeholder="Tantos: 40-32, 25-40, 40-38" defaultValue={tantos} className={`${estiloInput} min-w-0 flex-1 font-mono`} />
@@ -161,29 +169,6 @@ export default async function AdminMus() {
       <Finalizar torneo="mus" />
       <NuevaEdicion torneo="mus" />
     </MarcoAdmin>
-  );
-}
-
-function SelectPareja({
-  name,
-  valor,
-  parejas,
-  className = "",
-}: {
-  name: string;
-  valor: number | null;
-  parejas: { id: number; nombre: string }[];
-  className?: string;
-}) {
-  return (
-    <select name={name} defaultValue={valor ?? ""} className={`${estiloInput} min-w-0 ${className}`}>
-      <option value="">— pase directo —</option>
-      {parejas.map((e) => (
-        <option key={e.id} value={e.id}>
-          {e.nombre}
-        </option>
-      ))}
-    </select>
   );
 }
 

@@ -6,7 +6,8 @@ import { estiloInput } from "@/modulos/panel/estilos";
 import { FormAccion } from "@/modulos/panel/form-accion";
 import { MarcoAdmin, Seccion } from "@/modulos/panel/marco";
 import { TORNEOS } from "@/modulos/torneos/config";
-import { describirCuadro, nombreRonda, RONDA_TERCER_PUESTO, rondasEnOrden } from "@/modulos/cuadros/logica";
+import { describirCuadro, nombreRonda, origenDelLado, RONDA_TERCER_PUESTO, rondasEnOrden } from "@/modulos/cuadros/logica";
+import { SelectLado } from "@/modulos/cuadros/select-lado";
 import { paraInputFecha } from "@/modulos/compartido/formato";
 import { plantillaATexto } from "@/modulos/personas/plantilla";
 import { exigirAdmin } from "@/modulos/acceso/sesion";
@@ -72,7 +73,10 @@ export default async function AdminFutbol() {
       )}
 
       {partidos.length > 0 && (
-        <Seccion titulo="Cruces y resultados" descripcion="Si hay empate, apunta la tanda de penaltis. El ganador pasa solo a la siguiente ronda; si corriges un resultado, las rondas siguientes se recalculan.">
+        <Seccion
+          titulo="Cruces y resultados"
+          descripcion="Si hay empate, apunta la tanda de penaltis. El ganador pasa solo a la siguiente ronda; si corriges un resultado, las rondas siguientes se recalculan. En cualquier partido (también en la final) puedes poner a mano a cualquier equipo, o a nadie: se queda aunque cambien los resultados (sale en naranja) hasta que vuelvas a elegir «Automático»."
+        >
           {rondasEnOrden(rondas, conTercero).map((r) => (
             <div key={r} className="mb-5">
               <h3 className="mb-2 font-mono text-xs font-bold tracking-widest text-tinta-suave uppercase">{nombreRonda(r, rondas)}</h3>
@@ -87,19 +91,26 @@ export default async function AdminFutbol() {
                           <input type="hidden" name="id" value={p.id} />
                           {/* En el móvil, cada lado en su fila con su marcador; en pantalla ancha, todo en una línea. */}
                           <div className="grid grid-cols-[1fr_auto] items-center gap-1.5 sm:grid-cols-[1fr_auto_auto_auto_1fr]">
-                            {r === 1 ? (
-                              <SelectEquipo name="localId" valor={p.localId} equipos={equipos} />
-                            ) : (
-                              <span className="truncate text-sm font-semibold sm:text-right">{p.localId ? nombre.get(p.localId) : "Por decidir"}</span>
-                            )}
+                            <SelectLado
+                              name="localId"
+                              etiqueta="Equipo local"
+                              valor={p.localId}
+                              fijo={p.localFijo}
+                              participantes={equipos}
+                              origen={origenDelLado(r, p.posicion, 0, rondas)}
+                            />
                             <input name="golesLocal" inputMode="numeric" defaultValue={p.golesLocal ?? ""} className={`${estiloInput} w-12 text-center`} aria-label="Goles local" />
                             <span className="hidden sm:block">–</span>
                             <input name="golesVisitante" inputMode="numeric" defaultValue={p.golesVisitante ?? ""} className={`${estiloInput} order-2 w-12 text-center sm:order-none`} aria-label="Goles visitante" />
-                            {r === 1 ? (
-                              <SelectEquipo className="order-1 sm:order-none" name="visitanteId" valor={p.visitanteId} equipos={equipos} />
-                            ) : (
-                              <span className="order-1 truncate text-sm font-semibold sm:order-none">{p.visitanteId ? nombre.get(p.visitanteId) : "Por decidir"}</span>
-                            )}
+                            <SelectLado
+                              className="order-1 sm:order-none"
+                              name="visitanteId"
+                              etiqueta="Equipo visitante"
+                              valor={p.visitanteId}
+                              fijo={p.visitanteFijo}
+                              participantes={equipos}
+                              origen={origenDelLado(r, p.posicion, 1, rondas)}
+                            />
                           </div>
                           <div className="flex flex-wrap items-center gap-2 text-sm">
                             <span className="font-mono text-xs text-tinta-suave">Penaltis</span>
@@ -160,29 +171,6 @@ export default async function AdminFutbol() {
       <Finalizar torneo="futbol" />
       <NuevaEdicion torneo="futbol" />
     </MarcoAdmin>
-  );
-}
-
-function SelectEquipo({
-  name,
-  valor,
-  equipos,
-  className = "",
-}: {
-  name: string;
-  valor: number | null;
-  equipos: { id: number; nombre: string }[];
-  className?: string;
-}) {
-  return (
-    <select name={name} defaultValue={valor ?? ""} className={`${estiloInput} min-w-0 ${className}`}>
-      <option value="">— pase directo —</option>
-      {equipos.map((e) => (
-        <option key={e.id} value={e.id}>
-          {e.nombre}
-        </option>
-      ))}
-    </select>
   );
 }
 

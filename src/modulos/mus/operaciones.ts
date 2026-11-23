@@ -41,6 +41,8 @@ export async function recalcularMus(tx: Tx) {
       b: p.parejaBId,
       ganador: p.ganadorId,
       conResultado: p.partidasA !== null && p.partidasB !== null,
+      fijoA: p.parejaAFija,
+      fijoB: p.parejaBFija,
     })),
     (c) => ganadorMus(c.a, c.b, porId.get(`${c.ronda}:${c.posicion}`)!),
   );

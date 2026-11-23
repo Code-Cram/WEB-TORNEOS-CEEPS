@@ -24,8 +24,8 @@ export type PartidoVista = {
   mejorDe: number | null;
   ganador: number | null;
   fecha: string | null;
-  /** Solo fútbol: horario orientativo mientras no hay fecha (lo reservan los capitanes). */
-  orientativa?: string | null;
+  /** Solo fútbol: fecha prevista mientras no hay fecha (sale de lo que marcan los capitanes; la reservan ellos). */
+  prevista?: string | null;
   lugar: string | null;
   notas: string | null;
   /** Solo mus: tantos de cada partida. */

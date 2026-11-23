@@ -9,6 +9,19 @@ import { traductor, type T } from "@/modulos/idioma/traducir";
 
 export const RONDA_TERCER_PUESTO = 0;
 
+/** En el panel, valor del desplegable de un lado de un cruce que se rellena solo (con el ganador del cruce anterior). */
+export const LADO_AUTOMATICO = "auto";
+
+/**
+ * De dónde sale cada lado de un cruce cuando va en automático: «ganador del partido 3 de octavos de final» (en el del
+ * 3er puesto, «perdedor del partido 1 de semifinales»). null en la primera ronda.
+ */
+export function origenDelLado(ronda: number, posicion: number, lado: 0 | 1, total: number, palabra = "partido"): string | null {
+  if (ronda === RONDA_TERCER_PUESTO) return `perdedor del ${palabra} ${lado + 1} de ${nombreRonda(total - 1, total).toLowerCase()}`;
+  if (ronda <= 1) return null;
+  return `ganador del ${palabra} ${posicion * 2 + lado + 1} de ${nombreRonda(ronda - 1, total).toLowerCase()}`;
+}
+
 export function tamanoCuadro(participantes: number): number {
   let n = 2;
   while (n < participantes) n *= 2;
@@ -157,11 +170,15 @@ export type PartidoCuadro = {
   ganador: number | null;
   /** ¿Hay resultado introducido? (goles/partidas) */
   conResultado: boolean;
+  /** Lado puesto a mano por el Consejo: se queda como está, ganara quien ganara el cruce anterior. */
+  fijoA?: boolean;
+  fijoB?: boolean;
 };
 
 /**
  * Recalcula el cuadro entero a partir de los resultados: rellena las rondas siguientes con los
- * ganadores, hace pasar a quien tiene bye y, si un cruce cambia, invalida su resultado.
+ * ganadores, hace pasar a quien tiene bye y, si un cruce cambia, invalida su resultado. Los lados puestos a mano
+ * (`fijoA`, `fijoB`) no se tocan: así el Consejo puede poner a quien quiera en cualquier cruce, también en la final.
  * `ganadorPorResultado` devuelve el ganador según el marcador (o null si empate/incompleto).
  * Devuelve los partidos modificados (con `limpiarResultado` si hay que borrar el marcador).
  */
@@ -199,7 +216,7 @@ export function recalcular(
     const deRonda = partidos.filter((p) => p.ronda === r).map((p) => mapa.get(`${r}:${p.posicion}`)!);
     for (const p of deRonda.sort((x, y) => x.posicion - y.posicion)) {
       const ganadorDe = (pos: number) => mapa.get(`${r - 1}:${pos}`)?.ganador ?? null;
-      resolver(p, r > 1 ? [ganadorDe(p.posicion * 2), ganadorDe(p.posicion * 2 + 1)] : null, r === 1);
+      resolver(p, r > 1 ? [p.fijoA ? p.a : ganadorDe(p.posicion * 2), p.fijoB ? p.b : ganadorDe(p.posicion * 2 + 1)] : null, r === 1);
     }
   }
 
@@ -209,7 +226,11 @@ export function recalcular(
     const semis = [mapa.get(`${rondas - 1}:0`), mapa.get(`${rondas - 1}:1`)];
     const perdedor = (s?: PartidoCuadro) => (s?.ganador == null ? null : s.ganador === s.a ? s.b : s.a);
     // Si una semifinal fue un pase directo no tiene perdedor: el otro queda 3º sin jugar.
-    resolver(tercero, [perdedor(semis[0]), perdedor(semis[1])], semis.every((s) => s?.ganador != null));
+    resolver(
+      tercero,
+      [tercero.fijoA ? tercero.a : perdedor(semis[0]), tercero.fijoB ? tercero.b : perdedor(semis[1])],
+      !tercero.fijoA && !tercero.fijoB && semis.every((s) => s?.ganador != null),
+    );
   }
   return [...cambios.values()];
 }

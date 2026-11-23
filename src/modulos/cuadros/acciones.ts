@@ -9,6 +9,7 @@ import { recalcularActividad } from "@/modulos/actividades/operaciones";
 import { fechaCorta } from "@/modulos/compartido/formato";
 import { bloquesCuadro, enBloque, intercambiar, RONDA_TERCER_PUESTO, type CruceRonda1 } from "@/modulos/cuadros/logica";
 import { recalcularFutbol } from "@/modulos/futbol/operaciones";
+import { recalcularPrevistas } from "@/modulos/futbol/prevision-datos";
 import { recalcularMus } from "@/modulos/mus/operaciones";
 import { entero, fecha, hecho, intentar, texto, textoONull, torneoDe, type Resultado } from "@/modulos/panel/comun";
 import { TORNEOS } from "@/modulos/torneos/config";
@@ -41,7 +42,11 @@ export async function fechasEnBloque(_prev: Resultado, f: FormData): Promise<Res
       const ids = partidos.filter((p) => enBloque(bloque, p, rondas) && !(p.ronda === 1 && (p.a === null) !== (p.b === null))).map((p) => p.id);
       if (!ids.length) throw new AvisoError("No hay partidos en ese bloque.");
       const cambios = { ...(cuando ? { fecha: cuando } : {}), ...(lugar ? { lugar } : {}) };
-      if (torneo === "futbol") await db.update(futbolPartidos).set(cambios).where(inArray(futbolPartidos.id, ids));
+      if (torneo === "futbol")
+        await db.transaction(async (tx) => {
+          await tx.update(futbolPartidos).set(cambios).where(inArray(futbolPartidos.id, ids));
+          await recalcularPrevistas(tx);
+        });
       else await db.update(musPartidos).set(cambios).where(inArray(musPartidos.id, ids));
       return hecho(
         admin,
