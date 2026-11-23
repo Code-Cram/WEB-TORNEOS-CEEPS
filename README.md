@@ -95,6 +95,12 @@ Todo desde el panel (`/admin`, botón «Admin» al entrar con un correo de `ADMI
 9. **Redes**: publicaciones que se preparan solas con lo que pasa en los torneos: el aviso destacado de cada torneo y actividad (un cambio de lugar o de fecha), qué se juega hoy y los próximos días, cada resultado, cómo queda cada cuadro, la mesa final del póker y los campeones. Cada una trae el texto para el canal de WhatsApp (con negritas y el enlace), el de X (cabe en 280 caracteres) y el pie de Instagram con sus hashtags, y su imagen para historia (1080 × 1920) y para post (1080 × 1350). Copiar, descargar y publicar.
 10. **Dar por finalizado** cuando acabe: lo ve todo el que entra en la web, con el ganador arriba (se puede reabrir).
 11. **Nueva edición** (con el nombre escrito para confirmar): el ganador pasa a la lista de ganadores, se guarda una copia completa en el archivo y el torneo queda vacío para la siguiente edición.
+12. **🎨 Web**: lo que se ve en toda la web de los participantes, sin tocar código (todo queda en el registro):
+    - **Aviso para todos**, arriba de cada página y de la portada (en español y, si se quiere, en inglés).
+    - **Textos**: cualquier texto de la web de los participantes (botones, explicaciones, avisos de error…), en español y en inglés. Se busca tal como sale en la web y se escribe el nuevo; lo que va entre llaves (`{fecha}`, `{n}`…) es donde la web pone el dato y no se puede quitar. Vacío, vuelve el de siempre. Son los de `en.ts` (todo lo que pasa por `t()`).
+    - **Nombre** («Torneos» + «CEEPS» destacado) y **quién organiza**: portada, cabeceras, pestaña del navegador, asunto y firma de los correos e imágenes y etiquetas para redes.
+    - **Logos**: el principal y los tres del pie (SVG, PNG o JPG de hasta 500 KB; los SVG con código se rechazan), con su texto alternativo; los del pie se pueden esconder.
+    - **Colores** de toda la web, con aviso si un texto se va a leer mal. El panel se queda siempre con los colores de siempre.
 
 ### Actividades
 
@@ -159,13 +165,14 @@ npm run lint
 | `redes` | Publicaciones para WhatsApp, X e Instagram y sus imágenes (las fuentes, con licencia OFL, en `fuentes/`). |
 | `importacion` | Leer los CSV de Forms e importarlos sin duplicar ni pisar correcciones. |
 | `panel` | Piezas comunes del panel: marco, formularios con resultado, intercambiar y validación de lo que llega del navegador. |
-| `idioma` | Español e inglés: el idioma de cada uno, los botones ES / EN y las traducciones (`en.ts`). |
+| `idioma` | Español e inglés: el idioma de cada uno, los botones ES / EN y las traducciones (`en.ts`), con los textos cambiados desde el panel por delante. |
+| `web` | La web editable desde el panel (🎨 Web): aviso para todos, textos, nombre, logos (se sirven en `/logos/…`) y colores. Sin nada guardado, todo sale como siempre (`config.ts`). |
 | `compartido` | Utilidades de toda la web: fechas, textos, cabecera, ventanas y refresco. |
 
 ## Adaptarla a tu asociación
 
-- Nombres, calendario, formato, premios y chuleta de reglas por defecto y partido por el 3er puesto: `src/modulos/torneos/config.ts`; número de mesas y asientos del póker: `src/modulos/poker/config.ts`. Para cualquier otra cosa no hace falta tocar código: créala como actividad desde el panel.
-- Logos: `public/marca/` y `src/app/icon.svg`. Colores: `src/app/globals.css`.
+- Desde el panel, sin código: nombre, logos, colores, aviso para todos y cualquier texto (**🎨 Web**), la información de cada torneo (su página del panel) y cualquier otra competición o evento (créalo como actividad).
+- En el código: los valores por defecto de cada torneo y el partido por el 3er puesto (`src/modulos/torneos/config.ts`), las mesas y asientos del póker (`src/modulos/poker/config.ts`), las horas de la pista del fútbol (`src/modulos/futbol/reservas.ts`), el icono de la pestaña (`src/app/icon.svg`) y los logos y colores por defecto (`public/marca/`, `src/app/globals.css` y `src/modulos/web/config.ts`).
 - Textos en inglés: `src/modulos/idioma/en.ts` (la clave es el texto en español tal cual; `npm test` avisa si alguno se queda sin traducir) y los textos por defecto de cada torneo en `src/modulos/torneos/config-en.ts`.
 - Estructura de la base de datos: `src/db/schema.ts`.
 

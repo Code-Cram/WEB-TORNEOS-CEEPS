@@ -2,6 +2,8 @@ import "server-only";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { ImageResponse } from "next/og";
+import { MARCA, type Marca } from "@/modulos/web/config";
+import { nombreCompleto } from "@/modulos/web/logica";
 import type { Publicacion, Tema } from "./publicaciones";
 
 /* Imagen de una publicación: historia (1080 × 1920) o post (1080 × 1350), con la identidad de los carteles del Consejo. */
@@ -21,15 +23,14 @@ const COLORES: Record<Tema, { fondo: string; texto: string; acento: string; text
   general: { fondo: "linear-gradient(180deg, #004522 0%, #002411 100%)", texto: "#f4ebdd", acento: "#c16100", textoAcento: "#ffffff" },
 };
 
-/** Fuentes (OFL, en ./fuentes) y logo: se leen una vez por servidor. */
+/** Fuentes (OFL, en ./fuentes): se leen una vez por servidor. El logo y el nombre llegan con cada imagen (se pueden cambiar). */
 let recursos: ReturnType<typeof leerRecursos> | null = null;
 async function leerRecursos() {
   const fuentes = path.join(process.cwd(), "src/modulos/redes/fuentes");
-  const [titulo, texto, mono, logo] = await Promise.all([
+  const [titulo, texto, mono] = await Promise.all([
     readFile(path.join(fuentes, "archivo-black-latin-400-normal.woff")),
     readFile(path.join(fuentes, "archivo-latin-600-normal.woff")),
     readFile(path.join(fuentes, "space-mono-latin-700-normal.woff")),
-    readFile(path.join(process.cwd(), "public/marca/ceeps.svg")),
   ]);
   return {
     fuentes: [
@@ -37,14 +38,20 @@ async function leerRecursos() {
       { name: "Archivo", data: texto, weight: 600 as const },
       { name: "Space Mono", data: mono, weight: 700 as const },
     ],
-    logo: `data:image/svg+xml;base64,${logo.toString("base64")}`,
   };
 }
 
 /** El naipe del mus (🂡) no está entre los emojis que se dibujan: en la imagen va el comodín (🃏). */
 const dibujable = (s: string) => s.replaceAll("🂡", "🃏");
 
-export async function imagenPublicacion(original: Publicacion, formato: Formato, web: string, cabeceras: Record<string, string> = {}) {
+export async function imagenPublicacion(
+  original: Publicacion,
+  formato: Formato,
+  web: string,
+  /** Nombre, organización y logo (data URI) de Panel → 🎨 Web. */
+  identidad: { marca: Marca; logo: string },
+  cabeceras: Record<string, string> = {},
+) {
   const p = {
     ...original,
     icono: dibujable(original.icono),
@@ -52,7 +59,8 @@ export async function imagenPublicacion(original: Publicacion, formato: Formato,
     bloques: original.bloques.map((b) => ({ titulo: dibujable(b.titulo), lineas: b.lineas.map(dibujable) })),
   };
   recursos ??= leerRecursos();
-  const { fuentes, logo } = await recursos;
+  const { fuentes } = await recursos;
+  const { marca, logo } = identidad;
   const { width, height } = TAMANO[formato];
   const c = COLORES[p.tema];
   const e = formato === "post" ? 0.8 : 1;
@@ -68,8 +76,10 @@ export async function imagenPublicacion(original: Publicacion, formato: Formato,
           {/* eslint-disable-next-line @next/next/no-img-element -- en ImageResponse no hay otra forma de poner una imagen */}
           <img src={logo} width={110 * e} height={110 * e} alt="" style={{ borderRadius: 999, backgroundColor: "#f4ebdd" }} />
           <div style={{ display: "flex", flexDirection: "column" }}>
-            <span style={{ fontFamily: "Archivo Black", fontSize: 44 * e, letterSpacing: 1 }}>TORNEOS CEEPS</span>
-            <span style={{ fontFamily: "Space Mono", fontSize: 24 * e, opacity: 0.8 }}>Consejo de Estudiantes EPS · UAM</span>
+            <span style={{ fontFamily: "Archivo Black", fontSize: 44 * e, letterSpacing: 1 }}>{nombreCompleto(marca).toUpperCase()}</span>
+            <span style={{ fontFamily: "Space Mono", fontSize: 24 * e, opacity: 0.8 }}>
+              {marca.organizacion === MARCA.organizacion ? "Consejo de Estudiantes EPS · UAM" : marca.organizacion}
+            </span>
           </div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", flexGrow: 1, justifyContent: "center", gap: 40 * e }}>

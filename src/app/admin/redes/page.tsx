@@ -5,6 +5,8 @@ import { BotonCopiar } from "@/modulos/panel/boton-copiar";
 import { MarcoAdmin, Seccion } from "@/modulos/panel/marco";
 import { publicaciones } from "@/modulos/redes/datos";
 import { paraInstagram, paraWhatsApp, paraX, type Publicacion } from "@/modulos/redes/publicaciones";
+import { leerAjustesWeb } from "@/modulos/web/datos";
+import { etiquetas } from "@/modulos/web/logica";
 
 export const metadata: Metadata = { title: "Panel · Redes" };
 
@@ -21,7 +23,8 @@ const estiloBoton = "rounded-full border-2 border-tinta bg-white px-3 py-1 font-
 
 export default async function Redes() {
   await exigirAdmin();
-  const [lista, web] = [await publicaciones(), urlWeb()];
+  const [lista, web, { marca }] = [await publicaciones(), urlWeb(), await leerAjustesWeb()];
+  const suyas = etiquetas(marca);
 
   return (
     <MarcoAdmin actual="/admin/redes" titulo="Redes">
@@ -38,7 +41,7 @@ export default async function Redes() {
               {deEste.map((p) => {
                 const imagen = (f: "historia" | "post", descargar = false) => `/admin/redes/imagen?p=${encodeURIComponent(p.clave)}&f=${f}${descargar ? "&descargar=1" : ""}`;
                 const whatsapp = paraWhatsApp(p, web);
-                const x = paraX(p, web);
+                const x = paraX(p, web, suyas);
                 return (
                   <article key={p.clave} className="grid gap-4 rounded-2xl border-2 border-linea bg-white p-3 sm:grid-cols-[9rem_1fr]">
                     <a href={imagen("historia")} target="_blank" rel="noopener" className="block w-36 overflow-hidden rounded-xl border-2 border-linea">
@@ -56,7 +59,7 @@ export default async function Redes() {
                         <a href={`https://wa.me/?text=${encodeURIComponent(whatsapp)}`} target="_blank" rel="noopener" className={estiloBoton}>
                           Abrir WhatsApp
                         </a>
-                        <BotonCopiar texto={paraInstagram(p)} etiqueta="Copiar pie de Instagram" />
+                        <BotonCopiar texto={paraInstagram(p, suyas)} etiqueta="Copiar pie de Instagram" />
                         <BotonCopiar texto={x} etiqueta="Copiar para X" />
                         <a href={`https://x.com/intent/post?text=${encodeURIComponent(x)}`} target="_blank" rel="noopener" className={estiloBoton}>
                           Publicar en X

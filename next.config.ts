@@ -24,6 +24,12 @@ const nextConfig: NextConfig = {
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
         ],
       },
+      {
+        // Logos subidos desde el panel (pueden ser SVG): aunque alguien abra uno solo, no se ejecuta nada. Va después de
+        // la regla general para que esta política la sustituya.
+        source: "/logos/:nombre",
+        headers: [{ key: "Content-Security-Policy", value: "default-src 'none'; style-src 'unsafe-inline'; img-src data:; sandbox; frame-ancestors 'none'" }],
+      },
     ];
   },
   turbopack: {

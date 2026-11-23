@@ -1,5 +1,6 @@
 import "server-only";
 import { cookies, headers } from "next/headers";
+import { leerTextosPropios } from "@/modulos/web/datos";
 import { COOKIE_IDIOMA, esIdioma, idiomaDeNavegador, type Idioma } from "./config";
 import { traductor, type T } from "./traducir";
 
@@ -10,8 +11,8 @@ export async function idiomaActual(): Promise<Idioma> {
   return idiomaDeNavegador((await headers()).get("accept-language"));
 }
 
-/** `t` para las páginas y acciones del servidor. */
+/** `t` para las páginas y acciones del servidor, con los textos cambiados desde el panel. */
 export async function traduccion(): Promise<{ t: T; idioma: Idioma }> {
-  const idioma = await idiomaActual();
-  return { t: traductor(idioma), idioma };
+  const [idioma, propios] = await Promise.all([idiomaActual(), leerTextosPropios()]);
+  return { t: traductor(idioma, propios), idioma };
 }

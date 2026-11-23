@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { esCorreoAdmin } from "@/modulos/acceso/admins";
 import { esAdmin, leerSesion } from "@/modulos/acceso/sesion";
 import { FormularioAdmin } from "@/modulos/acceso/formulario-admin";
+import { Logo } from "@/modulos/web/logo";
 
 export const metadata: Metadata = { title: "Panel" };
 
@@ -16,7 +16,7 @@ export default async function EntrarAdmin() {
   if (await esAdmin()) redirect("/admin");
   return (
     <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center px-5 py-10">
-      <Image src="/marca/ceeps.svg" alt="" width={72} height={72} className="mx-auto" />
+      <Logo ancho={72} alto={72} alt="" className="mx-auto" />
       <h1 className="mt-3 text-center font-display text-2xl text-verde uppercase">Panel de la mesa</h1>
       <p className="mb-5 text-center text-sm text-tinta-suave">
         Hola, {sesion.nombre}. Introduce la contraseña del panel para <strong>{sesion.email}</strong>.

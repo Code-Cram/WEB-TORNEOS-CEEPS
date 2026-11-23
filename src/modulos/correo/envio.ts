@@ -3,6 +3,9 @@ import { asc, eq, inArray, sql } from "drizzle-orm";
 import nodemailer from "nodemailer";
 import { db, type Tx } from "@/db";
 import { correos } from "@/db/schema";
+import { FIRMA } from "@/modulos/correo/firma";
+import { MARCA } from "@/modulos/web/config";
+import { leerAjustesWeb } from "@/modulos/web/datos";
 
 /*
  * Correos que manda la web sola. Primero se guardan (tabla correos) y después se envían por SMTP si está configurado en
@@ -11,15 +14,19 @@ import { correos } from "@/db/schema";
  */
 
 export const REMITENTE = process.env.CORREO_REMITENTE || "consejo.estudiantes.eps@uam.es";
-export const NOMBRE_REMITENTE = "Consejo de Estudiantes EPS";
+const NOMBRE_REMITENTE = "Consejo de Estudiantes EPS";
 
 export const correoConfigurado = () => !!(process.env.SMTP_HOST && process.env.SMTP_USUARIO && process.env.SMTP_CLAVE);
 
 export type CorreoNuevo = { para: string; asunto: string; texto: string; motivo: string };
 
-/** Lo deja listo para enviar (dentro de la misma transacción que el cambio que lo provoca). */
+/**
+ * Lo deja listo para enviar (dentro de la misma transacción que el cambio que lo provoca). Todos los correos acaban con
+ * la firma de siempre (FIRMA); si en Panel → 🎨 Web se ha cambiado quién organiza, firman con ese nombre.
+ */
 export async function encolarCorreo(tx: Tx | typeof db, c: CorreoNuevo) {
-  await tx.insert(correos).values(c);
+  const { organizacion } = (await leerAjustesWeb()).marca;
+  await tx.insert(correos).values(organizacion === FIRMA ? c : { ...c, texto: c.texto.replaceAll(FIRMA, organizacion) });
 }
 
 /** Envía los pendientes (como mucho 20 de una vez). Devuelve cuántos ha enviado; si no está configurado, ninguno. */
@@ -39,10 +46,13 @@ export async function enviarPendientes(ids?: number[]): Promise<number> {
     secure: puerto === 465,
     auth: { user: process.env.SMTP_USUARIO, pass: process.env.SMTP_CLAVE },
   });
+  // El nombre del remitente: el de siempre o, si se ha cambiado en Panel → 🎨 Web, el de quien organiza.
+  const { organizacion } = (await leerAjustesWeb()).marca;
+  const nombre = organizacion === MARCA.organizacion ? NOMBRE_REMITENTE : organizacion;
   let enviados = 0;
   for (const c of pendientes) {
     try {
-      await transporte.sendMail({ from: { name: NOMBRE_REMITENTE, address: REMITENTE }, to: c.para, subject: c.asunto, text: c.texto });
+      await transporte.sendMail({ from: { name: nombre, address: REMITENTE }, to: c.para, subject: c.asunto, text: c.texto });
       await db.update(correos).set({ estado: "enviado", enviadoEn: sql`now()`, error: null }).where(eq(correos.id, c.id));
       enviados++;
     } catch (e) {

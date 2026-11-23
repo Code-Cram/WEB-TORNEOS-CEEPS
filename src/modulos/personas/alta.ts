@@ -21,6 +21,8 @@ import { CUPO_POKER, POKER } from "@/modulos/poker/config";
 import { reservaConAcceso } from "@/modulos/poker/datos";
 import { asientoLibre } from "@/modulos/poker/mesas";
 import { correoAlta } from "./correo-alta";
+import { leerAjustesWeb } from "@/modulos/web/datos";
+import { nombreCompleto } from "@/modulos/web/logica";
 import { mismoNombre, problemasDeAltas, sinRepetir, type Alta, type Destino } from "./logica";
 
 /* Personas → Añadir personas: apunta a gente nueva (o que ya está en la web) a un equipo, al póker o a una actividad. */
@@ -72,7 +74,7 @@ export async function darDeAlta(
       for (const p of r.nuevas)
         await encolarCorreo(tx, {
           para: p.email,
-          ...correoAlta({ nombre: p.nombre, donde: r.donde, web: urlWeb(), email: p.email, reserva: !!p.reserva }),
+          ...correoAlta({ nombre: p.nombre, donde: r.donde, web: urlWeb(), email: p.email, reserva: !!p.reserva, marca: nombreCompleto((await leerAjustesWeb()).marca) }),
           motivo: "Alta desde el panel",
         });
     return r;

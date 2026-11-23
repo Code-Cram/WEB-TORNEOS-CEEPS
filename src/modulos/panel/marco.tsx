@@ -1,8 +1,10 @@
-import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { salirAdmin } from "@/modulos/acceso/acciones-admin";
 import { ProveedorIdioma } from "@/modulos/idioma/cliente";
+import { leerAjustesWeb } from "@/modulos/web/datos";
+import { cssColoresPorDefecto } from "@/modulos/web/logica";
+import { Logo } from "@/modulos/web/logo";
 
 const SECCIONES = [
   ["/admin", "Resumen"],
@@ -18,16 +20,20 @@ const SECCIONES = [
   ["/admin/personas", "Personas"],
   ["/admin/correos", "✉ Correos"],
   ["/admin/palmares", "🏆 Ganadores"],
+  ["/admin/web", "🎨 Web"],
 ] as const;
 
-export function MarcoAdmin({ actual, titulo, children }: { actual: string; titulo: string; children: ReactNode }) {
+export async function MarcoAdmin({ actual, titulo, children }: { actual: string; titulo: string; children: ReactNode }) {
+  const { marca } = await leerAjustesWeb();
   return (
     <ProveedorIdioma idioma="es">
+      {/* El panel, siempre con los colores de siempre: así se sigue leyendo bien con cualquier color elegido en 🎨 Web. */}
+      <style>{cssColoresPorDefecto()}</style>
       <header className="sticky top-0 z-30 border-b-2 border-tinta bg-tinta text-crema">
         <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-2">
-          <Image src="/marca/ceeps.svg" alt="" width={30} height={30} className="rounded-full bg-crema" />
+          <Logo ancho={30} alto={30} alt="" className="rounded-full bg-crema" />
           <span className="font-display text-sm uppercase">
-            Panel <span className="text-naranja-claro">CEEPS</span>
+            Panel <span className="text-naranja-claro">{marca.destacado || marca.nombre}</span>
           </span>
           <div className="ml-auto flex items-center gap-2">
             <Link href="/torneos" className="font-mono text-xs underline-offset-2 hover:underline">

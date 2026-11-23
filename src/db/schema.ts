@@ -98,6 +98,42 @@ export const registro = pgTable("registro", {
   creadoEn: creadoEn(),
 }).enableRLS();
 
+/* ───────────────────────────── LA WEB, EDITABLE DESDE EL PANEL (Panel → 🎨 Web) ───────────────────────────── */
+
+/**
+ * Ajustes de la web: una fila por apartado (marca, colores, aviso, logos), con su valor en JSON. Lo que no esté aquí usa
+ * el valor por defecto de modulos/web/config.ts.
+ */
+export const ajustesWeb = pgTable("ajustes_web", {
+  clave: text("clave").primaryKey(),
+  valor: jsonb("valor").$type<Record<string, unknown>>().notNull(),
+  actualizadoPor: text("actualizado_por"),
+  actualizadoEn: timestamp("actualizado_en", { withTimezone: true }).defaultNow().notNull(),
+}).enableRLS();
+
+/**
+ * Textos de la web cambiados desde el panel. La clave es el texto en español tal cual está en el código (la misma que
+ * en modulos/idioma/en.ts); `es` y `en`, lo que sale en su lugar (null o vacío: el de siempre).
+ */
+export const textosWeb = pgTable("textos_web", {
+  clave: text("clave").primaryKey(),
+  es: text("es"),
+  en: text("en"),
+  actualizadoPor: text("actualizado_por"),
+  actualizadoEn: timestamp("actualizado_en", { withTimezone: true }).defaultNow().notNull(),
+}).enableRLS();
+
+/** Imágenes subidas desde el panel (los logos), en base64. Se sirven en /logos/<nombre>. */
+export const imagenesWeb = pgTable("imagenes_web", {
+  /** principal | pie-1 | pie-2 | pie-3 */
+  nombre: text("nombre").primaryKey(),
+  /** image/svg+xml | image/png | image/jpeg */
+  tipo: text("tipo").notNull(),
+  datos: text("datos").notNull(),
+  actualizadoPor: text("actualizado_por"),
+  actualizadoEn: timestamp("actualizado_en", { withTimezone: true }).defaultNow().notNull(),
+}).enableRLS();
+
 const refUsuario = { onUpdate: "cascade", onDelete: "set null" } as const;
 
 /* ───────────────────────────── FÚTBOL SALA ───────────────────────────── */

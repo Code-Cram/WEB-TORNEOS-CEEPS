@@ -1,15 +1,19 @@
-import Image from "next/image";
+import { Logo } from "@/modulos/web/logo";
+import { leerAjustesWeb } from "@/modulos/web/datos";
 
-/** Fila de logos institucionales: UAM | EPS | Consejo. */
-export function Logos({ claro = false }: { claro?: boolean }) {
+/** Fila de logos del pie (por defecto, UAM | EPS | Consejo). Se cambian, se esconden o se quitan en Panel → 🎨 Web. */
+export async function Logos({ claro = false }: { claro?: boolean }) {
+  const { logos } = await leerAjustesWeb();
+  const visibles = (["pie-1", "pie-2", "pie-3"] as const).filter((h) => !logos[h].oculto);
   const sep = claro ? "bg-crema/40" : "bg-tinta/20";
   return (
     <div className="flex items-center justify-center gap-4">
-      <Image src="/marca/uam.svg" alt="Universidad Autónoma de Madrid" width={60} height={33} className={claro ? "brightness-0 invert" : ""} />
-      <span aria-hidden className={`h-8 w-px ${sep}`} />
-      <Image src="/marca/eps.svg" alt="Escuela Politécnica Superior" width={66} height={32} className={claro ? "brightness-0 invert" : ""} />
-      <span aria-hidden className={`h-8 w-px ${sep}`} />
-      <Image src="/marca/ceeps.svg" alt="Consejo de Estudiantes EPS" width={34} height={34} />
+      {visibles.map((h, i) => (
+        <span key={h} className="flex items-center gap-4">
+          {i > 0 && <span aria-hidden className={`h-8 w-px ${sep}`} />}
+          <Logo hueco={h} ancho={logos[h].ancho} alto={logos[h].alto} className={claro && h !== "pie-3" ? "brightness-0 invert" : ""} />
+        </span>
+      ))}
     </div>
   );
 }

@@ -39,20 +39,23 @@ export function paraWhatsApp(p: Publicacion, web: string): string {
   ].join("\n");
 }
 
+/** Etiquetas de la web si no se pasan otras (las de Panel → 🎨 Web salen del nombre: ver web/logica.ts). */
+const ETIQUETAS = ["#CEEPS", "#TorneosCEEPS"];
+
 /** Pie para Instagram: igual que el de WhatsApp pero sin asteriscos y con etiquetas. */
-export function paraInstagram(p: Publicacion): string {
+export function paraInstagram(p: Publicacion, etiquetas = ETIQUETAS): string {
   return [
     `${p.icono} ${p.antetitulo}`,
     ...p.bloques.flatMap((b) => ["", b.titulo, ...b.lineas]),
     ...(p.destacado ? ["", `✨ ${p.destacado}`] : []),
     "",
-    `#CEEPS #TorneosCEEPS ${HASHTAGS[p.tema]}`,
+    [...etiquetas, HASHTAGS[p.tema]].join(" "),
   ].join("\n");
 }
 
 /** X: como mucho 280 caracteres (un enlace cuenta 23, sea como sea de largo). Si no cabe, se recorta con «…». */
-export function paraX(p: Publicacion, web: string): string {
-  const cola = `\n\n${web} #CEEPS`;
+export function paraX(p: Publicacion, web: string, etiquetas = ETIQUETAS): string {
+  const cola = `\n\n${web}${etiquetas[0] ? ` ${etiquetas[0]}` : ""}`;
   const largoCola = cola.length - web.length + 23;
   const cuerpo = [`${p.icono} ${p.antetitulo}`, ...p.bloques.map((b) => [b.titulo, ...b.lineas].join(" · ")), ...(p.destacado ? [p.destacado] : [])].join("\n");
   const max = 280 - largoCola;

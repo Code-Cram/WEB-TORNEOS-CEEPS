@@ -3,6 +3,8 @@ import { Archivo, Archivo_Black, Space_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { ProveedorIdioma } from "@/modulos/idioma/cliente";
 import { traduccion } from "@/modulos/idioma/servidor";
+import { leerAjustesWeb, leerTextosPropios } from "@/modulos/web/datos";
+import { colorFinal, cssColores, nombreCompleto } from "@/modulos/web/logica";
 import "./globals.css";
 
 const archivo = Archivo({ variable: "--font-archivo", subsets: ["latin"] });
@@ -10,23 +12,30 @@ const archivoBlack = Archivo_Black({ variable: "--font-archivo-black", weight: "
 const spaceMono = Space_Mono({ variable: "--font-space-mono", weight: ["400", "700"], subsets: ["latin"] });
 
 export async function generateMetadata(): Promise<Metadata> {
-  const { t } = await traduccion();
+  const [{ t }, web] = await Promise.all([traduccion(), leerAjustesWeb()]);
+  const nombre = nombreCompleto(web.marca);
   return {
-    title: { default: "Torneos CEEPS", template: "%s · Torneos CEEPS" },
+    title: { default: nombre, template: `%s · ${nombre}` },
     description: t("Cuadros, mesas y resultados de los torneos del Consejo de Estudiantes de la EPS (UAM)."),
   };
 }
 
-export const viewport: Viewport = {
-  themeColor: "#004522",
-};
+export async function generateViewport(): Promise<Viewport> {
+  const web = await leerAjustesWeb();
+  return { themeColor: colorFinal(web.colores, "verde") };
+}
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const { idioma } = await traduccion();
+  const [{ idioma }, web, textos] = await Promise.all([traduccion(), leerAjustesWeb(), leerTextosPropios()]);
+  // Los colores elegidos en Panel → 🎨 Web (solo variables ya validadas: ver cssColores).
+  const colores = cssColores(web.colores);
   return (
     <html lang={idioma} className={`${archivo.variable} ${archivoBlack.variable} ${spaceMono.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
-        <ProveedorIdioma idioma={idioma}>{children}</ProveedorIdioma>
+        {colores && <style>{colores}</style>}
+        <ProveedorIdioma idioma={idioma} textos={textos}>
+          {children}
+        </ProveedorIdioma>
         <Analytics />
       </body>
     </html>

@@ -2,7 +2,7 @@ import { FIRMA, primerNombre } from "@/modulos/correo/firma";
 
 /* Correo para quien el Consejo apunta desde el panel: dónde está y cómo entrar en la web. */
 
-export function correoAlta(d: { nombre: string; donde: string; web: string; email: string; reserva: boolean }) {
+export function correoAlta(d: { nombre: string; donde: string; web: string; email: string; reserva: boolean; marca?: string }) {
   if (d.reserva)
     return {
       asunto: "Torneo de Póker: estás en la lista de reserva",
@@ -15,7 +15,7 @@ export function correoAlta(d: { nombre: string; donde: string; web: string; emai
       ].join("\n"),
     };
   return {
-    asunto: `Torneos CEEPS: ya estás en ${d.donde}`,
+    asunto: `${d.marca || "Torneos CEEPS"}: ya estás en ${d.donde}`,
     texto: [
       `Hola, ${primerNombre(d.nombre)}:`,
       "",

@@ -27,6 +27,7 @@ export const EN: Record<string, string> = {
   "Estás en la lista de reserva del póker: de momento no tienes plaza. Si se libera alguna, el Consejo te avisará por correo.": "You're on the poker waiting list: you don't have a seat for now. If one frees up, the Council will let you know by email.",
   "Este correo no aparece en ningún torneo. Revisa que sea el mismo con el que te inscribiste; si te acabas de apuntar, puede tardar un poco en aparecer.": "This email isn't in any tournament. Check it's the one you signed up with; if you've just signed up, it may take a little while to appear.",
   "Elegir torneo": "Choose a tournament",
+  "Aviso": "Notice",
   "Hola,": "Hi,",
   "Salir": "Log out",
 
