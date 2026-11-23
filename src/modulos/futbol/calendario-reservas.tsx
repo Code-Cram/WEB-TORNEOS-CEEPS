@@ -414,6 +414,8 @@ function TuPartido({ datos, motivoReserva }: { datos: DatosReservas; motivoReser
   const misPropuestas = datos.propuestas.filter((x) => x.partidoId === mio.id);
   const prevista = !mio.fecha && mio.prevista ? huecoDe(mio.prevista) : null;
   const yaPropuesta = misPropuestas.some((x) => x.deMiEquipo);
+  // Con una propuesta del rival pendiente, se contesta a esa: aceptarla, rechazarla o proponer otra hora.
+  const delRival = misPropuestas.some((x) => !x.deMiEquipo);
 
   return (
     <div className="mb-4 space-y-2 rounded-2xl border-2 border-tinta bg-papel p-4">
@@ -455,7 +457,7 @@ function TuPartido({ datos, motivoReserva }: { datos: DatosReservas; motivoReser
         <p className="text-sm">{t("Fecha prevista: aún no hay hueco. Marcad cuándo podéis o proponed una hora.")}</p>
       )}
 
-      {proponible && prevista && !yaPropuesta && !motivoReserva(prevista.dia, prevista.hora) && (
+      {proponible && prevista && !yaPropuesta && !delRival && !motivoReserva(prevista.dia, prevista.hora) && (
         <div className="space-y-1">
           <FormAccion accion={proponerHueco} boton={t("✓ Confirmar esta fecha")} compacto>
             <input type="hidden" name="partido" value={proponible.id} />
@@ -496,7 +498,7 @@ function TuPartido({ datos, motivoReserva }: { datos: DatosReservas; motivoReser
         ),
       )}
 
-      {proponible && <OtraHora datos={datos} partidoId={proponible.id} rival={proponible.rival!} motivoReserva={motivoReserva} />}
+      {proponible && <OtraHora datos={datos} partidoId={proponible.id} rival={proponible.rival!} contrapropuesta={delRival} motivoReserva={motivoReserva} />}
 
       <p className="text-xs text-tinta-suave">
         {!mio.esCapitan
@@ -511,16 +513,21 @@ function TuPartido({ datos, motivoReserva }: { datos: DatosReservas; motivoReser
   );
 }
 
-/** «¿Otra hora?»: el capitán elige día y hora (las ocupadas, cerradas o pasadas salen sin poder elegirse). */
+/**
+ * «¿Otra hora?»: el capitán elige día y hora (las ocupadas, cerradas o pasadas salen sin poder elegirse). Si el rival le
+ * había propuesto una (`contrapropuesta`), esa queda rechazada al proponer otra.
+ */
 function OtraHora({
   datos,
   partidoId,
   rival,
+  contrapropuesta,
   motivoReserva,
 }: {
   datos: DatosReservas;
   partidoId: number;
   rival: string;
+  contrapropuesta: boolean;
   motivoReserva: (dia: string, hora: number) => string | null;
 }) {
   const t = useT();
@@ -542,7 +549,9 @@ function OtraHora({
   const elegida = hora !== null && !horas.find((x) => x.h === hora)?.motivo ? hora : null;
   return (
     <details className="rounded-xl border border-linea bg-white px-3 py-2">
-      <summary className="min-h-9 cursor-pointer py-1 text-sm font-semibold">{t("¿Otra hora? Proponed la que queráis")}</summary>
+      <summary className="min-h-9 cursor-pointer py-1 text-sm font-semibold">
+        {contrapropuesta ? t("¿No os viene bien? Proponed otra hora") : t("¿Otra hora? Proponed la que queráis")}
+      </summary>
       <div className="mt-2 flex flex-wrap items-end gap-2">
         <label className="text-sm">
           {t("Día")}
@@ -592,7 +601,9 @@ function OtraHora({
             <input type="hidden" name="hora" value={elegida} />
           </FormAccion>
           <p className="mt-1 text-xs text-tinta-suave">
-            {t("Le llegará a su capitán para que la acepte. Si teníais otra propuesta pendiente, esta la sustituye.")}
+            {contrapropuesta
+              ? t("Le llegará a su capitán para que la acepte, y la hora que os habían propuesto quedará rechazada.")
+              : t("Le llegará a su capitán para que la acepte. Si teníais otra propuesta pendiente, esta la sustituye.")}
           </p>
         </div>
       )}

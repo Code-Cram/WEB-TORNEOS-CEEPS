@@ -20,8 +20,9 @@ import { ajustesReservas, equipoDe, equiposVivos, huecosOcupados } from "./reser
 /*
  * Calendario del fútbol. El capitán de cada equipo marca los huecos que le vienen bien (las fechas previstas se
  * recalculan solas), propone un hueco para su próximo partido (la fecha prevista, con un toque, u otro) y el capitán
- * rival lo acepta (queda reservado: fecha del partido, aviso en el chat del día y correo) o lo rechaza. Todo se comprueba
- * aquí con la sesión: del navegador solo se acepta el partido, el hueco o la propuesta y la respuesta.
+ * rival lo acepta (queda reservado: fecha del partido, aviso en el chat del día y correo), lo rechaza o propone otra
+ * hora (y entonces la suya queda rechazada: solo hay una propuesta viva por partido). Todo se comprueba aquí con la
+ * sesión: del navegador solo se acepta el partido, el hueco o la propuesta y la respuesta.
  */
 
 export type EstadoReserva = { ok?: string; error?: string; t?: number };
@@ -69,21 +70,43 @@ export async function proponerHueco(_prev: EstadoReserva, f: FormData): Promise<
     if (motivo) return fallo(motivo);
     const fecha = inicioHueco(dia, hora);
     if (c.partido.fecha && c.partido.fecha.getTime() === fecha.getTime()) return fallo(t("Vuestro partido ya está reservado a esa hora."));
-    await db.transaction(async (tx) => {
+    const delRival = and(eq(futbolPropuestas.partidoId, partidoId), eq(futbolPropuestas.equipoId, c.rival.id), eq(futbolPropuestas.estado, "pendiente"));
+    // Si el rival ya ha propuesto justo esa hora, no hace falta proponerla: basta con aceptarla.
+    if ((await db.select({ fecha: futbolPropuestas.fecha }).from(futbolPropuestas).where(delRival)).some((x) => x.fecha.getTime() === fecha.getTime()))
+      return fallo(t("{rival} ya os ha propuesto esa misma hora: basta con aceptarla.", { rival: c.rival.nombre }));
+    const rechazadas = await db.transaction(async (tx) => {
       // Una propuesta por equipo y partido: la nueva sustituye a la que tuviera pendiente.
       await tx
         .update(futbolPropuestas)
         .set({ estado: "anulada", respondidoEn: new Date() })
         .where(and(eq(futbolPropuestas.partidoId, partidoId), eq(futbolPropuestas.equipoId, c.equipo.id), eq(futbolPropuestas.estado, "pendiente")));
+      // Proponer otra hora es decirle que no a la que había propuesto el rival: queda rechazada.
+      const rechazadas = await tx
+        .update(futbolPropuestas)
+        .set({ estado: "rechazada", respondidoPor: sesion.email, respondidoEn: new Date() })
+        .where(delRival)
+        .returning({ fecha: futbolPropuestas.fecha });
       await tx.insert(futbolPropuestas).values({ partidoId, equipoId: c.equipo.id, fecha, propuestoPor: sesion.email });
       if (c.rival.capitanEmail)
         await encolarCorreo(tx, {
           para: c.rival.capitanEmail,
-          ...correoPropuesta({ capitan: await nombreDe(c.rival.capitanEmail), propone: c.equipo.nombre, ronda: await nombreDeRonda(c.partido.ronda), fecha: fecha.toISOString(), web: urlWeb() }),
-          motivo: "Fútbol · propuesta de horario",
+          ...correoPropuesta({
+            capitan: await nombreDe(c.rival.capitanEmail),
+            propone: c.equipo.nombre,
+            ronda: await nombreDeRonda(c.partido.ronda),
+            fecha: fecha.toISOString(),
+            enVezDe: rechazadas[0]?.fecha.toISOString() ?? null,
+            web: urlWeb(),
+          }),
+          motivo: rechazadas.length ? "Fútbol · otra hora propuesta" : "Fútbol · propuesta de horario",
         });
+      return rechazadas.length;
     });
-    return hecho(t("Propuesta enviada: {rival} tiene que aceptarla.", { rival: c.rival.nombre }));
+    return hecho(
+      rechazadas
+        ? t("Propuesta enviada: {rival} tiene que aceptarla. La hora que os habían propuesto queda rechazada.", { rival: c.rival.nombre })
+        : t("Propuesta enviada: {rival} tiene que aceptarla.", { rival: c.rival.nombre }),
+    );
   } catch (e) {
     console.error(e);
     return fallo(t("No se ha podido guardar. Vuelve a intentarlo en un momento."));

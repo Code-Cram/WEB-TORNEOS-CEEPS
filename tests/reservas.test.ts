@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
+import { correoPropuesta } from "../src/modulos/futbol/correos-reservas";
 import {
   claveHueco,
   diasDeSemana,
@@ -112,5 +113,22 @@ describe("reservas del fútbol: qué se puede proponer", () => {
     assert.deepEqual(FRANJAS.map((f) => f.horas), [[8, 9, 10, 11, 12, 13], [14, 15, 16, 17]]);
     assert.equal(franjaDe(13), "manana");
     assert.equal(franjaDe(14), "tarde");
+  });
+});
+
+describe("reservas del fútbol: correo al capitán que tiene que contestar", () => {
+  const base = { capitan: "Ana López", propone: "Los Rápidos", ronda: "Cuartos de final", fecha: "2026-11-27T15:00:00Z", web: "https://web" };
+
+  test("una propuesta normal", () => {
+    const c = correoPropuesta(base);
+    assert.match(c.asunto, /^Fútbol: Los Rápidos os propone jugar el viernes, 27 de noviembre · 16:00$/);
+    assert.match(c.texto, /^Hola, Ana:/);
+    assert.match(c.texto, /Los Rápidos propone jugar vuestro partido de cuartos de final el viernes, 27 de noviembre · 16:00\./);
+  });
+
+  test("otra hora en vez de la que les propusieron: se dice cuál no pueden y cuál proponen", () => {
+    const c = correoPropuesta({ ...base, enVezDe: "2026-11-26T10:00:00Z" });
+    assert.match(c.asunto, /^Fútbol: Los Rápidos os propone otra hora, el viernes, 27 de noviembre · 16:00$/);
+    assert.match(c.texto, /Los Rápidos no puede jugar vuestro partido de cuartos de final el jueves, 26 de noviembre · 11:00, la hora que les propusisteis, y os propone el viernes, 27 de noviembre · 16:00\./);
   });
 });

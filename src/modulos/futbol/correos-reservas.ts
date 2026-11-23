@@ -3,14 +3,19 @@ import { FIRMA, primerNombre } from "@/modulos/correo/firma";
 
 /* Correos de las reservas de pista del fútbol: al capitán rival cuando le proponen un hueco, y al que propuso cuando le contestan. */
 
-/** Para el capitán que tiene que contestar. */
-export function correoPropuesta(d: { capitan: string; propone: string; ronda: string; fecha: string; web: string }) {
+/**
+ * Para el capitán que tiene que contestar. `enVezDe`: la hora que había propuesto él y que el otro rechaza al proponer
+ * otra (una contrapropuesta).
+ */
+export function correoPropuesta(d: { capitan: string; propone: string; ronda: string; fecha: string; enVezDe?: string | null; web: string }) {
   return {
-    asunto: `Fútbol: ${d.propone} os propone jugar el ${fechaLarga(d.fecha)}`,
+    asunto: d.enVezDe ? `Fútbol: ${d.propone} os propone otra hora, el ${fechaLarga(d.fecha)}` : `Fútbol: ${d.propone} os propone jugar el ${fechaLarga(d.fecha)}`,
     texto: [
       d.capitan ? `Hola, ${primerNombre(d.capitan)}:` : "Hola:",
       "",
-      `${d.propone} propone jugar vuestro partido de ${d.ronda.toLowerCase()} el ${fechaLarga(d.fecha)}.`,
+      d.enVezDe
+        ? `${d.propone} no puede jugar vuestro partido de ${d.ronda.toLowerCase()} el ${fechaLarga(d.enVezDe)}, la hora que les propusisteis, y os propone el ${fechaLarga(d.fecha)}.`
+        : `${d.propone} propone jugar vuestro partido de ${d.ronda.toLowerCase()} el ${fechaLarga(d.fecha)}.`,
       "",
       `Entra en ${d.web}/futbol#calendario con este correo para aceptarlo, rechazarlo o proponer otra hora (lo tienes arriba de la página y en el calendario, debajo de la clasificación).`,
       "",
