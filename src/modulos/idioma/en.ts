@@ -28,6 +28,8 @@ export const EN: Record<string, string> = {
   "Este correo no aparece en ningún torneo. Revisa que sea el mismo con el que te inscribiste; si te acabas de apuntar, puede tardar un poco en aparecer.": "This email isn't in any tournament. Check it's the one you signed up with; if you've just signed up, it may take a little while to appear.",
   "Elegir torneo": "Choose a tournament",
   "Aviso": "Notice",
+  "Más información": "More information",
+  "Ir a la portada": "Go to the home page",
   "Hola,": "Hi,",
   "Salir": "Log out",
 
@@ -422,7 +424,7 @@ export const EN: Record<string, string> = {
   "Solo el capitán puede marcar cuándo le viene bien a su equipo.": "Only the captain can mark when their team can play.",
   "Vuestro equipo ya no tiene partidos por jugar.": "Your team has no more matches to play.",
   "¿No os viene bien? Proponed otra hora en el calendario, debajo de la clasificación.": "Doesn't suit you? Propose another time in the calendar, below the standings.",
-  "Se juega de lunes a viernes, de {primera} a {ultima}, del {desde} al {hasta}. Cada capitán marca las mañanas y tardes que le vienen bien a su equipo y la fecha prevista de cada partido sale sola de lo que marcan los dos. Después, un capitán la confirma y el otro la acepta. La idea: cuartos antes de que acabe noviembre y todo terminado el {hasta}.": "Matches are played Monday to Friday, {primera}–{ultima}, from {desde} to {hasta}. Each captain marks the mornings and afternoons that suit their team, and each match's planned date is worked out from what both teams mark. Then one captain confirms it and the other accepts it. The plan: quarter-finals before the end of November and everything finished by {hasta}.",
+  "Se juega de lunes a viernes, de {primera} a {ultima}, del {desde} al {hasta}. Cada capitán marca las mañanas y tardes que le vienen bien a su equipo y la fecha prevista de cada partido sale sola de lo que marcan los dos. Después, un capitán la confirma y el otro la acepta. La idea: cuartos antes del {objetivo} y todo terminado el {hasta}.": "Matches are played Monday to Friday, {primera}–{ultima}, from {desde} to {hasta}. Each captain marks the mornings and afternoons that suit their team, and each match's planned date is worked out from what both teams mark. Then one captain confirms it and the other accepts it. The plan: quarter-finals before {objetivo} and everything finished by {hasta}.",
   "Solo hay pista en los huecos que da Deportes.": "The pitch is only available in the slots given by the Sports Service.",
   "✋ Capitán: marca cuándo le viene bien a tu equipo": "✋ Captain: mark when your team can play",
   "Toca «Nos viene bien» en cada mañana o tarde que podáis. ¿Solo podéis a una hora concreta? Abre «Horas concretas» y márcala. Se guarda solo y la fecha prevista se recoloca al momento.": "Tick “Works for us” on each morning or afternoon you can make. Only free at a specific time? Open “Specific times” and tick it. It saves automatically and the planned date updates straight away.",

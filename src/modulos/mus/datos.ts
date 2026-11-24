@@ -5,16 +5,19 @@ import { db } from "@/db";
 import { musIntegrantes, musParejas, musPartidas, musPartidos } from "@/db/schema";
 import type { DatosCuadro } from "@/modulos/cuadros/tipos";
 import { perfilesPorCorreo } from "@/modulos/personas/perfiles";
+import { conTercerPuesto } from "@/modulos/torneos/ajustes-torneo";
 
 export async function datosMus(emailUsuario: string | null): Promise<DatosCuadro> {
-  const [parejas, integrantes, partidos, partidas, perfiles] = await Promise.all([
+  const [parejas, integrantes, partidos, partidas, perfiles, tercerPuesto] = await Promise.all([
     db.select().from(musParejas).orderBy(asc(musParejas.nombre)),
     db.select().from(musIntegrantes).orderBy(asc(musIntegrantes.orden)),
     db.select().from(musPartidos).orderBy(asc(musPartidos.ronda), asc(musPartidos.posicion)),
     db.select().from(musPartidas).orderBy(asc(musPartidas.numero)),
     perfilesPorCorreo(),
+    conTercerPuesto(db, "mus"),
   ]);
   return {
+    tercerPuesto,
     equipos: parejas.map((p) => ({
       id: p.id,
       nombre: p.nombre,

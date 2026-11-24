@@ -125,13 +125,26 @@ export async function guardarAjustesReservas(_prev: Resultado, f: FormData): Pro
     if (!esDiaValido(desde)) throw new AvisoError("Elige el primer día en que se juega.");
     if (!esDiaValido(hasta)) throw new AvisoError("Elige el último día en que se juega.");
     if (hasta < desde) throw new AvisoError("El último día va después del primero.");
+    const horaDesde = entero(f, "horaDesde", 23) ?? 8;
+    const horaHasta = entero(f, "horaHasta", 24) ?? 18;
+    if (horaHasta <= horaDesde) throw new AvisoError("La pista tiene que cerrar después de abrir (p. ej. de 8 a 18).");
+    const objetivo = texto(f, "objetivo", 10);
+    if (objetivo && !esDiaValido(objetivo)) throw new AvisoError("El día objetivo no es una fecha válida.");
     const cerradas = texto(f, "cerradas", 3000);
     const abiertas = texto(f, "abiertas", 3000);
     const sinEntender = (s: string, que: string) => {
       const n = s.split(/\r?\n/).filter((l) => l.trim()).length - leerCierres(s).length;
       return n > 0 ? [`${n} ${n === 1 ? "línea" : "líneas"} de ${que} no se entienden: escribe «2026-12-08» (todo el día) o «2026-12-07 9-14» (de 9:00 a 14:00).`] : [];
     };
-    const ajustes = { reservasDesde: desde, reservasHasta: hasta, reservasCerradas: cerradas || null, reservasAbiertas: abiertas || null };
+    const ajustes = {
+      reservasDesde: desde,
+      reservasHasta: hasta,
+      reservasCerradas: cerradas || null,
+      reservasAbiertas: abiertas || null,
+      reservasHoraDesde: horaDesde,
+      reservasHoraHasta: horaHasta,
+      reservasObjetivo: objetivo || null,
+    };
     await db.transaction(async (tx) => {
       await tx
         .insert(infoTorneos)
@@ -141,7 +154,7 @@ export async function guardarAjustesReservas(_prev: Resultado, f: FormData): Pro
       await recalcularPrevistas(tx);
     });
     const avisos = [...sinEntender(abiertas, "huecos de Deportes"), ...sinEntender(cerradas, "días cerrados")];
-    return hecho(admin, "Calendario guardado.", avisos.length ? avisos : undefined, `Fútbol · del ${desde} al ${hasta}${abiertas ? " · con huecos de Deportes" : ""}`);
+    return hecho(admin, "Calendario guardado.", avisos.length ? avisos : undefined, `Fútbol · del ${desde} al ${hasta}, de ${horaDesde} a ${horaHasta} h${abiertas ? " · con huecos de Deportes" : ""}`);
   });
 }
 

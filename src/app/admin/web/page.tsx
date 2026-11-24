@@ -10,6 +10,7 @@ import { COLORES, HUECOS_LOGO, LOGOS, MAX_IMAGEN } from "@/modulos/web/config";
 import { leerAjustesWeb, leerTextosPropios } from "@/modulos/web/datos";
 import { avisosDeContraste, colorFinal, etiquetas, nombreCompleto } from "@/modulos/web/logica";
 import { Logo } from "@/modulos/web/logo";
+import { PaginasAdmin } from "@/modulos/web/paginas-admin";
 import { TextosAdmin } from "@/modulos/web/textos-admin";
 
 export const metadata: Metadata = { title: "Panel · Web" };
@@ -24,7 +25,7 @@ export default async function AdminWeb({ searchParams }: { searchParams: Promise
   return (
     <MarcoAdmin actual="/admin/web" titulo="🎨 Web">
       <p className="mb-6 max-w-3xl text-sm text-tinta-suave">
-        Lo que se ve en toda la web de los participantes, sin tocar código: se guarda al momento y queda en «Últimos cambios» del resumen. Para ver cómo queda,{" "}
+        Lo que se ve en toda la web de los participantes, sin tocar código (aviso, textos, páginas, nombre, logos y colores): se guarda al momento y queda en «Últimos cambios» del resumen. Para ver cómo queda,{" "}
         <Link href="/torneos" className="font-semibold underline">
           abre la web ↗
         </Link>
@@ -46,6 +47,8 @@ export default async function AdminWeb({ searchParams }: { searchParams: Promise
       </Seccion>
 
       <TextosAdmin q={q} propios={propios} />
+
+      <PaginasAdmin />
 
       <Seccion
         titulo="Nombre"

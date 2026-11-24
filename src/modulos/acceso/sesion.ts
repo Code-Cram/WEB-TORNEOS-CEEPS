@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { limpiarClave } from "@/modulos/acceso/clave";
 import { esCorreoAdmin } from "@/modulos/acceso/admins";
+import { accesoIa } from "@/modulos/ia/contexto";
 
 const COOKIE = "ceeps_sesion";
 const COOKIE_ADMIN = "ceeps_admin";
@@ -87,13 +88,18 @@ export async function iniciarSesionAdmin(email: string) {
 /** Admin = sesión normal con un correo de la mesa + contraseña del panel ya introducida con ese mismo correo. */
 export async function esAdmin(): Promise<boolean> {
   const sesion = await leerSesion();
-  if (!sesion || !esCorreoAdmin(sesion.email)) return false;
+  if (!sesion || !(await esCorreoAdmin(sesion.email))) return false;
   const p = await verificar((await cookies()).get(COOKIE_ADMIN)?.value);
   return p?.rol === "admin" && p.email === sesion.email && p.v === versionClave();
 }
 
-/** Para usar al principio de cada Server Action y página del panel. Devuelve el correo del admin (para el registro). */
+/**
+ * Para usar al principio de cada Server Action y página del panel. Devuelve el correo del admin (para el registro).
+ * Desde el acceso para IA, el dueño de la clave (la ruta /api/mcp ya ha comprobado la clave y que sigue siendo admin).
+ */
 export async function exigirAdmin(): Promise<string> {
+  const ia = accesoIa.getStore();
+  if (ia) return ia.email;
   const sesion = await leerSesion();
   if (!sesion || !(await esAdmin())) redirect("/admin/entrar");
   return sesion.email;

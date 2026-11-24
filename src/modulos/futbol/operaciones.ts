@@ -4,7 +4,7 @@ import { futbolEquipos, futbolJugadores, futbolPartidos } from "@/db/schema";
 import { ganadorFutbol, recalcular, RONDA_TERCER_PUESTO, sortear, totalRondas, type PartidoCuadro } from "@/modulos/cuadros/logica";
 import type { LineaJugador } from "@/modulos/personas/plantilla";
 import { asegurarUsuarios } from "@/modulos/personas/plantilla";
-import { TORNEOS } from "@/modulos/torneos/config";
+import { conTercerPuesto } from "@/modulos/torneos/ajustes-torneo";
 import { recalcularPrevistas } from "./prevision-datos";
 
 /** Crea todos los partidos del cuadro a partir de un sorteo nuevo. Borra el cuadro anterior. */
@@ -18,7 +18,7 @@ export async function sortearFutbol(db: Db) {
     for (let r = 1; r <= totalRondas(tamano); r++)
       for (let p = 0; p < tamano / 2 ** r; p++)
         filas.push({ ronda: r, posicion: p, localId: r === 1 ? primeraRonda[p][0] : null, visitanteId: r === 1 ? primeraRonda[p][1] : null });
-    if (TORNEOS.futbol.tercerPuesto && totalRondas(tamano) >= 2) filas.push({ ronda: RONDA_TERCER_PUESTO, posicion: 0, localId: null, visitanteId: null });
+    if ((await conTercerPuesto(tx, "futbol")) && totalRondas(tamano) >= 2) filas.push({ ronda: RONDA_TERCER_PUESTO, posicion: 0, localId: null, visitanteId: null });
     await tx.insert(futbolPartidos).values(filas);
     await recalcularFutbol(tx);
   });

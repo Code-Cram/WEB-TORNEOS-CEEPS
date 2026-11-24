@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-import { franjasDeHorario, preverFechas, type EntradaPrevision, type PartidoPrevision } from "../src/modulos/futbol/prevision";
+import { franjasDeHorario, objetivoPorDefecto, preverFechas, type EntradaPrevision, type PartidoPrevision } from "../src/modulos/futbol/prevision";
 import { claveHueco, diaDe, diaDeLaSemana, FRANJAS, franjaDe, huecoDe, inicioHueco, leerCierres, masDias, type Franja } from "../src/modulos/futbol/reservas";
 
 /*
@@ -208,4 +208,14 @@ describe("fechas previstas del fútbol", () => {
     // Y queda margen: la final, antes del último día con pista.
     assert.ok(hueco(plan.get(deSitio(e.partidos, 4, 0).id))!.dia < "2026-12-04");
   });
+
+  test("con otro horario y otro día objetivo desde el panel, las fechas previstas los respetan", () => {
+    const e = entrada({ horario: { primera: 18, ultima: 20 }, objetivo: (ronda, total) => objetivoPorDefecto(ronda, total, "2026-11-25") });
+    const plan = preverFechas(e);
+    assert.equal(plan.size, 11);
+    for (const v of plan.values()) assert.ok(v && [18, 19, 20].includes(huecoDe(v)!.hora), `${v}: entre las 18 y las 21`);
+    assert.equal(objetivoPorDefecto(2, 4, "2026-11-25")?.dia, "2026-11-25");
+    assert.equal(objetivoPorDefecto(4, 4, "2026-11-25"), null);
+  });
 });
+

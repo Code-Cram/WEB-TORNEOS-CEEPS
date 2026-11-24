@@ -8,6 +8,8 @@ import {
   estaCerrado,
   FRANJAS,
   franjaDe,
+  franjasDe,
+  horasDe,
   huecoDe,
   inicioHueco,
   leerCierres,
@@ -132,3 +134,22 @@ describe("reservas del fútbol: correo al capitán que tiene que contestar", () 
     assert.match(c.texto, /Los Rápidos no puede jugar vuestro partido de cuartos de final el jueves, 26 de noviembre · 11:00, la hora que les propusisteis, y os propone el viernes, 27 de noviembre · 16:00\./);
   });
 });
+
+describe("reservas del fútbol: horario de la pista desde el panel", () => {
+  test("las horas y las franjas salen del horario; una franja sin horas no sale", () => {
+    assert.deepEqual(horasDe({ primera: 9, ultima: 20 }), [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]);
+    assert.deepEqual(franjasDe(horasDe({ primera: 15, ultima: 20 })).map((f) => [f.id, f.horas.length]), [["tarde", 6]]);
+    assert.deepEqual(franjasDe(horasDe({ primera: 9, ultima: 12 })).map((f) => f.id), ["manana"]);
+    assert.deepEqual(horasDe({ primera: 10, ultima: 9 }), []);
+  });
+
+  test("fuera del horario guardado no se puede, y el aviso dice cuál es", () => {
+    const base = { ahora: new Date("2026-11-17T12:00:00Z"), desde: "2026-11-23", hasta: "2026-12-18", cierres: [], abiertos: [] };
+    const tarde = { ...base, horario: { primera: 15, ultima: 20 } };
+    assert.equal(motivoNoReservable({ dia: "2026-11-24", hora: 20 }, { ...tarde, ocupados: new Map(), partidoId: 1 }), null);
+    assert.equal(motivoNoReservable({ dia: "2026-11-24", hora: 9 }, { ...tarde, ocupados: new Map(), partidoId: 1 }), "Los huecos son de 15:00 a 21:00.");
+    // Sin horario, el de siempre.
+    assert.equal(motivoNoReservable({ dia: "2026-11-24", hora: 20 }, { ...base, ocupados: new Map(), partidoId: 1 }), "Los huecos son de 8:00 a 18:00.");
+  });
+});
+

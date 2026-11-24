@@ -143,7 +143,7 @@ function Contenido({ tipo, datos, extra }: { tipo: TipoCuadro; datos: DatosCuadr
       <>
         <SinSorteo
           equipos={datos.equipos}
-          conTercerPuesto={tipo !== "general" && TORNEOS[tipo].tercerPuesto}
+          conTercerPuesto={datos.tercerPuesto ?? (tipo !== "general" && TORNEOS[tipo].tercerPuesto)}
           onEquipo={(id) => abrir({ tipo: "equipo", id })}
         />
         <ModalEquipo tipo={tipo} vista={vista} equipos={equipos} partidos={datos.partidos} rondas={rondas} onCerrar={cerrar} onAbrir={abrir} onVolver={pila.length > 1 ? () => setPila((p) => p.slice(0, -1)) : undefined} />

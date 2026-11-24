@@ -32,4 +32,9 @@ export type PartidoVista = {
   detalle: [number, number][];
 };
 
-export type DatosCuadro = { equipos: EquipoVista[]; partidos: PartidoVista[] };
+export type DatosCuadro = {
+  equipos: EquipoVista[];
+  partidos: PartidoVista[];
+  /** Si el sorteo creará el partido por el 3er y 4º puesto (lo del panel); sin él, lo de torneos/config.ts. */
+  tercerPuesto?: boolean;
+};

@@ -4,7 +4,7 @@ import {
   diaDe,
   diaDeLaSemana,
   franjaDe,
-  HORAS,
+  horasDe,
   huecoDe,
   inicioHueco,
   masDias,
@@ -57,10 +57,10 @@ const preferencia = (hora: number) => {
   return i === -1 ? HORAS_PREFERIDAS.length : i;
 };
 
-/** Cuartos (y antes) hasta el día objetivo, con prisa; las semifinales, si se puede; la final, sin prisa. */
-export function objetivoPorDefecto(ronda: number, total: number): { dia: string; peso: number } | null {
+/** Cuartos (y antes) hasta el día objetivo (el del panel), con prisa; las semifinales, si se puede; la final, sin prisa. */
+export function objetivoPorDefecto(ronda: number, total: number, dia = OBJETIVO_CUARTOS_Y_SEMIS): { dia: string; peso: number } | null {
   if (ronda === RONDA_TERCER_PUESTO || ronda >= total) return null;
-  return { dia: OBJETIVO_CUARTOS_Y_SEMIS, peso: ronda === total - 1 ? 0.8 : 0.5 };
+  return { dia, peso: ronda === total - 1 ? 0.8 : 0.5 };
 }
 
 /** «Tarde / Mañana» (lo que pusieron en la inscripción) → ["manana", "tarde"]. */
@@ -157,7 +157,7 @@ export function preverFechas(e: EntradaPrevision): Map<number, string | null> {
     let mejor: { dia: string; hora: number; puntos: number } | null = null;
     for (let dia = primerDia; dia <= e.hasta; dia = masDias(dia, 1)) {
       if (diaDeLaSemana(dia) > 5) continue;
-      for (const hora of HORAS) {
+      for (const hora of horasDe(e.horario)) {
         if (ocupados.has(claveHueco(dia, hora)) || inicioHueco(dia, hora) <= limite || motivoNoDisponible({ dia, hora }, e)) continue;
         const [a, b] = lados.map((ids) => (ids.length ? ids.reduce((s, id) => s + valorPara(e, id, dia, hora, conMarcas), 0) / ids.length : 0.3));
         let puntos = Math.min(a, b) + 0.25 * (a + b);

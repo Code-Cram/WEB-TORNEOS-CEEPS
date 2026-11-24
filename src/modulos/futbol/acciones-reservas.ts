@@ -14,7 +14,7 @@ import { nombreRonda } from "@/modulos/cuadros/logica";
 import { traduccion } from "@/modulos/idioma/servidor";
 import { correoPropuesta, correoRespuesta } from "./correos-reservas";
 import { recalcularPrevistas } from "./prevision-datos";
-import { esDiaValido, HORAS, huecoDe, inicioHueco, motivoNoDisponible, motivoNoReservable } from "./reservas";
+import { esDiaValido, huecoDe, inicioHueco, motivoNoDisponible, motivoNoReservable } from "./reservas";
 import { ajustesReservas, equipoDe, equiposVivos, huecosOcupados } from "./reservas-datos";
 
 /*
@@ -198,7 +198,8 @@ export async function marcarHuecos(dia: string, horas: number[], marcar: boolean
   const { t, idioma } = await traduccion();
   const sesion = await leerSesion();
   if (!sesion) return { error: t("Tu sesión ha caducado. Vuelve a entrar.") };
-  if (typeof dia !== "string" || !esDiaValido(dia) || !Array.isArray(horas) || !horas.length || !horas.every((h) => HORAS.includes(h)))
+  // Aquí solo que sean horas; si se pueden marcar lo dice después el horario guardado (desmarcar vale siempre).
+  if (typeof dia !== "string" || !esDiaValido(dia) || !Array.isArray(horas) || !horas.length || !horas.every((h) => Number.isInteger(h) && h >= 0 && h <= 23))
     return { error: t("Ese hueco no existe: recarga la página.") };
   try {
     const equipo = await equipoDe(sesion.email);

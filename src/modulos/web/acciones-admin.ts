@@ -1,14 +1,15 @@
 "use server";
 
-import { eq, sql } from "drizzle-orm";
+import { and, eq, ne, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { ajustesWeb, imagenesWeb, textosWeb } from "@/db/schema";
+import { ajustesWeb, imagenesWeb, paginas, textosWeb } from "@/db/schema";
 import { AvisoError } from "@/modulos/acceso/clave";
 import { exigirAdmin } from "@/modulos/acceso/sesion";
 import { EN } from "@/modulos/idioma/en";
-import { hecho, intentar, texto, type Resultado } from "@/modulos/panel/comun";
+import { slugify } from "@/modulos/compartido/texto";
+import { entero, hecho, idDe, intentar, texto, type Resultado } from "@/modulos/panel/comun";
 import { COLORES, HUECOS_LOGO, LOGOS, MARCA, MAX_IMAGEN, type HuecoLogo } from "./config";
-import { avisosDeContraste, esColor, leerAjustesLogos, leerColores, problemaSvg, problemaTexto, tipoDeImagen } from "./logica";
+import { avisosDeContraste, esColor, esEstadoPagina, leerAjustesLogos, leerColores, problemaSvg, problemaTexto, tipoDeImagen } from "./logica";
 
 /* Panel → 🎨 Web: marca, colores, aviso para todos, logos y textos. Todo se valida aquí; lo que no se toca, sigue igual. */
 
@@ -153,3 +154,67 @@ export async function restaurarTexto(_prev: Resultado, f: FormData): Promise<Res
     return hecho(admin, "Texto de siempre.", undefined, `Web · texto «${clave.slice(0, 60)}»`);
   });
 }
+
+/* ─────────────── Páginas libres ─────────────── */
+
+/** Lo que llega del formulario de una página, validado. */
+function datosPagina(f: FormData) {
+  const titulo = texto(f, "titulo", 80);
+  if (!titulo) throw new AvisoError("La página necesita un título.");
+  const estado = texto(f, "estado", 20);
+  if (!esEstadoPagina(estado)) throw new AvisoError("Elige quién puede ver la página.");
+  return {
+    titulo,
+    contenido: texto(f, "contenido", 20000),
+    tituloEn: texto(f, "titulo_en", 80) || null,
+    contenidoEn: texto(f, "contenido_en", 20000) || null,
+    estado,
+    orden: entero(f, "orden", 999) ?? 0,
+  };
+}
+
+/** Dirección única (/p/normas, /p/normas-2…) a partir de la escrita o, si no, del título. */
+async function slugLibre(escrita: string, titulo: string, sinContar?: number) {
+  const fuente = escrita || titulo;
+  const base = slugify(fuente) === "actividad" && !/actividad/i.test(fuente) ? "pagina" : slugify(fuente);
+  let slug = base;
+  const ocupada = (s: string) => db.$count(paginas, sinContar ? and(eq(paginas.slug, s), ne(paginas.id, sinContar)) : eq(paginas.slug, s));
+  for (let n = 2; (await ocupada(slug)) > 0; n++) slug = `${base}-${n}`;
+  return slug;
+}
+
+export async function crearPagina(_prev: Resultado, f: FormData): Promise<Resultado> {
+  const admin = await exigirAdmin();
+  return intentar(async () => {
+    const datos = datosPagina(f);
+    const slug = await slugLibre(texto(f, "slug", 60), datos.titulo);
+    await db.insert(paginas).values({ ...datos, slug });
+    return hecho(admin, `Página creada: /p/${slug}.`, undefined, `Web · página «${datos.titulo}»`);
+  });
+}
+
+export async function guardarPagina(_prev: Resultado, f: FormData): Promise<Resultado> {
+  const admin = await exigirAdmin();
+  return intentar(async () => {
+    const id = idDe(f);
+    const datos = datosPagina(f);
+    const slug = await slugLibre(texto(f, "slug", 60), datos.titulo, id);
+    const [p] = await db
+      .update(paginas)
+      .set({ ...datos, slug, actualizadoEn: sql`now()` })
+      .where(eq(paginas.id, id))
+      .returning({ id: paginas.id });
+    if (!p) throw new AvisoError("Esa página ya no existe: recarga la página.");
+    return hecho(admin, "Página guardada.", undefined, `Web · página «${datos.titulo}»`);
+  });
+}
+
+export async function borrarPagina(_prev: Resultado, f: FormData): Promise<Resultado> {
+  const admin = await exigirAdmin();
+  return intentar(async () => {
+    const [p] = await db.delete(paginas).where(eq(paginas.id, idDe(f))).returning({ titulo: paginas.titulo });
+    if (!p) throw new AvisoError("Esa página ya no existe: recarga la página.");
+    return hecho(admin, "Página borrada.", undefined, `Web · página «${p.titulo}»`);
+  });
+}
+

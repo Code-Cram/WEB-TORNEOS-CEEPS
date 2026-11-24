@@ -59,8 +59,22 @@ export async function ReservasAdmin() {
             Último día
             <input type="date" name="hasta" defaultValue={ajustes.hasta} className={`${estiloInput} mt-0.5 w-full`} />
           </label>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block text-sm">
+              Pista desde las (hora)
+              <input type="number" name="horaDesde" min={0} max={23} required defaultValue={ajustes.horario.primera} className={`${estiloInput} mt-0.5 w-full`} />
+            </label>
+            <label className="block text-sm">
+              Hasta las (hora)
+              <input type="number" name="horaHasta" min={1} max={24} required defaultValue={ajustes.horario.ultima + 1} className={`${estiloInput} mt-0.5 w-full`} />
+            </label>
+          </div>
           <label className="block text-sm">
-            Huecos que da Deportes · uno por línea: «2026-11-23 8-14» (de 8:00 a 14:00) o «2026-11-24» (todo el día). Vacío: de lunes a viernes de 8:00 a 18:00
+            Día objetivo para cuartos y, si se puede, semifinales
+            <input type="date" name="objetivo" defaultValue={ajustes.objetivo} className={`${estiloInput} mt-0.5 w-full`} />
+          </label>
+          <label className="block text-sm">
+            Huecos que da Deportes · uno por línea: «2026-11-23 8-14» (de 8:00 a 14:00) o «2026-11-24» (todo el día). Vacío: de lunes a viernes, todo el horario de la pista
             <textarea
               name="abiertas"
               rows={4}
@@ -75,8 +89,9 @@ export async function ReservasAdmin() {
           </label>
         </div>
         <p className="text-xs text-tinta-suave">
-          Se juega de lunes a viernes, de 8:00 a 18:00, en huecos de una hora (mañana: de 8:00 a 14:00; tarde: de 14:00 a 18:00). Con huecos de Deportes, solo esos se
-          pueden marcar, prever y reservar. La idea: cuartos antes de que acabe noviembre y todo terminado el último día.
+          Se juega de lunes a viernes, en huecos de una hora dentro del horario de la pista (la mañana, hasta las 14:00; la tarde, desde las 14:00). Con huecos de
+          Deportes, solo esos se pueden marcar, prever y reservar. Las fechas previstas intentan que los cuartos (y, si se puede, las semifinales) se jueguen como
+          tarde el día objetivo, y todo antes del último día.
         </p>
       </FormAccion>
 

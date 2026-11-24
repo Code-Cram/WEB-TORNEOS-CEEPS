@@ -21,4 +21,7 @@ export type DatosPoker = {
   reservas: number;
   /** Cuántos de cada mesa clasificatoria pasan a la mesa final: 1 (el ganador) o 2 (también el segundo). */
   clasificanPorMesa: number;
+  /** Mesas clasificatorias y asientos por mesa (también los de la final): los del panel. */
+  mesas: number;
+  asientos: number;
 };

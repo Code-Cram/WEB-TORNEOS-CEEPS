@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "next dev",
+    "preparar": "tsx scripts/preparar.mts",
     "build": "tsx scripts/migrar.mts --solo-en-vercel && next build",
     "start": "next start",
     "lint": "eslint",
@@ -19,6 +20,7 @@
     "test": "tsx --test tests/*.test.ts",
     "comprobar": "npm run lint && npm run typecheck && npm test",
     "db:demo": "tsx --env-file=.env.local scripts/demo.mts",
+    "db:inventar": "tsx --env-file=.env.local scripts/inventar.mts",
     "supabase:push": "ENV_FILE=.env.supabase drizzle-kit push",
     "supabase:seed": "tsx --env-file=.env.supabase scripts/seed.mts"
   },

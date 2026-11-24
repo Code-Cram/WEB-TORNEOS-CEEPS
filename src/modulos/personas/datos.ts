@@ -2,7 +2,7 @@ import "server-only";
 import { and, asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { actividades, actividadMiembros, actividadParticipantes, futbolEquipos, futbolJugadores, musIntegrantes, musParejas, musPartidos, pokerAsientos, pokerJugadores, pokerMesas, usuarios } from "@/db/schema";
-import { CUPO_POKER } from "@/modulos/poker/config";
+import { configPoker } from "@/modulos/poker/config-datos";
 import { ordenarTurnos } from "@/modulos/poker/mesas";
 import type { DestinosAlta } from "./tipos";
 
@@ -123,7 +123,7 @@ export async function listaPersonas(): Promise<{ conCorreo: PersonaFila[]; sinCo
 
 /** A dónde se puede apuntar a alguien desde Personas (equipos de fútbol, póker y actividades) y los turnos del póker. */
 export async function destinosDeAlta(): Promise<DestinosAlta> {
-  const [equipos, jugadores, poker, mesas, acts, equiposDeActividad] = await Promise.all([
+  const [equipos, jugadores, poker, mesas, acts, equiposDeActividad, { cupo }] = await Promise.all([
     db.select({ id: futbolEquipos.id, nombre: futbolEquipos.nombre }).from(futbolEquipos).orderBy(asc(futbolEquipos.nombre)),
     db.select({ equipoId: futbolJugadores.equipoId }).from(futbolJugadores),
     db.select({ estado: pokerJugadores.estado, disponibilidad: pokerJugadores.disponibilidad }).from(pokerJugadores),
@@ -137,6 +137,7 @@ export async function destinosDeAlta(): Promise<DestinosAlta> {
       .from(actividadParticipantes)
       .innerJoin(actividades, and(eq(actividades.id, actividadParticipantes.actividadId), eq(actividades.porEquipos, true)))
       .orderBy(asc(actividadParticipantes.nombre)),
+    configPoker(db),
   ]);
   const grupos: DestinosAlta["grupos"] = [];
   if (equipos.length)
@@ -154,7 +155,7 @@ export async function destinosDeAlta(): Promise<DestinosAlta> {
       { valor: "poker:reserva", texto: `Lista de reserva · ${poker.filter((j) => j.estado === "reserva").length} en ella` },
       {
         valor: "poker:inscrito",
-        texto: inscritos >= CUPO_POKER ? `Inscrito · lleno (${inscritos}/${CUPO_POKER}): irá a la reserva` : `Inscrito · ${inscritos}/${CUPO_POKER} (se sienta solo si hay sitio)`,
+        texto: inscritos >= cupo ? `Inscrito · lleno (${inscritos}/${cupo}): irá a la reserva` : `Inscrito · ${inscritos}/${cupo} (se sienta solo si hay sitio)`,
       },
     ],
   });

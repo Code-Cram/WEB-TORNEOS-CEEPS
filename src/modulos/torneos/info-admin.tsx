@@ -6,10 +6,18 @@ import { infoEnInglesGuardada, leerInfoTorneos } from "@/modulos/torneos/info";
 import { TORNEOS_EN } from "@/modulos/torneos/config-en";
 import { paraInputFecha } from "@/modulos/compartido/formato";
 import { guardarInfoTorneo } from "@/modulos/torneos/acciones";
+import { conTercerPuesto } from "@/modulos/torneos/ajustes-torneo";
+import { configPoker } from "@/modulos/poker/config-datos";
+import { db } from "@/db";
 
 /** Lo que se ve en la página del torneo: nombre, calendario, lugar, formato, premios, chuleta de reglas, aviso e inscripción. */
 export async function InfoTorneoAdmin({ torneo }: { torneo: TorneoId }) {
-  const [todas, enIngles] = await Promise.all([leerInfoTorneos(), infoEnInglesGuardada()]);
+  const [todas, enIngles, tercerPuesto, poker] = await Promise.all([
+    leerInfoTorneos(),
+    infoEnInglesGuardada(),
+    torneo === "poker" ? false : conTercerPuesto(db, torneo),
+    configPoker(db),
+  ]);
   const info = todas[torneo];
   const en = enIngles[torneo] ?? {};
   const porDefecto = TORNEOS_EN[torneo];
@@ -40,6 +48,27 @@ export async function InfoTorneoAdmin({ torneo }: { torneo: TorneoId }) {
               <input type="datetime-local" name="cierreInscripcion" defaultValue={paraInputFecha(info.cierreInscripcion)} className={`${estiloInput} w-full`} />
             </Campo>
           </div>
+          {torneo === "poker" && (
+            <div className="grid gap-2 sm:grid-cols-2">
+              <Campo etiqueta="Mesas clasificatorias">
+                <input type="number" name="mesas" min={2} max={16} required defaultValue={poker.mesas} className={`${estiloInput} w-full`} />
+              </Campo>
+              <Campo etiqueta="Jugadores por mesa (también en la mesa final)">
+                <input type="number" name="asientos" min={2} max={12} required defaultValue={poker.asientos} className={`${estiloInput} w-full`} />
+              </Campo>
+              <p className="text-xs text-tinta-suave sm:col-span-2">
+                Plazas: mesas × jugadores (ahora, {poker.cupo}); el resto va a la lista de reserva. El ganador de la mesa N se sienta en el asiento N de la final, así
+                que no puede haber más mesas que asientos. Se aplica al sortear: si lo cambias con las mesas ya sorteadas, vuelve a sortear.
+              </p>
+            </div>
+          )}
+          {torneo !== "poker" && (
+            <label className="flex items-center gap-2 text-sm">
+              <input type="hidden" name="conTercerPuesto" value="1" />
+              <input type="checkbox" name="tercerPuesto" defaultChecked={tercerPuesto} className="size-4 accent-verde" />
+              Partido por el 3er y 4º puesto entre quienes pierdan en semifinales (lo crea el sorteo: si lo cambias después, vuelve a sortear)
+            </label>
+          )}
           <Campo etiqueta="Enlace del formulario de inscripción">
             <input name="enlaceInscripcion" type="url" defaultValue={info.enlaceInscripcion} placeholder="https://forms.office.com/…" className={`${estiloInput} w-full`} />
           </Campo>

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { createContext, useContext, useState } from "react";
 import { Modal } from "@/modulos/compartido/modal";
 import { ListaPremios } from "@/modulos/torneos/lista-premios";
 import { POKER } from "@/modulos/poker/config";
@@ -16,13 +16,16 @@ import { ordinal } from "@/modulos/idioma/traducir";
 
 const PALOS = ["♠", "♥", "♣", "♦"];
 
+/** Mesas y asientos de esta edición (los del panel), para las piezas de dentro sin pasarlos de una en una. */
+const Plazas = createContext<{ mesas: number; asientos: number }>(POKER);
+
 export function VistaPoker({ datos }: { datos: DatosPoker }) {
   const sorteado = datos.clasificatorias.length > 0;
   const miMesa = datos.clasificatorias.find((m) => m.asientos.some((a) => a.esYo));
   const enFinal = datos.final?.asientos.some((a) => a.esYo) ? datos.final : null;
   const dosPorMesa = datos.clasificanPorMesa >= 2;
   // La final ya está completa (o todas las mesas tienen ganador): se abre por la pestaña de la mesa final.
-  const finalCompleta = (datos.final?.asientos.length ?? 0) >= POKER.asientos;
+  const finalCompleta = (datos.final?.asientos.length ?? 0) >= datos.asientos;
   const [pestana, setPestana] = useState<"clasificatorias" | "final">(
     datos.final && (finalCompleta || datos.clasificatorias.every((m) => m.ganador)) ? "final" : "clasificatorias",
   );
@@ -31,7 +34,7 @@ export function VistaPoker({ datos }: { datos: DatosPoker }) {
   const idioma = useIdioma();
 
   return (
-    <>
+    <Plazas.Provider value={{ mesas: datos.mesas, asientos: datos.asientos }}>
       {datos.miEstado === "reserva" && (
         <Aviso>
           <Negritas texto={t("Estás en la **lista de reserva**. Si alguien se da de baja, el Consejo te avisará y aparecerás en una mesa.")} />
@@ -78,12 +81,12 @@ export function VistaPoker({ datos }: { datos: DatosPoker }) {
                 dosPorMesa
                   ? "🎲 Las mesas aún no se han sorteado. Así quedarán: {mesas} mesas de {asientos}; los dos primeros de cada una pasan a la mesa final (los premios, en la pestaña «Mesa final»)."
                   : "🎲 Las mesas aún no se han sorteado. Así quedarán: {mesas} mesas de {asientos}; el ganador de cada una pasa a la mesa final (los premios, en la pestaña «Mesa final»).",
-                { mesas: POKER.mesas, asientos: POKER.asientos },
+                { mesas: datos.mesas, asientos: datos.asientos },
               )}
             </p>
           )}
           <div className="grid gap-x-6 gap-y-8 sm:grid-cols-2 xl:grid-cols-3">
-            {(sorteado ? datos.clasificatorias : mesasVacias()).map((m) => (
+            {(sorteado ? datos.clasificatorias : mesasVacias(datos.mesas)).map((m) => (
               <Mesa key={m.numero} mesa={m} dosPorMesa={dosPorMesa} onAbrir={sorteado ? () => setAbierta(m) : undefined} />
             ))}
           </div>
@@ -152,7 +155,7 @@ export function VistaPoker({ datos }: { datos: DatosPoker }) {
           </div>
         )}
       </Modal>
-    </>
+    </Plazas.Provider>
   );
 }
 
@@ -160,8 +163,8 @@ function Aviso({ children }: { children: React.ReactNode }) {
   return <p className="mb-4 rounded-2xl border-2 border-naranja bg-naranja/10 px-4 py-3 text-sm">{children}</p>;
 }
 
-function mesasVacias(): MesaVista[] {
-  return Array.from({ length: POKER.mesas }, (_, i) => ({
+function mesasVacias(cuantas: number): MesaVista[] {
+  return Array.from({ length: cuantas }, (_, i) => ({
     id: -i,
     fase: "clasificatoria",
     numero: i + 1,
@@ -181,7 +184,8 @@ function segundoQuePasa(mesa: MesaVista, dosPorMesa: boolean) {
 
 /** Mesa ovalada de tapete con los asientos alrededor y el ganador en el centro. */
 function Mesa({ mesa, grande = false, dosPorMesa = false, onAbrir }: { mesa: MesaVista; grande?: boolean; dosPorMesa?: boolean; onAbrir?: () => void }) {
-  const asientos = Array.from({ length: POKER.asientos }, (_, i) => mesa.asientos.find((a) => a.asiento === i + 1) ?? null);
+  const plazas = useContext(Plazas).asientos;
+  const asientos = Array.from({ length: plazas }, (_, i) => mesa.asientos.find((a) => a.asiento === i + 1) ?? null);
   const mia = mesa.asientos.some((a) => a.esYo);
   const terminada = !!mesa.ganador;
   const segundo = segundoQuePasa(mesa, dosPorMesa);
@@ -225,7 +229,7 @@ function Mesa({ mesa, grande = false, dosPorMesa = false, onAbrir }: { mesa: Mes
 
         {/* Asientos */}
         {asientos.map((a, i) => {
-          const { x, y } = posicionAsiento(i, POKER.asientos);
+          const { x, y } = posicionAsiento(i, plazas);
           const plata = !!a && segundo?.asiento === a.asiento;
           const eliminado = a?.puesto != null && a.puesto > 1 && !plata;
           const gana = a?.puesto === 1;
@@ -291,15 +295,15 @@ function MesaFinal({ datos, onAbrir }: { datos: DatosPoker; onAbrir: (m: MesaVis
   };
   const dosPorMesa = datos.clasificanPorMesa >= 2;
   const clasificados = dosPorMesa ? final.asientos.length : datos.clasificatorias.filter((m) => m.ganador).length;
-  const completa = final.asientos.length >= POKER.asientos;
+  const completa = final.asientos.length >= datos.asientos;
   const t = useT();
   return (
     <div className="space-y-8">
       <div>
         <p className="mb-2 text-center font-mono text-xs font-bold tracking-widest text-tinta-suave uppercase">
           {dosPorMesa
-            ? t("{clasificados}/{plazas} clasificados · pasan los dos primeros de cada mesa", { clasificados, plazas: POKER.asientos })
-            : t("{clasificados}/{mesas} clasificados · el ganador de la mesa N se sienta en el asiento N", { clasificados, mesas: POKER.mesas })}
+            ? t("{clasificados}/{plazas} clasificados · pasan los dos primeros de cada mesa", { clasificados, plazas: datos.asientos })
+            : t("{clasificados}/{mesas} clasificados · el ganador de la mesa N se sienta en el asiento N", { clasificados, mesas: datos.mesas })}
         </p>
         <Mesa mesa={final} grande onAbrir={datos.final ? () => onAbrir(final) : undefined} />
       </div>
@@ -312,7 +316,7 @@ function MesaFinal({ datos, onAbrir }: { datos: DatosPoker; onAbrir: (m: MesaVis
         <div className="rounded-3xl border-2 border-tinta bg-papel p-5 shadow-[5px_5px_0_var(--tinta)]">
           <h2 className="font-display text-xl text-verde uppercase">{t("Camino a la final")}</h2>
           <ul className="mt-3 grid grid-cols-2 gap-1.5 text-sm">
-            {Array.from({ length: POKER.mesas }, (_, i) => {
+            {Array.from({ length: datos.mesas }, (_, i) => {
               const m = datos.clasificatorias.find((x) => x.numero === i + 1);
               const segundo = m && segundoQuePasa(m, dosPorMesa);
               // Con la final ya completa, una mesa sin ganador es que no llegó a jugarse.

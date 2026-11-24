@@ -1,0 +1,15 @@
+{
+  // GitHub Codespaces (o VS Code con contenedores): la web con su PostgreSQL y datos inventados, sin instalar nada.
+  // Al crearlo se ejecuta «npm run preparar»; después, «npm run dev» y se abre el puerto 3000.
+  "name": "Web de torneos",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "forwardPorts": [3000],
+  "portsAttributes": { "3000": { "label": "Web", "onAutoForward": "openPreview" } },
+  "postCreateCommand": "npm ci && npm run preparar",
+  "customizations": {
+    "vscode": { "extensions": ["dbaeumer.vscode-eslint", "bradlc.vscode-tailwindcss"] },
+    "codespaces": { "openFiles": ["CONTRIBUTING.md"] }
+  }
+}

@@ -104,6 +104,8 @@ describe("perfil: cómo le va en el póker", () => {
     miEstado,
     reservas: 0,
     clasificanPorMesa: 1,
+    mesas: 8,
+    asientos: 8,
   });
 
   test("con su mesa y quién se sienta en ella", () => {

@@ -11,6 +11,7 @@ import { SelectorIdioma } from "@/modulos/idioma/selector";
 import { AvisoGeneral } from "@/modulos/web/aviso-general";
 import { leerAjustesWeb } from "@/modulos/web/datos";
 import { Logo } from "@/modulos/web/logo";
+import { EnlacesPaginas } from "@/modulos/web/pagina";
 
 export default async function Inicio() {
   if (await leerSesion()) redirect("/torneos");
@@ -92,7 +93,8 @@ export default async function Inicio() {
           )}
         </div>
 
-        <footer className="relative z-10 pb-6">
+        <footer className="relative z-10 space-y-4 px-4 pb-6">
+          <EnlacesPaginas conSesion={false} />
           <Logos />
         </footer>
       </main>

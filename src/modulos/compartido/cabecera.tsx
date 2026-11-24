@@ -10,7 +10,7 @@ import { Logo } from "@/modulos/web/logo";
 
 /** Cabecera de las páginas de los participantes: logo y nombre (Panel → 🎨 Web), idioma, saludo y, debajo, el aviso para todos. */
 export async function Cabecera({ sesion }: { sesion: Sesion }) {
-  const [{ t, idioma }, { marca }] = await Promise.all([traduccion(), leerAjustesWeb()]);
+  const [{ t, idioma }, { marca }, admin] = await Promise.all([traduccion(), leerAjustesWeb(), esCorreoAdmin(sesion.email)]);
   return (
     <>
       <header className="sticky top-0 z-30 border-b-2 border-tinta bg-crema/95 backdrop-blur">
@@ -26,7 +26,7 @@ export async function Cabecera({ sesion }: { sesion: Sesion }) {
             <span className="hidden max-w-40 truncate text-tinta-suave sm:inline">
               {t("Hola,")} <strong className="text-tinta">{sesion.nombre}</strong>
             </span>
-            {esCorreoAdmin(sesion.email) && (
+            {admin && (
               <Link
                 href="/admin"
                 className="rounded-full bg-naranja px-3 py-1 font-mono text-xs font-bold text-white uppercase transition hover:bg-naranja/85"

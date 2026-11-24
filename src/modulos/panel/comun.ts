@@ -4,6 +4,7 @@ import { unstable_rethrow } from "next/navigation";
 import { db } from "@/db";
 import { registro } from "@/db/schema";
 import { AvisoError } from "@/modulos/acceso/clave";
+import { accesoIa } from "@/modulos/ia/contexto";
 import type { TorneoId } from "@/modulos/torneos/config";
 import { fechaMadrid } from "@/modulos/importacion/csv";
 
@@ -11,9 +12,11 @@ import { fechaMadrid } from "@/modulos/importacion/csv";
 
 export type Resultado = { ok?: string; error?: string; avisos?: string[]; t?: number };
 
-/** Apunta en el registro quién ha hecho qué y refresca las páginas. */
+/** Apunta en el registro quién ha hecho qué (y si fue con un asistente de IA, con qué clave) y refresca las páginas. */
 export async function hecho(admin: string, ok: string, avisos?: string[], detalle?: string): Promise<Resultado> {
-  await db.insert(registro).values({ email: admin, accion: detalle ? `${ok.replace(/\.$/, "")} · ${detalle}` : ok });
+  const ia = accesoIa.getStore();
+  const accion = detalle ? `${ok.replace(/\.$/, "")} · ${detalle}` : ok;
+  await db.insert(registro).values({ email: admin, accion: ia ? `${accion} · con IA (${ia.clave})` : accion });
   revalidatePath("/", "layout");
   return { ok, avisos, t: Date.now() };
 }

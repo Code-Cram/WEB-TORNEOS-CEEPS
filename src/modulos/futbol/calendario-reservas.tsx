@@ -11,10 +11,9 @@ import {
   diaDe,
   diaDeLaSemana,
   diasDeSemana,
-  FRANJAS,
   franjaDe,
-  HORARIO,
-  HORAS,
+  franjasDe,
+  horasDe,
   huecoDe,
   inicioHueco,
   lunesDe,
@@ -22,6 +21,7 @@ import {
   motivoNoDisponible,
   motivoNoReservable,
   semanasDeReserva,
+  textoHorario,
   type Franja,
 } from "./reservas";
 import type { DatosReservas, PartidoCalendario, PropuestaVista } from "./tipos";
@@ -119,9 +119,11 @@ export function CalendarioReservas({ datos }: { datos: DatosReservas }) {
       hasta: datos.hasta,
       cierres: datos.cierres,
       abiertos: datos.abiertos,
+      horario: datos.horario,
     }),
     [ahora, datos],
   );
+  const horas = useMemo(() => horasDe(datos.horario), [datos.horario]);
   const { porHueco, ocupados } = useMemo(() => {
     const porHueco = new Map<string, { partido: PartidoCalendario; tipo: "reservado" | "previsto" }[]>();
     const ocupados = new Map<string, number>();
@@ -160,12 +162,13 @@ export function CalendarioReservas({ datos }: { datos: DatosReservas }) {
       </h2>
       <p className="mb-3 max-w-3xl text-sm text-tinta-suave">
         {t(
-          "Se juega de lunes a viernes, de {primera} a {ultima}, del {desde} al {hasta}. Cada capitán marca las mañanas y tardes que le vienen bien a su equipo y la fecha prevista de cada partido sale sola de lo que marcan los dos. Después, un capitán la confirma y el otro la acepta. La idea: cuartos antes de que acabe noviembre y todo terminado el {hasta}.",
+          "Se juega de lunes a viernes, de {primera} a {ultima}, del {desde} al {hasta}. Cada capitán marca las mañanas y tardes que le vienen bien a su equipo y la fecha prevista de cada partido sale sola de lo que marcan los dos. Después, un capitán la confirma y el otro la acepta. La idea: cuartos antes del {objetivo} y todo terminado el {hasta}.",
           {
-            primera: HORARIO.desde,
-            ultima: HORARIO.hasta,
+            primera: textoHorario(datos.horario).desde,
+            ultima: textoHorario(datos.horario).hasta,
             desde: diaLargo(datos.desde, idioma),
             hasta: diaLargo(datos.hasta, idioma),
+            objetivo: diaLargo(datos.objetivo, idioma),
           },
         )}
         {datos.abiertos.length > 0 && ` ${t("Solo hay pista en los huecos que da Deportes.")}`}
@@ -222,8 +225,8 @@ export function CalendarioReservas({ datos }: { datos: DatosReservas }) {
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {dias.map((dia) => {
           // Si no se puede jugar en todo el día (ya ha pasado, cerrado, sin pista…), se dice una vez.
-          const motivoDia = HORAS.every((h) => motivoNoDisponible({ dia, hora: h }, ajustes))
-            ? motivoNoDisponible({ dia, hora: HORAS.at(-1)! }, ajustes, t, idioma)
+          const motivoDia = horas.every((h) => motivoNoDisponible({ dia, hora: h }, ajustes))
+            ? motivoNoDisponible({ dia, hora: horas.at(-1)! }, ajustes, t, idioma)
             : null;
           return (
             <article
@@ -235,7 +238,7 @@ export function CalendarioReservas({ datos }: { datos: DatosReservas }) {
                 {diaCorto(dia, idioma)}
               </h3>
               {motivoDia && <p className="text-sm text-tinta-suave">{motivoDia}</p>}
-              {FRANJAS.map((fr) => {
+              {franjasDe(horas).map((fr) => {
                 const disponibles = fr.horas.filter((h) => !motivoNoDisponible({ dia, hora: h }, ajustes));
                 const libres = disponibles.filter((h) => !ocupados.has(claveHueco(dia, h)));
                 const suyas = libres.filter((h) => marcadas.has(claveHueco(dia, h)));
@@ -536,11 +539,11 @@ function OtraHora({
     const lista: string[] = [];
     const hoy = diaDe(new Date(datos.ahora));
     for (let d = hoy > datos.desde ? hoy : datos.desde; d <= datos.hasta && lista.length < 60; d = masDias(d, 1))
-      if (diaDeLaSemana(d) <= 5 && HORAS.some((h) => !motivoReserva(d, h))) lista.push(d);
+      if (diaDeLaSemana(d) <= 5 && horasDe(datos.horario).some((h) => !motivoReserva(d, h))) lista.push(d);
     return lista;
-  }, [datos.ahora, datos.desde, datos.hasta, motivoReserva]);
+  }, [datos.ahora, datos.desde, datos.hasta, datos.horario, motivoReserva]);
   const [dia, setDia] = useState(dias[0] ?? "");
-  const horas = HORAS.map((h) => ({
+  const horas = horasDe(datos.horario).map((h) => ({
     h,
     motivo: dia ? motivoReserva(dia, h) : "",
   }));

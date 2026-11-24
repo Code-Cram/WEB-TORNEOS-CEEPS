@@ -21,6 +21,7 @@ const SECCIONES = [
   ["/admin/correos", "✉ Correos"],
   ["/admin/palmares", "🏆 Ganadores"],
   ["/admin/web", "🎨 Web"],
+  ["/admin/acceso", "🔑 Acceso"],
 ] as const;
 
 export async function MarcoAdmin({ actual, titulo, children }: { actual: string; titulo: string; children: ReactNode }) {

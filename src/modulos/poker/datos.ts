@@ -8,6 +8,7 @@ import type { Idioma } from "@/modulos/idioma/config";
 import { perfilesPorCorreo } from "@/modulos/personas/perfiles";
 import { leerInfoTorneos } from "@/modulos/torneos/info";
 import { parsearPremios } from "@/modulos/torneos/premios";
+import { configPoker } from "@/modulos/poker/config-datos";
 
 /** ¿Puede entrar al póker la lista de reserva? Lo decide el Consejo en el panel (por defecto, no). */
 export async function reservaConAcceso() {
@@ -22,13 +23,14 @@ export async function clasificanPorMesa(): Promise<number> {
 }
 
 export async function datosPoker(emailUsuario: string | null, idioma: Idioma = "es"): Promise<DatosPoker> {
-  const [mesas, asientos, jugadores, info, perfiles, porMesa] = await Promise.all([
+  const [mesas, asientos, jugadores, info, perfiles, porMesa, config] = await Promise.all([
     db.select().from(pokerMesas).orderBy(asc(pokerMesas.fase), asc(pokerMesas.numero)),
     db.select().from(pokerAsientos).orderBy(asc(pokerAsientos.asiento)),
     db.select({ email: pokerJugadores.email, nombre: pokerJugadores.nombre, estado: pokerJugadores.estado }).from(pokerJugadores),
     leerInfoTorneos(idioma),
     perfilesPorCorreo(),
     clasificanPorMesa(),
+    configPoker(db),
   ]);
   const nombre = new Map(jugadores.map((j) => [j.email, j.nombre]));
   const mapaMesa = (m: (typeof mesas)[number]) => ({
@@ -58,5 +60,7 @@ export async function datosPoker(emailUsuario: string | null, idioma: Idioma = "
     miEstado: yo?.estado ?? null,
     reservas: jugadores.filter((j) => j.estado === "reserva").length,
     clasificanPorMesa: porMesa,
+    mesas: config.mesas,
+    asientos: config.asientos,
   };
 }

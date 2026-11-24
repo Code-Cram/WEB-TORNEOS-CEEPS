@@ -8,27 +8,39 @@ import { traductor, type T } from "@/modulos/idioma/traducir";
  * Deportes, solo valen esos. Todas las horas, en hora de Madrid.
  */
 
-/** Primer y último hueco: de 8:00–9:00 a 17:00–18:00 (desde las 18:00 la pista está ocupada todos los días). */
+/**
+ * Horario de la pista: el primer hueco empieza a las `primera` y el último a las `ultima` (8 y 17: de 8:00 a 18:00).
+ * Se cambia en Panel → Fútbol → Calendario; sin nada guardado, el de por defecto (lo que da Deportes: desde las 18:00
+ * la pista está ocupada todos los días).
+ */
+export type Horario = { primera: number; ultima: number };
 export const HORA_PRIMERA = 8;
 export const HORA_ULTIMA = 17;
-export const HORAS = Array.from({ length: HORA_ULTIMA - HORA_PRIMERA + 1 }, (_, i) => HORA_PRIMERA + i);
+export const HORARIO_POR_DEFECTO: Horario = { primera: HORA_PRIMERA, ultima: HORA_ULTIMA };
+
+/** Las horas en que empieza un hueco: [8, 9, …, 17]. */
+export const horasDe = (h: Horario = HORARIO_POR_DEFECTO) => Array.from({ length: Math.max(0, h.ultima - h.primera + 1) }, (_, i) => h.primera + i);
+export const HORAS = horasDe();
 
 /** «8:00» y «18:00»: de cuándo a cuándo se juega (para los textos). */
-export const HORARIO = { desde: `${HORA_PRIMERA}:00`, hasta: `${HORA_ULTIMA + 1}:00` };
+export const textoHorario = (h: Horario = HORARIO_POR_DEFECTO) => ({ desde: `${h.primera}:00`, hasta: `${h.ultima + 1}:00` });
+export const HORARIO = textoHorario();
 
-/** Mañana: de 8:00 a 14:00; tarde: de 14:00 a 18:00. */
+/** Mañana: hasta las 14:00; tarde: desde las 14:00. Una franja sin horas (p. ej. con un horario de 15:00 a 21:00) no sale. */
 export type Franja = "manana" | "tarde";
-export const FRANJAS: { id: Franja; nombre: string; horas: number[] }[] = [
-  { id: "manana", nombre: "Mañana", horas: HORAS.filter((h) => h < 14) },
-  { id: "tarde", nombre: "Tarde", horas: HORAS.filter((h) => h >= 14) },
-];
+export const franjasDe = (horas: number[] = HORAS): { id: Franja; nombre: string; horas: number[] }[] =>
+  [
+    { id: "manana" as const, nombre: "Mañana", horas: horas.filter((h) => h < 14) },
+    { id: "tarde" as const, nombre: "Tarde", horas: horas.filter((h) => h >= 14) },
+  ].filter((f) => f.horas.length);
+export const FRANJAS = franjasDe();
 export const franjaDe = (hora: number): Franja => (hora < 14 ? "manana" : "tarde");
 
 /** Primer y último día si el Consejo no pone otros: del lunes 23 de noviembre al viernes 4 de diciembre (lo que da Deportes). */
 export const RESERVAS_DESDE = "2026-11-23";
 export const RESERVAS_HASTA = "2026-12-04";
 
-/** La idea del Consejo: los cuartos (y, si se puede, las semifinales) antes de que acabe noviembre. */
+/** La idea del Consejo si no pone otro día en el panel: los cuartos (y, si se puede, las semifinales) antes de que acabe noviembre. */
 export const OBJETIVO_CUARTOS_Y_SEMIS = "2026-11-30";
 
 const ZONA = "Europe/Madrid";
@@ -114,14 +126,15 @@ export const estaCerrado = (cierres: Cierre[], dia: string, hora: number) => cie
 /** Sin huecos de Deportes apuntados, vale cualquiera; con ellos, solo esos. */
 export const estaAbierto = (abiertos: Cierre[], dia: string, hora: number) => !abiertos.length || estaCerrado(abiertos, dia, hora);
 
-/** Lo que pone el Consejo en el panel, y la hora a la que se mira. */
-export type AjustesHuecos = { ahora: Date; desde: string; hasta: string; cierres: Cierre[]; abiertos: Cierre[] };
+/** Lo que pone el Consejo en el panel, y la hora a la que se mira. Sin horario, el de por defecto. */
+export type AjustesHuecos = { ahora: Date; desde: string; hasta: string; cierres: Cierre[]; abiertos: Cierre[]; horario?: Horario };
 
 /** Por qué no se puede usar un hueco (ni para marcarlo ni para jugar en él), o null si se puede. */
 export function motivoNoDisponible(h: { dia: string; hora: number }, d: AjustesHuecos, t: T = traductor("es"), idioma: Idioma = "es"): string | null {
   if (!esDiaValido(h.dia) || !Number.isInteger(h.hora)) return t("Ese hueco no existe: recarga la página.");
   if (diaDeLaSemana(h.dia) > 5) return t("Solo se juega de lunes a viernes.");
-  if (h.hora < HORA_PRIMERA || h.hora > HORA_ULTIMA) return t("Los huecos son de {desde} a {hasta}.", HORARIO);
+  const horario = d.horario ?? HORARIO_POR_DEFECTO;
+  if (h.hora < horario.primera || h.hora > horario.ultima) return t("Los huecos son de {desde} a {hasta}.", textoHorario(horario));
   if (inicioHueco(h.dia, h.hora) <= d.ahora) return t("Ese hueco ya ha pasado.");
   if (h.dia < d.desde) return t("Se juega a partir del {dia}.", { dia: diaLargo(d.desde, idioma) });
   if (h.dia > d.hasta) return t("Solo se puede reservar hasta el {dia}.", { dia: diaLargo(d.hasta, idioma) });

@@ -7,7 +7,7 @@ import { AvisoError } from "@/modulos/acceso/clave";
 import { exigirAdmin } from "@/modulos/acceso/sesion";
 import { limpiarNombre, normalizarCorreo } from "@/modulos/compartido/texto";
 import { entero, fecha, hecho, idDe, intentar, texto, textoONull, type Resultado } from "@/modulos/panel/comun";
-import { CUPO_POKER, POKER } from "@/modulos/poker/config";
+import { configPoker } from "@/modulos/poker/config-datos";
 import { recalcularFinalPoker } from "@/modulos/poker/operaciones";
 import { CIERRE_INSCRIPCIONES, TORNEOS } from "@/modulos/torneos/config";
 import { conAvisos } from "@/modulos/chat/avisos";
@@ -20,12 +20,13 @@ export async function guardarMesa(_prev: Resultado, f: FormData): Promise<Result
       const mesaId = idDe(f);
       const avisos: string[] = [];
       let detalle = "";
-      const asientos = Array.from({ length: POKER.asientos }, (_, i) => ({
+      const { asientos: plazas } = await configPoker(db);
+      const asientos = Array.from({ length: plazas }, (_, i) => ({
         asiento: i + 1,
         email: textoONull(f, `jugador_${i + 1}`, 200),
-        puesto: entero(f, `puesto_${i + 1}`, POKER.asientos),
+        puesto: entero(f, `puesto_${i + 1}`, plazas),
       }));
-      const ganadorAsiento = entero(f, "ganador", POKER.asientos);
+      const ganadorAsiento = entero(f, "ganador", plazas);
       await db.transaction(async (tx) => {
         const [mesa] = await tx.select().from(pokerMesas).where(eq(pokerMesas.id, mesaId));
         if (!mesa) throw new AvisoError("Mesa no encontrada: recarga la página.");
@@ -119,10 +120,11 @@ export async function guardarJugadorPoker(_prev: Resultado, f: FormData): Promis
     const avisos = correo.aviso ? [correo.aviso] : [];
     if (estado === "inscrito" && previo?.estado !== "inscrito") {
       const inscritos = await db.$count(pokerJugadores, eq(pokerJugadores.estado, "inscrito"));
-      if (inscritos >= CUPO_POKER) {
-        if (!esNuevo) throw new AvisoError(`Ya hay ${CUPO_POKER} inscritos: da de baja o pasa a reserva a alguien antes.`);
+      const { cupo } = await configPoker(db);
+      if (inscritos >= cupo) {
+        if (!esNuevo) throw new AvisoError(`Ya hay ${cupo} inscritos: da de baja o pasa a reserva a alguien antes.`);
         estado = "reserva";
-        avisos.push(`Ya hay ${CUPO_POKER} inscritos: entra en la lista de reserva.`);
+        avisos.push(`Ya hay ${cupo} inscritos: entra en la lista de reserva.`);
       }
     }
 

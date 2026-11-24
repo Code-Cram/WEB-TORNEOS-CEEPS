@@ -4,10 +4,13 @@ import { traducir, traductor } from "../src/modulos/idioma/traducir";
 import { MARCA } from "../src/modulos/web/config";
 import {
   avisosDeContraste,
+  bloquesDePagina,
   buscarTextos,
   componerLogos,
+  conEnlaces,
   contraste,
   cssColores,
+  esEstadoPagina,
   etiquetas,
   leerAviso,
   leerColores,
@@ -133,3 +136,37 @@ describe("web editable: logos", () => {
     assert.match(problemaSvg('<svg><image href="https://x.es/a.png"/></svg>') ?? "", /de fuera/);
   });
 });
+
+describe("web editable: páginas libres", () => {
+  test("apartados con «# Título» y, entre ellos, el formato de la chuleta", () => {
+    const b = bloquesDePagina("# Contacto\nCorreo: consejo@uam.es\n- Lunes\n- Martes\n\n## Dónde\nEdificio C.\nNota: en exámenes cambia.");
+    assert.deepEqual(
+      b.map((x) => x.tipo),
+      ["titulo", "parrafo", "lista", "titulo", "parrafo", "nota"],
+    );
+    assert.deepEqual(b[0], { tipo: "titulo", texto: "Contacto" });
+    assert.deepEqual(b[1], { tipo: "parrafo", titulo: "Correo", texto: "consejo@uam.es" });
+    assert.deepEqual(bloquesDePagina(""), []);
+    // «#etiqueta» sin espacio no es un apartado.
+    assert.equal(bloquesDePagina("#CEEPS mola")[0].tipo, "parrafo");
+  });
+
+  test("las direcciones web y los correos salen como enlaces, sin el punto final de la frase", () => {
+    assert.deepEqual(conEnlaces("Escribe a consejo.estudiantes.eps@uam.es o mira https://www.uam.es/eps."), [
+      { tipo: "texto", texto: "Escribe a " },
+      { tipo: "enlace", texto: "consejo.estudiantes.eps@uam.es", href: "mailto:consejo.estudiantes.eps@uam.es" },
+      { tipo: "texto", texto: " o mira " },
+      { tipo: "enlace", texto: "https://www.uam.es/eps", href: "https://www.uam.es/eps" },
+      { tipo: "texto", texto: "." },
+    ]);
+    assert.deepEqual(conEnlaces("Sin enlaces"), [{ tipo: "texto", texto: "Sin enlaces" }]);
+    // Solo http y https: nada de javascript:.
+    assert.deepEqual(conEnlaces("javascript:alert(1)"), [{ tipo: "texto", texto: "javascript:alert(1)" }]);
+  });
+
+  test("quién puede ver una página", () => {
+    assert.ok(esEstadoPagina("publica") && esEstadoPagina("participantes") && esEstadoPagina("borrador"));
+    assert.ok(!esEstadoPagina("todos"));
+  });
+});
+

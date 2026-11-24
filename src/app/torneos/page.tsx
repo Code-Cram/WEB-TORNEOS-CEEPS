@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { futbolEquipos, musParejas, pokerAsientos, pokerMesas } from "@/db/schema";
 import { Cabecera } from "@/modulos/compartido/cabecera";
 import { Logos } from "@/modulos/compartido/logos";
+import { EnlacesPaginas } from "@/modulos/web/pagina";
 import { listarActividades } from "@/modulos/actividades/datos";
 import type { Cita } from "@/modulos/asistencia/logica";
 import { citaDe, citaDeActividad } from "@/modulos/asistencia/datos";
@@ -116,7 +117,7 @@ export default async function Torneos() {
         <p className="mt-1 text-tinta-suave">
           {modoAdmin
             ? t("Modo admin: ves todos los torneos y actividades. El panel está en el botón «Admin» de arriba.")
-            : !total && esCorreoAdmin(sesion.email)
+            : !total && (await esCorreoAdmin(sesion.email))
               ? t("No estás inscrito en nada. Entra en el panel con el botón «Admin» para verlo todo.")
               : total === 1
                 ? t("Aquí tienes:")
@@ -202,7 +203,8 @@ export default async function Torneos() {
         </div>
 
       </main>
-      <footer className="pb-6">
+      <footer className="space-y-4 px-4 pb-6">
+        <EnlacesPaginas conSesion />
         <Logos />
       </footer>
     </>

@@ -17,7 +17,7 @@ import { AvisoError } from "@/modulos/acceso/clave";
 import { correosEnActividad, guardarMiembros } from "@/modulos/actividades/operaciones";
 import { urlWeb } from "@/modulos/compartido/web";
 import { encolarCorreo } from "@/modulos/correo/envio";
-import { CUPO_POKER, POKER } from "@/modulos/poker/config";
+import { configPoker } from "@/modulos/poker/config-datos";
 import { reservaConAcceso } from "@/modulos/poker/datos";
 import { asientoLibre } from "@/modulos/poker/mesas";
 import { correoAlta } from "./correo-alta";
@@ -127,13 +127,14 @@ async function alPoker(tx: Tx, pedido: "inscrito" | "reserva", personas: Persona
     ).map((j) => [j.email, j.estado]),
   );
   const nuevas = personas.filter((p) => !previos.has(p.email) || (avisos.push(`${p.nombre} ya estaba en el póker (${previos.get(p.email)}): si hace falta, cámbialo en Póker.`), false));
-  let plazas = pedido === "inscrito" ? CUPO_POKER - (await tx.$count(pokerJugadores, eq(pokerJugadores.estado, "inscrito"))) : 0;
+  const { cupo, asientos: plazasPorMesa } = await configPoker(tx);
+  let plazas = pedido === "inscrito" ? cupo - (await tx.$count(pokerJugadores, eq(pokerJugadores.estado, "inscrito"))) : 0;
   const filas = nuevas.map((p) => ({ ...p, estado: pedido === "inscrito" && plazas-- > 0 ? "inscrito" : "reserva" }));
   if (!filas.length) return { nuevas: [], donde: pedido === "reserva" ? "la lista de reserva del póker" : "el Torneo de Póker" };
   // Mismo orden que el Forms: quien llega antes, antes en la lista de reserva.
   await tx.insert(pokerJugadores).values(filas.map((f, i) => ({ ...f, disponibilidad, traeFichas: false, inscritoEn: new Date(ahora.getTime() + i) })));
   const aReserva = pedido === "inscrito" ? filas.filter((f) => f.estado === "reserva").length : 0;
-  if (aReserva) avisos.push(`Ya hay ${CUPO_POKER} inscritos: ${aReserva === 1 ? "entra" : `${aReserva} entran`} en la lista de reserva.`);
+  if (aReserva) avisos.push(`Ya hay ${cupo} inscritos: ${aReserva === 1 ? "entra" : `${aReserva} entran`} en la lista de reserva.`);
 
   // Inscritos con el sorteo ya hecho: se sientan solos en un asiento libre de una mesa de su día que no se haya jugado.
   const inscritas = filas.filter((f) => f.estado === "inscrito");
@@ -159,7 +160,7 @@ async function alPoker(tx: Tx, pedido: "inscrito" | "reserva", personas: Persona
       .map((m) => ({ ...m, fecha: m.fecha?.toISOString() ?? null, ocupados: asientos.filter((a) => a.mesaId === m.id).map((a) => a.asiento) }));
     const sinMesa: string[] = [];
     for (const p of inscritas) {
-      const sitio = asientoLibre(conSitio, disponibilidad, POKER.asientos, ahora);
+      const sitio = asientoLibre(conSitio, disponibilidad, plazasPorMesa, ahora);
       if (!sitio) {
         sinMesa.push(p.nombre);
         continue;

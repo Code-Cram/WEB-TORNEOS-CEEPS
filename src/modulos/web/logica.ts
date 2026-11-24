@@ -1,3 +1,4 @@
+import { parsearReglas, type BloqueReglas } from "@/modulos/torneos/reglas";
 import {
   COLORES,
   HUECOS_LOGO,
@@ -191,4 +192,54 @@ export function buscarTextos(q: string, en: Record<string, string>, propios: Rec
     if (resultado.length >= max) break;
   }
   return resultado;
+}
+
+/* ─────────────── Páginas libres ─────────────── */
+
+export const ESTADOS_PAGINA = [
+  { id: "publica", nombre: "Pública: la ve cualquiera, también sin entrar" },
+  { id: "participantes", nombre: "Solo para quien ha entrado con su correo" },
+  { id: "borrador", nombre: "Borrador: solo la ve el Consejo" },
+] as const;
+export type EstadoPagina = (typeof ESTADOS_PAGINA)[number]["id"];
+export const esEstadoPagina = (s: string): s is EstadoPagina => ESTADOS_PAGINA.some((e) => e.id === s);
+
+export type BloquePagina = BloqueReglas | { tipo: "titulo"; texto: string };
+
+/**
+ * El contenido de una página: el mismo formato que la chuleta de reglas (viñetas, pasos, «Algo: texto», notas y
+ * **negritas**) y, además, «# Título» para separar apartados.
+ */
+export function bloquesDePagina(texto: string): BloquePagina[] {
+  const bloques: BloquePagina[] = [];
+  let pendiente: string[] = [];
+  const soltar = () => {
+    if (pendiente.length) bloques.push(...parsearReglas(pendiente.join("\n")));
+    pendiente = [];
+  };
+  for (const linea of texto.split(/\r?\n/)) {
+    const titulo = linea.trim().match(/^#{1,3}\s+(.+)$/);
+    if (titulo) {
+      soltar();
+      bloques.push({ tipo: "titulo", texto: titulo[1].trim() });
+    } else pendiente.push(linea);
+  }
+  soltar();
+  return bloques;
+}
+
+export type Trozo = { tipo: "texto"; texto: string } | { tipo: "enlace"; texto: string; href: string };
+
+/** Las direcciones web (https://…) y los correos de un texto, como enlaces. El punto final de una frase no entra. */
+export function conEnlaces(texto: string): Trozo[] {
+  const trozos: Trozo[] = [];
+  const patron = /(https?:\/\/[^\s<>"]+[^\s<>".,;:!?)»'])|([\w.+-]+@[\w-]+(?:\.[\w-]+)+)/g;
+  let desde = 0;
+  for (const m of texto.matchAll(patron)) {
+    if (m.index > desde) trozos.push({ tipo: "texto", texto: texto.slice(desde, m.index) });
+    trozos.push(m[1] ? { tipo: "enlace", texto: m[1], href: m[1] } : { tipo: "enlace", texto: m[2], href: `mailto:${m[2]}` });
+    desde = m.index + m[0].length;
+  }
+  if (desde < texto.length) trozos.push({ tipo: "texto", texto: texto.slice(desde) });
+  return trozos;
 }

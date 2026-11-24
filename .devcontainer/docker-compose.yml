@@ -1,0 +1,20 @@
+# Contenedores de Codespaces: el de trabajo (Node 22) y PostgreSQL. Los datos de la base se guardan en un volumen.
+services:
+  app:
+    image: mcr.microsoft.com/devcontainers/javascript-node:22
+    volumes:
+      - ../..:/workspaces:cached
+    command: sleep infinity
+    environment:
+      DATABASE_URL: postgres://ceeps:ceeps@db:5432/torneos
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ceeps
+      POSTGRES_PASSWORD: ceeps
+      POSTGRES_DB: torneos
+    volumes:
+      - datos:/var/lib/postgresql/data
+volumes:
+  datos:

@@ -5,15 +5,18 @@ import { db } from "@/db";
 import { futbolEquipos, futbolJugadores, futbolPartidos } from "@/db/schema";
 import type { DatosCuadro } from "@/modulos/cuadros/tipos";
 import { perfilesPorCorreo } from "@/modulos/personas/perfiles";
+import { conTercerPuesto } from "@/modulos/torneos/ajustes-torneo";
 
 export async function datosFutbol(emailUsuario: string | null): Promise<DatosCuadro> {
-  const [equipos, jugadores, partidos, perfiles] = await Promise.all([
+  const [equipos, jugadores, partidos, perfiles, tercerPuesto] = await Promise.all([
     db.select().from(futbolEquipos).orderBy(asc(futbolEquipos.nombre)),
     db.select().from(futbolJugadores).orderBy(asc(futbolJugadores.id)),
     db.select().from(futbolPartidos).orderBy(asc(futbolPartidos.ronda), asc(futbolPartidos.posicion)),
     perfilesPorCorreo(),
+    conTercerPuesto(db, "futbol"),
   ]);
   return {
+    tercerPuesto,
     // Solo lo que necesita el navegador: sin correos ni teléfonos.
     equipos: equipos.map((e) => ({
       id: e.id,

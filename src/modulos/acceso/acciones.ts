@@ -28,13 +28,14 @@ export async function entrar(_prev: EstadoEntrar, formData: FormData): Promise<E
     console.error(e);
     return { error: t("No hemos podido comprobar tu correo ahora mismo. Inténtalo de nuevo en un momento."), nombre, correo };
   }
-  if (!encontrado && !esCorreoAdmin(email) && enReserva)
+  const admin = !encontrado && (await esCorreoAdmin(email));
+  if (!encontrado && !admin && enReserva)
     return {
       error: t("Estás en la lista de reserva del póker: de momento no tienes plaza. Si se libera alguna, el Consejo te avisará por correo."),
       nombre,
       correo,
     };
-  if (!encontrado && !esCorreoAdmin(email))
+  if (!encontrado && !admin)
     return {
       error: t("Este correo no aparece en ningún torneo. Revisa que sea el mismo con el que te inscribiste; si te acabas de apuntar, puede tardar un poco en aparecer."),
       nombre,

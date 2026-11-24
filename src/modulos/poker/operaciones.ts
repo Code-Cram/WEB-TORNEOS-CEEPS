@@ -1,7 +1,7 @@
 import { and, asc, eq, inArray, isNotNull, ne, notInArray, sql } from "drizzle-orm";
 import type { Db, Tx } from "@/db/client";
 import { infoTorneos, pokerAsientos, pokerJugadores, pokerMesas } from "@/db/schema";
-import { POKER } from "@/modulos/poker/config";
+import { configPoker } from "@/modulos/poker/config-datos";
 import { finalistas, ordenarTurnos, sortearMesas } from "@/modulos/poker/mesas";
 
 /** Turnos que aparecen en la disponibilidad de los inscritos, por orden de fecha. */
@@ -13,18 +13,28 @@ export async function turnosPoker(db: Db | Tx): Promise<string[]> {
   return ordenarTurnos(filas.map((f) => f.turno));
 }
 
-/** Asegura que existen las 8 mesas clasificatorias y la final (respeta turno/fecha/lugar ya puestos). */
+/**
+ * Asegura que existen las mesas clasificatorias (las del panel; por defecto, 8) y la final, respetando turno, fecha y
+ * lugar ya puestos. Si ahora hay menos mesas, quita las que sobran solo si están vacías y sin ganador.
+ */
 export async function asegurarMesas(tx: Tx) {
+  const { mesas: cuantas } = await configPoker(tx);
   const existentes = await tx.select().from(pokerMesas);
+  const sobran = existentes.filter((m) => m.fase === "clasificatoria" && m.numero > cuantas && !m.ganadorEmail).map((m) => m.id);
+  if (sobran.length) {
+    const ocupadas = new Set((await tx.select({ mesaId: pokerAsientos.mesaId }).from(pokerAsientos).where(inArray(pokerAsientos.mesaId, sobran))).map((a) => a.mesaId));
+    const vacias = sobran.filter((id) => !ocupadas.has(id));
+    if (vacias.length) await tx.delete(pokerMesas).where(inArray(pokerMesas.id, vacias));
+  }
   const turnos = await turnosPoker(tx);
   const nuevas = [];
-  for (let n = 1; n <= POKER.mesas; n++)
+  for (let n = 1; n <= cuantas; n++)
     if (!existentes.some((m) => m.fase === "clasificatoria" && m.numero === n))
       nuevas.push({
         fase: "clasificatoria",
         numero: n,
         // Por defecto: primera mitad de mesas al primer turno, segunda mitad al segundo.
-        turno: turnos.length ? turnos[Math.min(turnos.length - 1, Math.floor(((n - 1) * turnos.length) / POKER.mesas))] : null,
+        turno: turnos.length ? turnos[Math.min(turnos.length - 1, Math.floor(((n - 1) * turnos.length) / cuantas))] : null,
       });
   if (!existentes.some((m) => m.fase === "final")) nuevas.push({ fase: "final", numero: 1, turno: null });
   if (nuevas.length) await tx.insert(pokerMesas).values(nuevas);
@@ -32,15 +42,17 @@ export async function asegurarMesas(tx: Tx) {
 
 export async function sortearPoker(db: Db) {
   return db.transaction(async (tx) => {
+    // Primero se vacían las mesas: así, si ahora hay menos, las que sobran se pueden quitar.
+    await tx.delete(pokerAsientos);
+    await tx.update(pokerMesas).set({ ganadorEmail: null });
     await asegurarMesas(tx);
+    const { asientos } = await configPoker(tx);
     const mesas = await tx.select().from(pokerMesas).where(eq(pokerMesas.fase, "clasificatoria")).orderBy(asc(pokerMesas.numero));
     const jugadores = await tx
       .select({ email: pokerJugadores.email, disponibilidad: pokerJugadores.disponibilidad })
       .from(pokerJugadores)
       .where(eq(pokerJugadores.estado, "inscrito"));
-    await tx.delete(pokerAsientos);
-    await tx.update(pokerMesas).set({ ganadorEmail: null });
-    const { asignacion, avisos } = sortearMesas(jugadores, mesas, POKER.asientos);
+    const { asignacion, avisos } = sortearMesas(jugadores, mesas, asientos);
     const filas = mesas.flatMap((m) => (asignacion.get(m.numero) ?? []).map((email, i) => ({ mesaId: m.id, asiento: i + 1, jugadorEmail: email })));
     if (filas.length) await tx.insert(pokerAsientos).values(filas);
     return avisos;
@@ -70,7 +82,7 @@ export async function recalcularFinalPoker(tx: Tx) {
         segundo: sentadosClasif.find((a) => a.mesaId === m.id && a.puesto === 2)?.email ?? null,
       })),
     ajuste?.porMesa ?? 1,
-    POKER.asientos,
+    (await configPoker(tx)).asientos,
   );
   const actuales = await tx.select().from(pokerAsientos).where(eq(pokerAsientos.mesaId, final.id));
   const sobran = actuales.filter((a) => !deseados.some((d) => d.asiento === a.asiento && d.email === a.jugadorEmail));

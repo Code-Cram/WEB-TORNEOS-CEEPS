@@ -1,7 +1,7 @@
 import { asc, eq, inArray, ne, sql } from "drizzle-orm";
 import type { Db, Tx } from "@/db/client";
 import { aliasCorreos, futbolEquipos, futbolJugadores, musIntegrantes, musParejas, pokerJugadores, usuarios } from "@/db/schema";
-import { CUPO_POKER } from "@/modulos/poker/config";
+import { configPoker } from "@/modulos/poker/config-datos";
 import type { TorneoId } from "@/modulos/torneos/config";
 import { leerCsv } from "@/modulos/importacion/csv";
 import { parsearFutbol, parsearMus, parsearPoker, type EquipoImport, type JugadorPokerImport, type ParejaImport, type Persona } from "@/modulos/importacion/parsers";
@@ -184,7 +184,7 @@ export async function aplicar(db: Db, p: Parseado, opciones: { eliminarAusentes:
         .select({ n: sql<number>`count(*)::int` })
         .from(pokerJugadores)
         .where(eq(pokerJugadores.estado, "inscrito"));
-      let plazas = CUPO_POKER - n;
+      let plazas = (await configPoker(tx)).cupo - n;
       // Por orden de inscripción: los primeros entran, el resto queda en reserva.
       const ordenados = [...p.registros].sort((a, b) => (a.inscritoEn?.getTime() ?? 0) - (b.inscritoEn?.getTime() ?? 0));
       for (const r of ordenados) {

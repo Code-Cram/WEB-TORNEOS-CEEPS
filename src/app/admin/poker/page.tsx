@@ -5,7 +5,7 @@ import { pokerAsientos, pokerJugadores, pokerMesas } from "@/db/schema";
 import { estiloInput } from "@/modulos/panel/estilos";
 import { FormAccion } from "@/modulos/panel/form-accion";
 import { MarcoAdmin, Seccion } from "@/modulos/panel/marco";
-import { CUPO_POKER, POKER } from "@/modulos/poker/config";
+import { configPoker } from "@/modulos/poker/config-datos";
 import { clasificanPorMesa, reservaConAcceso } from "@/modulos/poker/datos";
 import { paraInputFecha } from "@/modulos/compartido/formato";
 import { ordenarTurnos } from "@/modulos/poker/mesas";
@@ -30,12 +30,13 @@ export default async function AdminPoker() {
   await exigirAdmin();
   await procesarReservas(true).catch((e) => console.error(e));
   await ponerFinalAlDia(db, true).catch((e) => console.error(e));
-  const [mesas, asientos, jugadores, accesoReserva, porMesa] = await Promise.all([
+  const [mesas, asientos, jugadores, accesoReserva, porMesa, config] = await Promise.all([
     db.select().from(pokerMesas).orderBy(asc(pokerMesas.fase), asc(pokerMesas.numero)),
     db.select().from(pokerAsientos),
     db.select().from(pokerJugadores).orderBy(asc(pokerJugadores.inscritoEn)),
     reservaConAcceso(),
     clasificanPorMesa(),
+    configPoker(db),
   ]);
   const clasif = mesas.filter((m) => m.fase === "clasificatoria");
   const final = mesas.find((m) => m.fase === "final");
@@ -62,7 +63,7 @@ export default async function AdminPoker() {
         titulo="Sorteo de mesas"
         descripcion={
           <>
-            {inscritos.length}/{CUPO_POKER} plazas ocupadas. El sorteo reparte a los inscritos en {POKER.mesas} mesas respetando su disponibilidad
+            {inscritos.length}/{config.cupo} plazas ocupadas. El sorteo reparte a los inscritos en {config.mesas} mesas de {config.asientos} respetando su disponibilidad
             {turnos.length > 0 && <> ({turnos.join(" / ")})</>}: cada mesa tiene un turno (por defecto la mitad de las mesas en cada turno; cámbialo abajo y vuelve a sortear si
             hace falta).
           </>
@@ -106,7 +107,7 @@ export default async function AdminPoker() {
                   <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-2.5">
                     <span className="font-display uppercase">{esFinal ? "Mesa final" : `Mesa ${m.numero}`}</span>
                     <span className="text-xs text-tinta-suave">
-                      {m.turno ?? "sin turno"} · {deMesa.length}/{POKER.asientos}
+                      {m.turno ?? "sin turno"} · {deMesa.length}/{config.asientos}
                     </span>
                     {m.ganadorEmail && <span className="truncate rounded-full bg-oros/25 px-2 text-xs">👑 {nombre.get(m.ganadorEmail)}</span>}
                     <span className="ml-auto text-tinta-suave transition group-open:rotate-180">▾</span>
@@ -129,7 +130,7 @@ export default async function AdminPoker() {
                           </tr>
                         </thead>
                         <tbody>
-                          {Array.from({ length: POKER.asientos }, (_, i) => {
+                          {Array.from({ length: config.asientos }, (_, i) => {
                             const a = deMesa.find((x) => x.asiento === i + 1);
                             return (
                               <tr key={i} className="border-t border-linea">

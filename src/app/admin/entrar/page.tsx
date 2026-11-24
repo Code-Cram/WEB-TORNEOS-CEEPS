@@ -12,7 +12,7 @@ export default async function EntrarAdmin() {
   const sesion = await leerSesion();
   // Primero hay que entrar en la web con uno de los correos de la mesa de portavoces.
   if (!sesion) redirect("/");
-  if (!esCorreoAdmin(sesion.email)) redirect("/torneos");
+  if (!(await esCorreoAdmin(sesion.email))) redirect("/torneos");
   if (await esAdmin()) redirect("/admin");
   return (
     <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center px-5 py-10">

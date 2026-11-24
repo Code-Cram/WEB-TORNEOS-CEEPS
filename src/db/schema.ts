@@ -64,6 +64,16 @@ export const infoTorneos = pgTable("info_torneos", {
   reservasCerradas: text("reservas_cerradas"),
   /** Solo fútbol: los huecos que da Deportes, con el mismo formato; vacío, vale de lunes a viernes de 8:00 a 18:00. */
   reservasAbiertas: text("reservas_abiertas"),
+  /** Solo fútbol: horario de la pista, de `desde` a `hasta` en punto (null: de 8 a 18, el de futbol/reservas.ts). */
+  reservasHoraDesde: integer("reservas_hora_desde"),
+  reservasHoraHasta: integer("reservas_hora_hasta"),
+  /** Solo fútbol: el día hasta el que se quieren jugar los cuartos (y, si se puede, las semis). Null: el de reservas.ts. */
+  reservasObjetivo: date("reservas_objetivo", { mode: "string" }),
+  /** Fútbol y mus: si el sorteo crea el partido por el 3er y 4º puesto (null: lo de torneos/config.ts). */
+  tercerPuesto: boolean("tercer_puesto"),
+  /** Solo póker: mesas clasificatorias y asientos por mesa, también los de la final (null: los de poker/config.ts). */
+  mesas: integer("mesas"),
+  asientos: integer("asientos"),
 }).enableRLS();
 
 /** Ficheros de sql/ ya aplicados en esta base de datos (los apunta scripts/migrar.mts al desplegar). */
@@ -98,6 +108,32 @@ export const registro = pgTable("registro", {
   creadoEn: creadoEn(),
 }).enableRLS();
 
+/**
+ * Admins añadidos desde el panel (🔑 Acceso). Los de la variable ADMIN_EMAILS lo son siempre y no están aquí. Para
+ * entrar al panel, además, hace falta la contraseña ADMIN_PASSWORD.
+ */
+export const admins = pgTable("admins", {
+  email: text("email").primaryKey(),
+  anadidoPor: text("anadido_por").notNull(),
+  creadoEn: creadoEn(),
+}).enableRLS();
+
+/**
+ * Claves del acceso para IA (Panel → 🔑 Acceso): con una, el asistente de un admin usa la web por /api/mcp como lo haría
+ * él desde el panel. Solo se guarda la huella (sha256): la clave se enseña una vez, al crearla.
+ */
+export const clavesIa = pgTable("claves_ia", {
+  id: serial("id").primaryKey(),
+  /** Para reconocerla en el registro: «Asistente de Marta». */
+  nombre: text("nombre").notNull(),
+  /** El admin dueño: si deja de ser admin, la clave deja de valer. */
+  email: text("email").notNull(),
+  huella: text("huella").notNull().unique(),
+  creadoEn: creadoEn(),
+  usadaEn: timestamp("usada_en", { withTimezone: true }),
+  revocadaEn: timestamp("revocada_en", { withTimezone: true }),
+}).enableRLS();
+
 /* ───────────────────────────── LA WEB, EDITABLE DESDE EL PANEL (Panel → 🎨 Web) ───────────────────────────── */
 
 /**
@@ -120,6 +156,23 @@ export const textosWeb = pgTable("textos_web", {
   es: text("es"),
   en: text("en"),
   actualizadoPor: text("actualizado_por"),
+  actualizadoEn: timestamp("actualizado_en", { withTimezone: true }).defaultNow().notNull(),
+}).enableRLS();
+
+/** Páginas libres creadas desde el panel (🎨 Web → Páginas): normas generales, contacto, preguntas frecuentes… En /p/<slug>. */
+export const paginas = pgTable("paginas", {
+  id: serial("id").primaryKey(),
+  slug: text("slug").notNull().unique(),
+  titulo: text("titulo").notNull(),
+  /** Una idea por línea, con el formato de web/logica.ts (bloquesDePagina). */
+  contenido: text("contenido").notNull().default(""),
+  /** Versión en inglés; vacía, sale la española. */
+  tituloEn: text("titulo_en"),
+  contenidoEn: text("contenido_en"),
+  /** publica (la ve cualquiera, también sin entrar) | participantes (solo quien ha entrado) | borrador (solo el Consejo) */
+  estado: text("estado").notNull().default("publica"),
+  orden: integer("orden").notNull().default(0),
+  creadoEn: creadoEn(),
   actualizadoEn: timestamp("actualizado_en", { withTimezone: true }).defaultNow().notNull(),
 }).enableRLS();
 

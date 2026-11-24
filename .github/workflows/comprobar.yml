@@ -1,0 +1,51 @@
+# Lo mismo que hay que comprobar antes de publicar, en cada pull request y en cada push a main: lint, tipos, pruebas,
+# una base de datos desde cero (tablas, todas las migraciones de sql/ y datos inventados) y el build.
+name: Comprobar
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  comprobar:
+    name: Lint, tipos, pruebas, base de datos y build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: ceeps
+          POSTGRES_PASSWORD: ceeps
+          POSTGRES_DB: torneos
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ceeps"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgres://ceeps:ceeps@localhost:5432/torneos
+      SESSION_SECRET: solo-para-las-comprobaciones-de-github
+      ADMIN_EMAILS: admin@example.com
+      ADMIN_PASSWORD: demo
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Lint, tipos y pruebas
+        run: npm run comprobar
+      - name: Base de datos desde cero (tablas, migraciones y datos inventados)
+        run: |
+          npx drizzle-kit push --force
+          npx tsx scripts/migrar.mts
+          npx tsx scripts/inventar.mts
+          npx tsx scripts/demo.mts
+      - name: Build
+        # Next a veces corta el build con un aviso de seguridad de su versión; a la segunda compila.
+        run: npm run build || npm run build

@@ -4,7 +4,7 @@ import { musIntegrantes, musParejas, musPartidas, musPartidos } from "@/db/schem
 import { ganadorMus, recalcular, RONDA_TERCER_PUESTO, sortear, totalRondas } from "@/modulos/cuadros/logica";
 import type { LineaJugador } from "@/modulos/personas/plantilla";
 import { asegurarUsuarios } from "@/modulos/personas/plantilla";
-import { TORNEOS } from "@/modulos/torneos/config";
+import { conTercerPuesto } from "@/modulos/torneos/ajustes-torneo";
 
 export async function sortearMus(db: Db) {
   await db.transaction(async (tx) => {
@@ -24,7 +24,7 @@ export async function sortearMus(db: Db) {
           mejorDe: r === rondas ? 5 : 3,
         });
     // Las dos parejas que pierden en semifinales juegan por el 3er y 4º puesto.
-    if (TORNEOS.mus.tercerPuesto && rondas >= 2) filas.push({ ronda: RONDA_TERCER_PUESTO, posicion: 0, parejaAId: null, parejaBId: null, mejorDe: 3 });
+    if ((await conTercerPuesto(tx, "mus")) && rondas >= 2) filas.push({ ronda: RONDA_TERCER_PUESTO, posicion: 0, parejaAId: null, parejaBId: null, mejorDe: 3 });
     await tx.insert(musPartidos).values(filas);
     await recalcularMus(tx);
   });

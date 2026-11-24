@@ -97,6 +97,8 @@ export async function datosReservas(email: string | null): Promise<DatosReservas
     hasta: ajustes.hasta,
     cierres: ajustes.cierres,
     abiertos: ajustes.abiertos,
+    horario: ajustes.horario,
+    objetivo: ajustes.objetivo,
     partidos: jugables
       .filter((p) => p.fecha || p.fechaPrevista)
       .map((p) => ({

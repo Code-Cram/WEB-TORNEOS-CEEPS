@@ -1,4 +1,4 @@
-import type { Cierre } from "./reservas";
+import type { Cierre, Horario } from "./reservas";
 
 /* Calendario del fútbol, tal como llega al navegador (sin correos). */
 
@@ -51,6 +51,10 @@ export type DatosReservas = {
   cierres: Cierre[];
   /** Los huecos que da Deportes (vacío: todos). */
   abiertos: Cierre[];
+  /** Horario de la pista (primera y última hora en que empieza un hueco). */
+  horario: Horario;
+  /** Día hasta el que se quieren jugar los cuartos («2026-11-30»). */
+  objetivo: string;
   partidos: PartidoCalendario[];
   propuestas: PropuestaVista[];
   miPartido: MiPartido | null;

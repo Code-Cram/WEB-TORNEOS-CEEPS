@@ -1,6 +1,6 @@
 /**
  * SOLO DESARROLLO: sortea los tres torneos y apunta resultados de prueba para ver la web con contenido.
- * Se niega a ejecutarse si DATABASE_URL no apunta a localhost.
+ * Se niega a ejecutarse si DATABASE_URL no es local (este ordenador o el contenedor de Codespaces).
  * Uso: npm run db:demo
  */
 import { asc, eq } from "drizzle-orm";
@@ -12,9 +12,10 @@ import { ordenarTurnos } from "../src/modulos/poker/mesas";
 import { recalcularFinalPoker, sortearPoker } from "../src/modulos/poker/operaciones";
 import { recalcularFutbol, sortearFutbol } from "../src/modulos/futbol/operaciones";
 import { recalcularMus, sortearMus } from "../src/modulos/mus/operaciones";
+import { esLocal } from "./local";
 
 const url = process.env.DATABASE_URL ?? "";
-if (!/@(localhost|127\.0\.0\.1)[:/]/.test(url)) {
+if (!esLocal(url)) {
   console.error("demo: DATABASE_URL no es local. No se toca nada.");
   process.exit(1);
 }
